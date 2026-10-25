@@ -8,9 +8,10 @@
         :root {
             --primary-color: #2c5e3b;
             --accent-color: #4a7c59;
-            --bg-color: #1a1a1a;
+            --bg-color: #121c15;
             --text-color: #f4f4f4;
             --card-bg: #223d2a;
+            --danger-color: #a93226;
         }
 
         * {
@@ -19,6 +20,7 @@
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             user-select: none;
+            -webkit-user-select: none;
         }
 
         body {
@@ -46,20 +48,20 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 10px;
-            gap: 10px;
+            padding: 8px;
+            gap: 8px;
             max-width: 900px;
             margin: 0 auto;
             width: 100%;
-            height: calc(100% - 40px);
             overflow: hidden;
+            box-sizing: border-box;
         }
 
         /* --- Menysystem --- */
         .menu-container {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             height: 100%;
             justify-content: center;
         }
@@ -67,7 +69,7 @@
         .menu-card {
             background: linear-gradient(135deg, var(--primary-color), var(--card-bg));
             border-radius: 12px;
-            padding: 16px;
+            padding: 14px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -81,17 +83,17 @@
         }
 
         .menu-card h2 {
-            font-size: 1.1rem;
-            margin-bottom: 4px;
+            font-size: 1.05rem;
+            margin-bottom: 2px;
         }
 
         .menu-card p {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             opacity: 0.85;
         }
 
         .menu-card .icon {
-            font-size: 2rem;
+            font-size: 1.8rem;
         }
 
         /* --- Sektioner --- */
@@ -100,7 +102,8 @@
             flex-direction: column;
             height: 100%;
             width: 100%;
-            gap: 10px;
+            gap: 8px;
+            overflow: hidden;
         }
 
         .screen.active {
@@ -122,8 +125,9 @@
             display: flex;
             flex-direction: column;
             flex: 1;
-            gap: 10px;
+            gap: 8px;
             min-height: 0;
+            overflow: hidden;
         }
 
         .canvas-container {
@@ -145,7 +149,7 @@
         .controls {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             flex-shrink: 0;
         }
 
@@ -158,10 +162,10 @@
             background: var(--accent-color);
             color: white;
             border: none;
-            padding: 10px;
+            padding: 9px;
             border-radius: 8px;
             font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             text-align: center;
             flex: 1;
@@ -169,6 +173,10 @@
 
         .btn:active {
             opacity: 0.8;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
         }
 
         .btn-secondary {
@@ -179,10 +187,10 @@
             background: #333;
             color: #fff;
             border: 1px solid #555;
-            padding: 8px;
+            padding: 7px;
             border-radius: 8px;
             width: 100%;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .info-box {
@@ -195,20 +203,60 @@
             line-height: 1.4;
         }
 
+        /* Drill-panel overlay */
+        .drill-hud {
+            background: rgba(0,0,0,0.75);
+            border: 2px solid var(--danger-color);
+            padding: 8px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .progress-bar-container {
+            background: #333;
+            border-radius: 4px;
+            height: 12px;
+            overflow: hidden;
+            width: 100%;
+            position: relative;
+        }
+
+        .progress-fill {
+            background: var(--accent-color);
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .tension-fill {
+            background: var(--danger-color);
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
         /* --- Liggande skärm (Landscape) utan scroll --- */
         @media (orientation: landscape) {
             header {
-                display: none; /* Dölj rubriken i landscape för max spelyta */
+                display: none;
             }
 
             main {
                 height: 100vh;
                 height: 100dvh;
-                padding: 8px;
+                padding: 6px;
+                gap: 6px;
             }
 
             .menu-container {
                 flex-direction: row;
+                gap: 10px;
             }
 
             .menu-card {
@@ -216,7 +264,8 @@
                 flex-direction: column;
                 justify-content: center;
                 text-align: center;
-                gap: 10px;
+                gap: 8px;
+                padding: 10px;
             }
 
             .game-layout {
@@ -228,7 +277,7 @@
             }
 
             .controls {
-                width: 220px;
+                width: 240px;
                 justify-content: space-between;
             }
         }
@@ -270,7 +319,7 @@
         <div id="game-screen" class="screen">
             <div class="stats-bar">
                 <span id="stat-spot">Plats: Dickson</span>
-                <span id="stat-score">Fångster: 0</span>
+                <span id="stat-score">Poäng: 0</span>
             </div>
 
             <div class="game-layout">
@@ -280,7 +329,6 @@
 
                 <div class="controls">
                     <div>
-                        <label style="font-size:0.75rem; color:#aaa;">Välj fiskeplats:</label>
                         <select id="spotSelect" class="select-input" onchange="changeSpot()">
                             <option value="dickson">Dickson</option>
                             <option value="mannered">Mannered</option>
@@ -288,12 +336,35 @@
                         </select>
                     </div>
 
-                    <div class="btn-group">
-                        <button class="btn" onclick="moveRod(-10)">⬅️ Flytta</button>
-                        <button class="btn" onclick="moveRod(10)">Flytta ➡️</button>
+                    <!-- Normala kontroller -->
+                    <div id="normal-controls">
+                        <div class="btn-group" style="margin-bottom: 6px;">
+                            <button class="btn" onclick="moveRod(-10)">⬅️ Flytta</button>
+                            <button class="btn" onclick="moveRod(10)">Flytta ➡️</button>
+                        </div>
+                        <button class="btn" onclick="castLine()">Kasta / Byt fluga</button>
                     </div>
 
-                    <button class="btn" onclick="castLine()">Kasta / Byt fluga</button>
+                    <!-- Drill-kontroller (visas vid napp) -->
+                    <div id="drill-controls" class="drill-hud hidden">
+                        <div style="font-size: 0.8rem; font-weight: bold;" id="drill-info">Hugg! Drillar...</div>
+                        
+                        <div>
+                            <div style="font-size:0.7rem; display:flex; justify-content:space-between;"><span>Landning:</span><span id="progress-val">0%</span></div>
+                            <div class="progress-bar-container"><div id="progress-fill" class="progress-fill"></div></div>
+                        </div>
+
+                        <div>
+                            <div style="font-size:0.7rem; display:flex; justify-content:space-between;"><span>Tafsstressen:</span><span id="tension-val">0%</span></div>
+                            <div class="progress-bar-container"><div id="tension-fill" class="tension-fill"></div></div>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="btn btn-danger" onclick="drillPull()">Drilla hårt</button>
+                            <button class="btn" onclick="drillRelease()">Ge lina</button>
+                        </div>
+                    </div>
+
                     <button class="btn btn-secondary" onclick="openScreen('main-menu')">Meny</button>
                 </div>
             </div>
@@ -301,38 +372,51 @@
 
         <!-- BIOTOPVÅRD -->
         <div id="biotope-screen" class="screen">
-            <h2>Biotopvård i Säveån</h2>
+            <h2 style="font-size: 1.1rem; flex-shrink: 0;">Biotopvård i Säveån</h2>
             <div class="info-box">
                 <p><strong>Restaurering av lekområden:</strong> Genom att återställa grusbottnar och lägga ut död ved skapas skydd och lekområden för Säveålaxen och öringen.</p>
                 <br>
                 <p><strong>Friare vandringsvägar:</strong> Arbetet med att minska vandringshinder gör att fisken kan nå sina naturliga lekområden högre upp i vattensystemet.</p>
             </div>
-            <button class="btn btn-secondary" onclick="openScreen('main-menu')">Tillbaka till meny</button>
+            <button class="btn btn-secondary" onclick="openScreen('main-menu')" style="flex-shrink: 0;">Tillbaka till meny</button>
         </div>
 
         <!-- VÄDER SKÄRM -->
         <div id="weather-screen" class="screen">
-            <h2>Väder & Vatten (Jonsered)</h2>
+            <h2 style="font-size: 1.1rem; flex-shrink: 0;">Väder & Vatten (Jonsered)</h2>
             <div class="info-box" id="weather-data">
                 Laddar väderdata...
             </div>
-            <button class="btn btn-secondary" onclick="openScreen('main-menu')">Tillbaka till meny</button>
+            <button class="btn btn-secondary" onclick="openScreen('main-menu')" style="flex-shrink: 0;">Tillbaka till meny</button>
         </div>
     </main>
 
     <script>
-        // Sparad data i localStorage
         let score = parseInt(localStorage.getItem('savean_score') || '0');
         let currentSpot = 'dickson';
         let rodX = 150;
         let lineCast = false;
         let fish = { x: 50, y: 100, caught: false };
 
+        // Drill- och artvariabler
+        let isDrilling = false;
+        let drillProgress = 0;
+        let drillTension = 0;
+        let currentFish = null;
+        let drillInterval = null;
+
+        const speciesData = [
+            { name: 'Säveålax', points: 10, minW: 3.0, maxW: 12.0, sensitivity: 1.8, color: '#88c999' },
+            { name: 'Öring', points: 6, minW: 1.0, maxW: 5.0, sensitivity: 1.3, color: '#d4ac0d' },
+            { name: 'Gädda', points: 2, minW: 1.5, maxW: 7.0, sensitivity: 1.0, color: '#27ae60' },
+            { name: 'Abborre', points: 1, minW: 0.3, maxW: 1.2, sensitivity: 0.7, color: '#d35400' }
+        ];
+
         const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
 
         function updateScoreDisplay() {
-            document.getElementById('stat-score').innerText = 'Fångster: ' + score;
+            document.getElementById('stat-score').innerText = 'Poäng: ' + score;
         }
 
         function openScreen(screenId) {
@@ -341,12 +425,13 @@
 
             if (screenId === 'main-menu') {
                 document.getElementById('main-menu').style.display = 'flex';
+                stopDrill();
             } else {
                 document.getElementById(screenId).classList.add('active');
             }
 
             if (screenId === 'game-screen') {
-                setTimeout(resizeCanvas, 50);
+                setTimeout(resizeCanvas, 30);
             } else if (screenId === 'weather-screen') {
                 fetchWeather();
             }
@@ -360,32 +445,142 @@
         }
 
         window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
 
         function changeSpot() {
             currentSpot = document.getElementById('spotSelect').value;
             const names = { dickson: 'Dickson', mannered: 'Mannered', lortholjan: 'Lorthöljan' };
             document.getElementById('stat-spot').innerText = 'Plats: ' + names[currentSpot];
+            stopDrill();
             resetFish();
             drawGame();
         }
 
         function moveRod(delta) {
+            if (isDrilling) return;
             rodX = Math.max(20, Math.min(canvas.width - 20, rodX + delta));
             drawGame();
         }
 
         function castLine() {
+            if (isDrilling) return;
             lineCast = true;
+            
             // Kolla om spöet är nära fisken vid kast
-            if (Math.abs(rodX - fish.x) < 30 && !fish.caught) {
-                fish.caught = true;
-                score++;
-                localStorage.setItem('savean_score', score);
-                updateScoreDisplay();
-                alert("Hugg! Du fångade en Säveålax!");
-                setTimeout(resetFish, 1000);
+            if (Math.abs(rodX - fish.x) < 35 && !fish.caught) {
+                startDrill();
+            } else {
+                setTimeout(() => {
+                    if (!isDrilling) {
+                        lineCast = false;
+                        drawGame();
+                    }
+                }, 400);
             }
             drawGame();
+        }
+
+        function startDrill() {
+            isDrilling = true;
+            fish.caught = true;
+            
+            // Slumpa art (lax är vanligare i Dickson/Mannered, gädda/abborre ibland)
+            const rand = Math.random();
+            let spChoice;
+            if (rand < 0.45) spChoice = speciesData[0]; // Säveålax
+            else if (rand < 0.80) spChoice = speciesData[1]; // Öring
+            else if (rand < 0.93) spChoice = speciesData[2]; // Gädda
+            else spChoice = speciesData[3]; // Abborre
+
+            const weight = (Math.random() * (spChoice.maxW - spChoice.minW) + spChoice.minW).toFixed(1);
+            currentFish = { ...spChoice, weight: parseFloat(weight) };
+
+            drillProgress = 10;
+            drillTension = 20;
+
+            document.getElementById('normal-controls').classList.add('hidden');
+            document.getElementById('drill-controls').classList.remove('hidden');
+            document.getElementById('drill-info').innerText = `${currentFish.name} (${currentFish.weight} kg)! Parera drillen.`;
+
+            // Starta drill-loop
+            if (drillInterval) clearInterval(drillInterval);
+            drillInterval = setInterval(updateDrillPhysics, 150);
+        }
+
+        function updateDrillPhysics() {
+            if (!isDrilling) return;
+
+            // Fisken stretar emot slumpmässigt beroende på känslighet/storlek
+            const resistance = (Math.random() * 8 + 4) * currentFish.sensitivity;
+            drillTension += (resistance - 5); // Om man inte gör något ökar/fluktuerar spänningen
+
+            // Begränsa värden
+            drillTension = Math.max(0, Math.min(100, drillTension));
+            drillProgress = Math.max(0, Math.min(100, drillProgress));
+
+            // Kolla tafsbrott (100% spänning)
+            if (drillTension >= 100) {
+                stopDrill();
+                alert(`Tafsbrott! ${currentFish.name} på ${currentFish.weight} kg slet sig loss då linan brast p.g.a. för hårt tryck.`);
+                resetFish();
+                return;
+            }
+
+            // Kolla landad fisk (100% progress)
+            if (drillProgress >= 100) {
+                finishLanding();
+                return;
+            }
+
+            updateDrillUI();
+        }
+
+        function drillPull() {
+            if (!isDrilling) return;
+            drillProgress += 12; // Drar in fisken snabbare
+            drillTension += 18 * currentFish.sensitivity; // Ökar risken för tafsbrott kraftigt på stora fiskar!
+        }
+
+        function drillRelease() {
+            if (!isDrilling) return;
+            drillProgress = Math.max(0, drillProgress - 6);
+            drillTension = Math.max(0, drillTension - 22); // Släpper efter och sänker spänningen
+        }
+
+        function updateDrillUI() {
+            document.getElementById('progress-fill').style.width = drillProgress + '%';
+            document.getElementById('progress-val').innerText = Math.floor(drillProgress) + '%';
+            document.getElementById('tension-fill').style.width = drillTension + '%';
+            document.getElementById('tension-val').innerText = Math.floor(drillTension) + '%';
+        }
+
+        function finishLanding() {
+            stopDrill();
+
+            // C/R mortality check: Sällan fisken dör, men risk ökar om tafsstress/drill varit brutal (hög snittstress eller max tension nått nära under drillen)
+            let mortalityRisk = 0.03; // 3% grundrisk vid c/r
+            if (drillTension > 75) mortalityRisk = 0.15; // Högre risk om man pressat hårt
+
+            const fishSurvived = Math.random() > mortalityRisk;
+
+            if (fishSurvived) {
+                score += currentFish.points;
+                localStorage.setItem('savean_score', score);
+                updateScoreDisplay();
+                alert(`Landad! Du fångade en praktfull ${currentFish.name} på ${currentFish.weight} kg (+${currentFish.points} poäng).\n\nFisken återtogs varsamt (C/R) och simmade pigg tillbaka i Säveån!`);
+            } else {
+                alert(`Tråkigt slut: ${currentFish.name} på ${currentFish.weight} kg landades, men drillen var för hård och fisken klarade inte återutsättningen trots C/R-försök.`);
+            }
+
+            resetFish();
+        }
+
+        function stopDrill() {
+            isDrilling = false;
+            if (drillInterval) clearInterval(drillInterval);
+            drillInterval = null;
+            document.getElementById('drill-controls').classList.add('hidden');
+            document.getElementById('normal-controls').classList.remove('hidden');
         }
 
         function resetFish() {
@@ -399,7 +594,6 @@
         function drawGame() {
             if (canvas.width === 0 || canvas.height === 0) return;
 
-            // Rita vatten/bakgrund baserat på plats
             if (currentSpot === 'dickson') {
                 ctx.fillStyle = '#113322';
             } else if (currentSpot === 'mannered') {
@@ -409,7 +603,6 @@
             }
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Rita ström/linjer
             ctx.strokeStyle = 'rgba(255,255,255,0.1)';
             ctx.lineWidth = 2;
             for (let i = 0; i < canvas.height; i += 20) {
@@ -419,7 +612,6 @@
                 ctx.stroke();
             }
 
-            // Rita fisk om den inte är fångad
             if (!fish.caught) {
                 ctx.fillStyle = '#88c999';
                 ctx.beginPath();
@@ -427,7 +619,6 @@
                 ctx.fill();
             }
 
-            // Rita spö/lina
             ctx.strokeStyle = '#d4af37';
             ctx.lineWidth = 3;
             ctx.beginPath();
@@ -445,7 +636,6 @@
             }
         }
 
-        // Hämta Väder via Open-Meteo API för Jonsered/Säveån
         function fetchWeather() {
             const container = document.getElementById('weather-data');
             container.innerText = "Hämtar aktuella data...";
@@ -470,7 +660,6 @@
                 });
         }
 
-        // Start
         updateScoreDisplay();
         resetFish();
     </script>
