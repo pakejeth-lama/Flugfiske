@@ -8,7 +8,7 @@
         :root {
             --primary-color: #2c5e3b;
             --accent-color: #4a7c59;
-            --bg-color: #121c15;
+            --bg-color: #1a1a1a;
             --text-color: #f4f4f4;
             --card-bg: #223d2a;
         }
@@ -19,7 +19,6 @@
             padding: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             user-select: none;
-            -webkit-user-select: none;
         }
 
         body {
@@ -47,20 +46,20 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 8px;
-            gap: 8px;
+            padding: 10px;
+            gap: 10px;
             max-width: 900px;
             margin: 0 auto;
             width: 100%;
+            height: calc(100% - 40px);
             overflow: hidden;
-            box-sizing: border-box;
         }
 
         /* --- Menysystem --- */
         .menu-container {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             height: 100%;
             justify-content: center;
         }
@@ -68,7 +67,7 @@
         .menu-card {
             background: linear-gradient(135deg, var(--primary-color), var(--card-bg));
             border-radius: 12px;
-            padding: 14px 16px;
+            padding: 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -82,17 +81,17 @@
         }
 
         .menu-card h2 {
-            font-size: 1.05rem;
-            margin-bottom: 2px;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
         }
 
         .menu-card p {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             opacity: 0.85;
         }
 
         .menu-card .icon {
-            font-size: 1.8rem;
+            font-size: 2rem;
         }
 
         /* --- Sektioner --- */
@@ -101,8 +100,7 @@
             flex-direction: column;
             height: 100%;
             width: 100%;
-            gap: 8px;
-            overflow: hidden;
+            gap: 10px;
         }
 
         .screen.active {
@@ -124,9 +122,8 @@
             display: flex;
             flex-direction: column;
             flex: 1;
-            gap: 8px;
+            gap: 10px;
             min-height: 0;
-            overflow: hidden;
         }
 
         .canvas-container {
@@ -148,7 +145,7 @@
         .controls {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
             flex-shrink: 0;
         }
 
@@ -161,10 +158,10 @@
             background: var(--accent-color);
             color: white;
             border: none;
-            padding: 9px;
+            padding: 10px;
             border-radius: 8px;
             font-weight: bold;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             cursor: pointer;
             text-align: center;
             flex: 1;
@@ -182,10 +179,10 @@
             background: #333;
             color: #fff;
             border: 1px solid #555;
-            padding: 7px;
+            padding: 8px;
             border-radius: 8px;
             width: 100%;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
         }
 
         .info-box {
@@ -207,13 +204,11 @@
             main {
                 height: 100vh;
                 height: 100dvh;
-                padding: 6px;
-                gap: 6px;
+                padding: 8px;
             }
 
             .menu-container {
                 flex-direction: row;
-                gap: 10px;
             }
 
             .menu-card {
@@ -221,8 +216,7 @@
                 flex-direction: column;
                 justify-content: center;
                 text-align: center;
-                gap: 8px;
-                padding: 10px;
+                gap: 10px;
             }
 
             .game-layout {
@@ -286,6 +280,7 @@
 
                 <div class="controls">
                     <div>
+                        <label style="font-size:0.75rem; color:#aaa;">Välj fiskeplats:</label>
                         <select id="spotSelect" class="select-input" onchange="changeSpot()">
                             <option value="dickson">Dickson</option>
                             <option value="mannered">Mannered</option>
@@ -306,26 +301,27 @@
 
         <!-- BIOTOPVÅRD -->
         <div id="biotope-screen" class="screen">
-            <h2 style="font-size: 1.1rem; flex-shrink: 0;">Biotopvård i Säveån</h2>
+            <h2>Biotopvård i Säveån</h2>
             <div class="info-box">
                 <p><strong>Restaurering av lekområden:</strong> Genom att återställa grusbottnar och lägga ut död ved skapas skydd och lekområden för Säveålaxen och öringen.</p>
                 <br>
                 <p><strong>Friare vandringsvägar:</strong> Arbetet med att minska vandringshinder gör att fisken kan nå sina naturliga lekområden högre upp i vattensystemet.</p>
             </div>
-            <button class="btn btn-secondary" onclick="openScreen('main-menu')" style="flex-shrink: 0;">Tillbaka till meny</button>
+            <button class="btn btn-secondary" onclick="openScreen('main-menu')">Tillbaka till meny</button>
         </div>
 
         <!-- VÄDER SKÄRM -->
         <div id="weather-screen" class="screen">
-            <h2 style="font-size: 1.1rem; flex-shrink: 0;">Väder & Vatten (Jonsered)</h2>
+            <h2>Väder & Vatten (Jonsered)</h2>
             <div class="info-box" id="weather-data">
                 Laddar väderdata...
             </div>
-            <button class="btn btn-secondary" onclick="openScreen('main-menu')" style="flex-shrink: 0;">Tillbaka till meny</button>
+            <button class="btn btn-secondary" onclick="openScreen('main-menu')">Tillbaka till meny</button>
         </div>
     </main>
 
     <script>
+        // Sparad data i localStorage
         let score = parseInt(localStorage.getItem('savean_score') || '0');
         let currentSpot = 'dickson';
         let rodX = 150;
@@ -350,7 +346,7 @@
             }
 
             if (screenId === 'game-screen') {
-                setTimeout(resizeCanvas, 30);
+                setTimeout(resizeCanvas, 50);
             } else if (screenId === 'weather-screen') {
                 fetchWeather();
             }
@@ -364,7 +360,6 @@
         }
 
         window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
 
         function changeSpot() {
             currentSpot = document.getElementById('spotSelect').value;
@@ -381,6 +376,7 @@
 
         function castLine() {
             lineCast = true;
+            // Kolla om spöet är nära fisken vid kast
             if (Math.abs(rodX - fish.x) < 30 && !fish.caught) {
                 fish.caught = true;
                 score++;
@@ -403,6 +399,7 @@
         function drawGame() {
             if (canvas.width === 0 || canvas.height === 0) return;
 
+            // Rita vatten/bakgrund baserat på plats
             if (currentSpot === 'dickson') {
                 ctx.fillStyle = '#113322';
             } else if (currentSpot === 'mannered') {
@@ -412,6 +409,7 @@
             }
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            // Rita ström/linjer
             ctx.strokeStyle = 'rgba(255,255,255,0.1)';
             ctx.lineWidth = 2;
             for (let i = 0; i < canvas.height; i += 20) {
@@ -421,6 +419,7 @@
                 ctx.stroke();
             }
 
+            // Rita fisk om den inte är fångad
             if (!fish.caught) {
                 ctx.fillStyle = '#88c999';
                 ctx.beginPath();
@@ -428,6 +427,7 @@
                 ctx.fill();
             }
 
+            // Rita spö/lina
             ctx.strokeStyle = '#d4af37';
             ctx.lineWidth = 3;
             ctx.beginPath();
@@ -445,6 +445,7 @@
             }
         }
 
+        // Hämta Väder via Open-Meteo API för Jonsered/Säveån
         function fetchWeather() {
             const container = document.getElementById('weather-data');
             container.innerText = "Hämtar aktuella data...";
@@ -469,6 +470,7 @@
                 });
         }
 
+        // Start
         updateScoreDisplay();
         resetFish();
     </script>
