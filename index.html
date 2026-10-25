@@ -10,6 +10,7 @@
             --accent-color: #4a7c59;
             --bg-color: #1a1a1a;
             --text-color: #f4f4f4;
+            --card-bg: #223d2a;
         }
 
         * {
@@ -32,12 +33,13 @@
 
         header {
             background: var(--primary-color);
-            padding: 10px 15px;
+            padding: 8px 12px;
             text-align: center;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
             z-index: 10;
+            flex-shrink: 0;
         }
 
         main {
@@ -46,31 +48,32 @@
             flex-direction: column;
             padding: 10px;
             gap: 10px;
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             width: 100%;
-            overflow-y: auto;
+            height: calc(100% - 40px);
+            overflow: hidden;
         }
 
-        /* Meny- och sektionssystem */
+        /* --- Menysystem --- */
         .menu-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 10px;
-            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+            justify-content: center;
         }
 
         .menu-card {
-            background: linear-gradient(135deg, #2c5e3b, #1e3f26);
+            background: linear-gradient(135deg, var(--primary-color), var(--card-bg));
             border-radius: 12px;
-            padding: 15px;
+            padding: 16px;
             display: flex;
-            flex-direction: column;
+            align-items: center;
             justify-content: space-between;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.15);
             cursor: pointer;
-            transition: transform 0.1s;
         }
 
         .menu-card:active {
@@ -78,40 +81,59 @@
         }
 
         .menu-card h2 {
-            font-size: 1.2rem;
-            margin-bottom: 5px;
+            font-size: 1.1rem;
+            margin-bottom: 4px;
         }
 
         .menu-card p {
-            font-size: 0.9rem;
-            opacity: 0.8;
+            font-size: 0.85rem;
+            opacity: 0.85;
         }
 
-        /* Spelyta */
-        #game-screen {
+        .menu-card .icon {
+            font-size: 2rem;
+        }
+
+        /* --- Sektioner --- */
+        .screen {
             display: none;
             flex-direction: column;
-            flex: 1;
+            height: 100%;
+            width: 100%;
             gap: 10px;
         }
 
+        .screen.active {
+            display: flex;
+        }
+
+        /* Spelskärmen */
         .stats-bar {
-            background: rgba(255,255,255,0.05);
-            padding: 8px 12px;
+            background: rgba(255,255,255,0.08);
+            padding: 6px 12px;
             border-radius: 8px;
             display: flex;
             justify-content: space-between;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .game-layout {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 10px;
+            min-height: 0;
         }
 
         .canvas-container {
             flex: 1;
-            background: #0f2e1b;
-            border-radius: 12px;
+            background: #0d2215;
+            border-radius: 10px;
             position: relative;
             overflow: hidden;
             border: 2px solid var(--accent-color);
-            min-height: 200px;
+            min-height: 0;
         }
 
         canvas {
@@ -120,145 +142,337 @@
             display: block;
         }
 
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
+        }
+
         .btn {
             background: var(--accent-color);
             color: white;
             border: none;
-            padding: 10px 15px;
+            padding: 10px;
             border-radius: 8px;
             font-weight: bold;
-            font-size: 1rem;
+            font-size: 0.9rem;
             cursor: pointer;
             text-align: center;
+            flex: 1;
+        }
+
+        .btn:active {
+            opacity: 0.8;
         }
 
         .btn-secondary {
             background: #444;
         }
 
-        /* Anpassning för liggande skärm (Landscape) utan scroll */
+        .select-input {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .info-box {
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 10px;
+            overflow-y: auto;
+            flex: 1;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* --- Liggande skärm (Landscape) utan scroll --- */
         @media (orientation: landscape) {
-            body {
-                flex-direction: row;
-                flex-wrap: wrap;
-            }
             header {
-                width: 100%;
-                padding: 6px;
-                font-size: 1rem;
+                display: none; /* Dölj rubriken i landscape för max spelyta */
             }
+
             main {
-                flex-direction: row;
-                max-width: 100%;
-                height: calc(100vh - 40px);
-                height: calc(100dvh - 40px);
+                height: 100vh;
+                height: 100dvh;
+                padding: 8px;
             }
+
             .menu-container {
-                grid-template-columns: repeat(3, 1fr);
-            }
-            #game-screen {
                 flex-direction: row;
             }
+
+            .menu-card {
+                flex: 1;
+                flex-direction: column;
+                justify-content: center;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .game-layout {
+                flex-direction: row;
+            }
+
             .canvas-container {
                 flex: 2;
             }
-            .side-panel {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
+
+            .controls {
+                width: 220px;
+                justify-content: space-between;
             }
         }
     </style>
 </head>
 <body>
 
-    <header>Säveån Fly Fishing</header>
+    <header id="page-header">Säveån Fly Fishing</header>
 
     <main>
-        <!-- Huvudmeny -->
+        <!-- HUVUDMENY -->
         <div id="main-menu" class="menu-container">
-            <div class="menu-card" onclick="startSection('fishing')">
+            <div class="menu-card" onclick="openScreen('game-screen')">
                 <div>
                     <h2>Fiska i Säveån</h2>
-                    <p>Utforska Dickson, Mannered och Lorthöljan.</p>
+                    <p>Dickson, Mannered och Lorthöljan</p>
                 </div>
-                <span style="font-size: 1.5rem; margin-top: 10px;">🎣</span>
-            </div>
-            
-            <div class="menu-card" onclick="startSection('biotope')">
-                <div>
-                    <h2>Biotopvård</h2>
-                    <p>Åtgärder för lax, öring och strömvattenmiljö.</p>
-                </div>
-                <span style="font-size: 1.5rem; margin-top: 10px;">🌿</span>
+                <div class="icon">🎣</div>
             </div>
 
-            <div class="menu-card" onclick="startSection('weather')">
+            <div class="menu-card" onclick="openScreen('biotope-screen')">
+                <div>
+                    <h2>Biotopvård</h2>
+                    <p>Åtgärder för lax och öring</p>
+                </div>
+                <div class="icon">🌿</div>
+            </div>
+
+            <div class="menu-card" onclick="openScreen('weather-screen')">
                 <div>
                     <h2>Väder & Vatten</h2>
-                    <p>Aktuell prognos och flöde via Open-Meteo.</p>
+                    <p>Realtidsdata via Open-Meteo</p>
                 </div>
-                <span style="font-size: 1.5rem; margin-top: 10px;">⛅</span>
+                <div class="icon">⛅</div>
             </div>
         </div>
 
-        <!-- Spelskärm / Aktiv sektion (Dold från start) -->
-        <div id="game-screen">
-            <div class="canvas-container">
-                <canvas id="simCanvas"></canvas>
+        <!-- SPELSKÄRM -->
+        <div id="game-screen" class="screen">
+            <div class="stats-bar">
+                <span id="stat-spot">Plats: Dickson</span>
+                <span id="stat-score">Fångster: 0</span>
             </div>
-            <div class="side-panel" style="display: flex; flex-direction: column; gap: 10px; justify-content: center;">
-                <div class="stats-bar">
-                    <span id="stat-info">Flugval: Torrfluga</span>
-                    <span id="stat-score">Fångst: 0</span>
+
+            <div class="game-layout">
+                <div class="canvas-container">
+                    <canvas id="simCanvas"></canvas>
                 </div>
-                <button class="btn" onclick="castLine()">Kasta kast</button>
-                <button class="btn btn-secondary" onclick="returnToMenu()">Tillbaka till meny</button>
+
+                <div class="controls">
+                    <div>
+                        <label style="font-size:0.75rem; color:#aaa;">Välj fiskeplats:</label>
+                        <select id="spotSelect" class="select-input" onchange="changeSpot()">
+                            <option value="dickson">Dickson</option>
+                            <option value="mannered">Mannered</option>
+                            <option value="lortholjan">Lorthöljan</option>
+                        </select>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn" onclick="moveRod(-10)">⬅️ Flytta</button>
+                        <button class="btn" onclick="moveRod(10)">Flytta ➡️</button>
+                    </div>
+
+                    <button class="btn" onclick="castLine()">Kasta / Byt fluga</button>
+                    <button class="btn btn-secondary" onclick="openScreen('main-menu')">Meny</button>
+                </div>
             </div>
+        </div>
+
+        <!-- BIOTOPVÅRD -->
+        <div id="biotope-screen" class="screen">
+            <h2>Biotopvård i Säveån</h2>
+            <div class="info-box">
+                <p><strong>Restaurering av lekområden:</strong> Genom att återställa grusbottnar och lägga ut död ved skapas skydd och lekområden för Säveålaxen och öringen.</p>
+                <br>
+                <p><strong>Friare vandringsvägar:</strong> Arbetet med att minska vandringshinder gör att fisken kan nå sina naturliga lekområden högre upp i vattensystemet.</p>
+            </div>
+            <button class="btn btn-secondary" onclick="openScreen('main-menu')">Tillbaka till meny</button>
+        </div>
+
+        <!-- VÄDER SKÄRM -->
+        <div id="weather-screen" class="screen">
+            <h2>Väder & Vatten (Jonsered)</h2>
+            <div class="info-box" id="weather-data">
+                Laddar väderdata...
+            </div>
+            <button class="btn btn-secondary" onclick="openScreen('main-menu')">Tillbaka till meny</button>
         </div>
     </main>
 
     <script>
-        function startSection(type) {
-            document.getElementById('main-menu').style.display = 'none';
-            const gameScreen = document.getElementById('game-screen');
-            gameScreen.style.display = 'flex';
-            
-            if(type === 'biotope') {
-                document.getElementById('stat-info').innerText = 'Biotopvård aktiv';
-            } else if(type === 'weather') {
-                document.getElementById('stat-info').innerText = 'Hämtar väder...';
-            } else {
-                document.getElementById('stat-info').innerText = 'Fluga: Följare';
-            }
-            
-            resizeCanvas();
-        }
-
-        function returnToMenu() {
-            document.getElementById('game-screen').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'grid';
-        }
+        // Sparad data i localStorage
+        let score = parseInt(localStorage.getItem('savean_score') || '0');
+        let currentSpot = 'dickson';
+        let rodX = 150;
+        let lineCast = false;
+        let fish = { x: 50, y: 100, caught: false };
 
         const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
 
+        function updateScoreDisplay() {
+            document.getElementById('stat-score').innerText = 'Fångster: ' + score;
+        }
+
+        function openScreen(screenId) {
+            document.getElementById('main-menu').style.display = 'none';
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+            if (screenId === 'main-menu') {
+                document.getElementById('main-menu').style.display = 'flex';
+            } else {
+                document.getElementById(screenId).classList.add('active');
+            }
+
+            if (screenId === 'game-screen') {
+                setTimeout(resizeCanvas, 50);
+            } else if (screenId === 'weather-screen') {
+                fetchWeather();
+            }
+        }
+
         function resizeCanvas() {
+            if (!canvas.parentElement) return;
             canvas.width = canvas.parentElement.clientWidth;
             canvas.height = canvas.parentElement.clientHeight;
+            drawGame();
         }
 
         window.addEventListener('resize', resizeCanvas);
 
-        function castLine() {
-            // Enkel animation eller händelse för kast
-            ctx.fillStyle = '#143d22';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#68d391';
-            ctx.font = '16px sans-serif';
-            ctx.fillText("Kast lagt i strömmen...", 20, 30);
+        function changeSpot() {
+            currentSpot = document.getElementById('spotSelect').value;
+            const names = { dickson: 'Dickson', mannered: 'Mannered', lortholjan: 'Lorthöljan' };
+            document.getElementById('stat-spot').innerText = 'Plats: ' + names[currentSpot];
+            resetFish();
+            drawGame();
         }
+
+        function moveRod(delta) {
+            rodX = Math.max(20, Math.min(canvas.width - 20, rodX + delta));
+            drawGame();
+        }
+
+        function castLine() {
+            lineCast = true;
+            // Kolla om spöet är nära fisken vid kast
+            if (Math.abs(rodX - fish.x) < 30 && !fish.caught) {
+                fish.caught = true;
+                score++;
+                localStorage.setItem('savean_score', score);
+                updateScoreDisplay();
+                alert("Hugg! Du fångade en Säveålax!");
+                setTimeout(resetFish, 1000);
+            }
+            drawGame();
+        }
+
+        function resetFish() {
+            fish.x = Math.random() * (canvas.width - 40) + 20;
+            fish.y = Math.random() * (canvas.height - 60) + 40;
+            fish.caught = false;
+            lineCast = false;
+            drawGame();
+        }
+
+        function drawGame() {
+            if (canvas.width === 0 || canvas.height === 0) return;
+
+            // Rita vatten/bakgrund baserat på plats
+            if (currentSpot === 'dickson') {
+                ctx.fillStyle = '#113322';
+            } else if (currentSpot === 'mannered') {
+                ctx.fillStyle = '#0f2b3c';
+            } else {
+                ctx.fillStyle = '#211f18';
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Rita ström/linjer
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < canvas.height; i += 20) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i + 10);
+                ctx.stroke();
+            }
+
+            // Rita fisk om den inte är fångad
+            if (!fish.caught) {
+                ctx.fillStyle = '#88c999';
+                ctx.beginPath();
+                ctx.ellipse(fish.x, fish.y, 12, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Rita spö/lina
+            ctx.strokeStyle = '#d4af37';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(rodX, canvas.height);
+            ctx.lineTo(rodX, canvas.height - 40);
+            ctx.stroke();
+
+            if (lineCast) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(rodX, canvas.height - 40);
+                ctx.lineTo(rodX, fish.y);
+                ctx.stroke();
+            }
+        }
+
+        // Hämta Väder via Open-Meteo API för Jonsered/Säveån
+        function fetchWeather() {
+            const container = document.getElementById('weather-data');
+            container.innerText = "Hämtar aktuella data...";
+
+            fetch('https://api.open-meteo.com/v1/forecast?latitude=57.75&longitude=12.17&current_weather=true')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.current_weather) {
+                        const temp = data.current_weather.temperature;
+                        const wind = data.current_weather.windspeed;
+                        container.innerHTML = `
+                            <p><strong>Plats:</strong> Säveån (Jonsered)</p>
+                            <p><strong>Temperatur:</strong> ${temp} °C</p>
+                            <p><strong>Vindstyrka:</strong> ${wind} km/h</p>
+                            <br>
+                            <p><em>Perfekt förhållande för flugfiske!</em></p>
+                        `;
+                    }
+                })
+                .catch(() => {
+                    container.innerText = "Kunde inte hämta väderdata just nu.";
+                });
+        }
+
+        // Start
+        updateScoreDisplay();
+        resetFish();
     </script>
 </body>
 </html>
