@@ -3,701 +3,500 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flugfiskarens Ekosystem – Säveån</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Säveån Fly Fishing</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; touch-action: manipulation; }
+        :root {
+            --primary-color: #2c5e3b;
+            --accent-color: #4a7c59;
+            --bg-color: #1a1a1a;
+            --text-color: #f4f4f4;
+            --card-bg: #223d2a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: var(--primary-color);
+            padding: 8px 12px;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            gap: 10px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* --- Menysystem --- */
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+            justify-content: center;
+        }
+
+        .menu-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--card-bg));
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+        }
+
+        .menu-card:active {
+            transform: scale(0.98);
+        }
+
+        .menu-card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .menu-card p {
+            font-size: 0.85rem;
+            opacity: 0.85;
+        }
+
+        .menu-card .icon {
+            font-size: 2rem;
+        }
+
+        /* --- Sektioner / Skärmar --- */
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            gap: 10px;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Spelskärmen */
+        .stats-bar {
+            background: rgba(255,255,255,0.08);
+            padding: 6px 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .game-layout {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        .canvas-container {
+            flex: 1;
+            background: #0d2215;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid var(--accent-color);
+            min-height: 150px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: center;
+            flex: 1;
+        }
+
+        .btn:active {
+            opacity: 0.8;
+        }
+
+        .btn-secondary {
+            background: #444;
+        }
+
+        .select-input {
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .info-box {
+            background: rgba(255,255,255,0.05);
+            padding: 12px;
+            border-radius: 10px;
+            overflow-y: auto;
+            flex: 1;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* --- Liggande skärm (Landscape) utan scroll --- */
+        @media (orientation: landscape) {
+            header {
+                display: none; /* Dölj rubriken i landscape för att maximera ytan */
+            }
+
+            main {
+                height: 100vh;
+                height: 100dvh;
+                padding: 6px;
+            }
+
+            .menu-container {
+                flex-direction: row;
+            }
+
+            .menu-card {
+                flex: 1;
+                flex-direction: column;
+                justify-content: center;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .game-layout {
+                flex-direction: row;
+            }
+
+            .canvas-container {
+                flex: 2;
+            }
+
+            .controls {
+                width: 220px;
+                justify-content: space-between;
+            }
+        }
     </style>
 </head>
-<body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col select-none">
+<body>
 
-    <!-- Header -->
-    <header class="bg-stone-800 border-b border-stone-700 py-3 px-4 shadow-md flex flex-wrap justify-between items-center gap-3">
-        <div>
-            <h1 class="text-xl md:text-2xl font-bold text-emerald-400 flex items-center gap-1.5">
-                <span>🎣</span> Säveån Ekosystem
-            </h1>
-            <p class="text-[11px] text-stone-400">Dickson, Mannered & Lorthöljan</p>
+    <header id="page-header">Säveån Fly Fishing</header>
+
+    <main>
+        <!-- HUVUDMENY -->
+        <div id="main-menu" class="menu-container">
+            <div class="menu-card" onclick="openScreen('game-screen')">
+                <div>
+                    <h2>Fiska i Säveån</h2>
+                    <p>Dickson, Mannered och Lorthöljan</p>
+                </div>
+                <div class="icon">🎣</div>
+            </div>
+
+            <div class="menu-card" onclick="openScreen('biotope-screen')">
+                <div>
+                    <h2>Biotopvård</h2>
+                    <p>Åtgärder för lax och öring</p>
+                </div>
+                <div class="icon">🌿</div>
+            </div>
+
+            <div class="menu-card" onclick="openScreen('weather-screen')">
+                <div>
+                    <h2>Väder & Vatten</h2>
+                    <p>Realtidsdata via Open-Meteo</p>
+                </div>
+                <div class="icon">⛅</div>
+            </div>
         </div>
-        
-        <!-- Väder- och Vattenpanel -->
-        <div class="flex items-center gap-3 bg-stone-900 px-4 py-2 rounded-xl border border-emerald-500/30 shadow-inner">
-            <div class="text-center px-2 border-r border-stone-700">
-                <span class="block text-[9px] uppercase tracking-wider text-stone-400 font-semibold">Väder</span>
-                <span id="wCondition" class="text-xs font-bold text-stone-200">Laddar...</span>
-            </div>
-            <div class="text-center px-2 border-r border-stone-700">
-                <span class="block text-[9px] uppercase tracking-wider text-stone-400 font-semibold">Luft / Vatten</span>
-                <span class="text-xs font-bold text-emerald-400"><span id="wTemp">-</span>°C / <span id="wWaterTemp">-</span>°C</span>
-            </div>
-            <div class="text-center px-2">
-                <span class="block text-[9px] uppercase tracking-wider text-stone-400 font-semibold">Vattenföring</span>
-                <span id="wFlow" class="text-xs font-bold text-blue-400">- m³/s</span>
-            </div>
-        </div>
 
-        <div class="flex items-center gap-2 text-xs">
-            <div class="bg-stone-900 px-3 py-1.5 rounded-lg border border-stone-700 text-center">
-                <span class="text-stone-400 text-[9px] block">Naturvårdspoäng</span>
-                <span id="conservationPoints" class="font-bold text-emerald-400 text-sm">700 p</span>
-            </div>
-            <button onclick="nextDay()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg font-semibold transition shadow flex items-center gap-1">
-                <span>🔄</span> <span id="dayCounter">Dag 1/7</span>
-            </button>
-        </div>
-    </header>
-
-    <!-- Main Layout -->
-    <main class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
-        
-        <div class="lg:col-span-2 flex flex-col gap-2.5">
-            
-            <!-- Interaktiv Karta -->
-            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-col gap-1.5">
-                <div class="flex justify-between items-center text-xs">
-                    <span class="font-bold text-emerald-400 flex items-center gap-1">
-                        <span>🗺️</span> Välj Fiskeplats (Unika layouter):
-                    </span>
-                    <span class="text-[9px] text-stone-400">Klicka för att byta zon</span>
-                </div>
-                <div id="riverMap" class="grid grid-cols-3 gap-1.5 text-xs">
-                    <button onclick="selectZone('dickson', 'Dickson')" id="zone-dickson" class="p-2.5 rounded bg-emerald-900/60 border border-emerald-500 text-left transition">
-                        <span class="block font-bold text-emerald-300">Dickson</span>
-                        <span class="block text-[9px] text-stone-400">Lugna sel & grov öring</span>
-                    </button>
-                    <button onclick="selectZone('mannered', 'Mannered')" id="zone-mannered" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
-                        <span class="block font-bold text-stone-200">Mannered</span>
-                        <span class="block text-[9px] text-stone-400">Svängande kurva & nackar</span>
-                    </button>
-                    <button onclick="selectZone('lortholjan', 'Lorthöljan')" id="zone-lortholjan" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
-                        <span class="block font-bold text-stone-200">Lorthöljan</span>
-                        <span class="block text-[9px] text-stone-400">Djup hölja & storfisk</span>
-                    </button>
-                </div>
+        <!-- SPELSKÄRM -->
+        <div id="game-screen" class="screen">
+            <div class="stats-bar">
+                <span id="stat-spot">Plats: Dickson</span>
+                <span id="stat-score">Fångster: 0</span>
             </div>
 
-            <!-- Canvas Spelyta -->
-            <div class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[16/9]">
-                <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
-                
-                <!-- Canvas HUD -->
-                <div class="absolute top-2 left-2 bg-stone-900/80 backdrop-blur px-2.5 py-1 rounded border border-stone-700 text-[11px] flex gap-2.5">
-                    <span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Klinkhåmer</strong></span>
-                    <span>Bestånd: <strong id="hudPopulation" class="text-emerald-400">210</strong> st</span>
-                    <span>Kast idag: <strong id="castsLeft" class="text-amber-400">5 / 5</strong></span>
+            <div class="game-layout">
+                <div class="canvas-container">
+                    <canvas id="simCanvas"></canvas>
                 </div>
 
-                <div id="modeBanner" class="hidden absolute top-2 right-2 bg-amber-500 text-stone-950 px-2.5 py-0.5 rounded font-bold text-[10px] shadow-lg animate-bounce">
-                    Aktivt läge: Klicka i vattnet!
-                </div>
-
-                <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg">
-                    Klicka i strömmen för att göra ett kast!
-                </div>
-            </div>
-
-            <!-- Kontroller -->
-            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-1.5">
-                    <button onclick="mendLine()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
-                        🌊 Menda Lina
-                    </button>
-                    <button onclick="changeFlyModal()" class="bg-stone-700 hover:bg-stone-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
-                        🪰 Byt Fluga
-                    </button>
-                    <button onclick="startMoveRod()" class="bg-amber-700 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
-                        📍 Flytta Ståplats
-                    </button>
-                </div>
-
-                <div id="castStatus" class="text-[11px] font-medium text-stone-300">
-                    Redo för kast. Klicka på spelytan!
-                </div>
-            </div>
-
-            <!-- Ekosystemstatus -->
-            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700">
-                <h3 class="text-xs font-bold text-stone-200 mb-1.5 flex items-center gap-1">
-                    <span>📊</span> Biotopstatus för aktuell sträcka
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-1.5 text-[10px]">
-                    <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
-                        <span class="text-stone-400 block">Lekgrus</span>
-                        <span id="statGravel" class="font-bold text-stone-100">0 st</span>
+                <div class="controls">
+                    <div>
+                        <label style="font-size:0.75rem; color:#aaa;">Välj fiskeplats:</label>
+                        <select id="spotSelect" class="select-input" onchange="changeSpot()">
+                            <option value="dickson">Dickson</option>
+                            <option value="mannered">Mannered</option>
+                            <option value="lortholjan">Lorthöljan</option>
+                        </select>
                     </div>
-                    <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
-                        <span class="text-stone-400 block">Ståndstenar</span>
-                        <span id="statBoulders" class="font-bold text-stone-100">0 st</span>
+
+                    <div class="btn-group">
+                        <button class="btn" onclick="moveRod(-15)">⬅️ Flytta</button>
+                        <button class="btn" onclick="moveRod(15)">Flytta ➡️</button>
                     </div>
-                    <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
-                        <span class="text-stone-400 block">Kantträd</span>
-                        <span id="statTrees" class="font-bold text-stone-100">2 st</span>
-                    </div> 
-                    <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
-                        <span class="text-stone-400 block">Vandringshinder</span>
-                        <span id="statLadders" class="font-bold text-stone-100">Ej åtgärdat</span>
-                    </div>
+
+                    <button class="btn" onclick="castLine()">Kasta flugan</button>
+                    <button class="btn btn-secondary" onclick="openScreen('main-menu')">Meny</button>
                 </div>
             </div>
         </div>
 
-        <!-- Höger Kolonn -->
-        <div class="flex flex-col gap-2.5">
-            
-            <!-- Biotopvård -->
-            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-col gap-2">
-                <h3 class="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                    <span>🌱</span> Biotopvård (Unikt per sträcka)
-                </h3>
-                
-                <div class="flex flex-col gap-1.5 text-xs">
-                    <div class="bg-stone-900 p-2 rounded border border-stone-700 flex justify-between items-center">
-                        <div>
-                            <h4 class="font-bold text-stone-200 text-[11px]">Placera Lekgrus</h4>
-                            <p class="text-[8px] text-stone-400">Ger mer öring & lax på sträckan</p>
-                        </div>
-                        <button onclick="startPlacement('gravel', 150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-1 rounded text-[10px]">150 p</button>
-                    </div>
-
-                    <div class="bg-stone-900 p-2 rounded border border-stone-700 flex justify-between items-center">
-                        <div>
-                            <h4 class="font-bold text-stone-200 text-[11px]">Placera Ståndsten</h4>
-                            <p class="text-[8px] text-stone-400">Skapar ståndplatser & strömvak</p>
-                        </div>
-                        <button onclick="startPlacement('boulder', 200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-1 rounded text-[10px]">200 p</button>
-                    </div>
-
-                    <div class="bg-stone-900 p-2 rounded border border-stone-700 flex justify-between items-center">
-                        <div>
-                            <h4 class="font-bold text-stone-200 text-[11px]">Plantera Kantträd</h4>
-                            <p class="text-[8px] text-stone-400">Skugga & insektsfall</p>
-                        </div>
-                        <button onclick="doTreePlanting(100)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2 py-1 rounded text-[10px]">100 p</button>
-                    </div>
-
-                    <div class="bg-stone-900 p-2 rounded border border-stone-700 flex justify-between items-center border-emerald-500/40">
-                        <div>
-                            <h4 class="font-bold text-amber-300 text-[11px]">Riv Vandringshinder</h4>
-                            <p class="text-[8px] text-stone-400">Enorm effekt (+150 max)</p>
-                        </div>
-                        <button onclick="doRemoveDam(1000)" class="bg-amber-600 hover:bg-amber-500 text-white px-2 py-1 rounded text-[10px]">1000 p</button>
-                    </div>
-                </div>
+        <!-- BIOTOPVÅRD -->
+        <div id="biotope-screen" class="screen">
+            <h2>Biotopvård i Säveån</h2>
+            <div class="info-box">
+                <p><strong>Restaurering av lekområden:</strong> Genom att lägga ut lekgrus och död ved skapas optimala förhållanden för Säveålaxen och öringen.</p>
+                <br>
+                <p><strong>Fria vandringsvägar:</strong> Åtgärder vid trösklar och vandringshinder gör att fisk kan vandra uppåt i systemet.</p>
             </div>
+            <button class="btn btn-secondary" onclick="openScreen('main-menu')">Tillbaka till meny</button>
+        </div>
 
-            <!-- Fångstdagbok -->
-            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex-1 flex flex-col">
-                <h3 class="text-xs font-bold text-stone-200 mb-1.5 flex items-center gap-1">
-                    <span>📖</span> Fångstdagbok
-                </h3>
-                <div id="catchLog" class="flex-1 bg-stone-900 rounded p-2 border border-stone-700 overflow-y-auto max-h-36 text-[11px] space-y-1">
-                    <p class="text-stone-500 italic">Inga fångster än. Gör ett kast!</p>
-                </div>
+        <!-- VÄDERSKÄRM -->
+        <div id="weather-screen" class="screen">
+            <h2>Väder & Vatten (Jonsered)</h2>
+            <div class="info-box" id="weather-data">
+                Hämtar väderdata...
             </div>
-
+            <button class="btn btn-secondary" onclick="openScreen('main-menu')">Tillbaka till meny</button>
         </div>
     </main>
 
-    <!-- Modal: C&R Välfärd -->
-    <div id="welfareModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-3">
-            <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1">
-                <span>🏆</span> Fisk Landad!
-            </h3>
-            <p id="caughtFishDetails" class="text-xs text-stone-300"></p>
-
-            <div class="flex flex-col gap-2 text-xs bg-stone-900 p-2.5 rounded border border-stone-700">
-                <label class="flex items-center justify-between cursor-pointer">
-                    <span class="text-stone-300">Blötte du händerna?</span>
-                    <input type="checkbox" id="chkWetHands" class="w-4 h-4 accent-emerald-500 rounded">
-                </label>
-                <label class="flex items-center justify-between cursor-pointer">
-                    <span class="text-stone-300">Skonsam håv?</span>
-                    <input type="checkbox" id="chkNet" class="w-4 h-4 accent-emerald-500 rounded" checked>
-                </label>
-                <div class="flex flex-col gap-1">
-                    <span class="text-stone-300">Tid ovan vatten: <span id="lblAirTime" class="font-bold text-emerald-400">15</span>s</span>
-                    <input type="range" id="sliderAirTime" min="5" max="60" value="15" class="accent-emerald-500" oninput="document.getElementById('lblAirTime').innerText = this.value">
-                </div>
-            </div>
-
-            <div class="flex gap-2">
-                <button onclick="releaseFish()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-xs font-semibold">
-                    Varsam C&R
-                </button>
-                <button onclick="keepFish()" class="bg-stone-700 hover:bg-stone-600 text-stone-300 px-3 py-2 rounded text-xs font-semibold">
-                    Behåll
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Byt Fluga -->
-    <div id="flyModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-3">
-            <h3 class="text-xs font-bold text-stone-200">🪰 Välj Fluga</h3>
-            <div id="flyList" class="flex flex-col gap-1.5"></div>
-            <button onclick="document.getElementById('flyModal').classList.add('hidden')" class="bg-stone-700 text-stone-300 py-1.5 rounded text-xs">Stäng</button>
-        </div>
-    </div>
-
     <script>
-        const saveanZones = {
-            dickson: { name: "Säveån – Dickson", lat: 57.742, lon: 12.195, baseTemp: 11 },
-            mannered: { name: "Säveån – Mannered", lat: 57.738, lon: 12.180, baseTemp: 11 },
-            lortholjan: { name: "Säveån – Lorthöljan", lat: 57.734, lon: 12.165, baseTemp: 11 }
-        };
+        let score = parseInt(localStorage.getItem('savean_score') || '0');
+        let currentSpot = 'dickson';
+        let rodX = 150;
+        let lineCast = false;
+        let fish = { x: 100, y: 100, caught: false };
 
-        const flies = [
-            { name: "Klinkhåmer", type: "Torrfluga (Öring)" },
-            { name: "Europa 12", type: "Torrfluga (Öring)" },
-            { name: "Haröra (Goldhead)", type: "Nymf (Öring)" },
-            { name: "Ullsock", type: "Laxfluga (Säveån klassiker)" },
-            { name: "Sunray Shadow", type: "Laxfluga (Tubfluga)" },
-            { name: "Den Vanliga", type: "Laxfluga / Öring" },
-            { name: "Francis (Röd)", type: "Laxfluga" }
-        ];
-
-        let currentZoneKey = 'dickson';
-        let weatherData = { temp: 11, waterTemp: 10, flow: 18, condition: "Molnigt" };
-        
-        let dayOfSeason = 1;
-        let castsRemaining = 5;
-        let placementMode = null; // 'gravel', 'boulder', 'rod'
-        let placementCost = 0;
-
-        // Sparad progression med helt unika biotopdata per sträcka
-        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v6')) || {
-            points: 700,
-            laddersFixed: false,
-            zones: {
-                dickson: { population: 210, maxPop: 380, gravels: [], boulders: [], trees: 2, playerPos: { x: null, y: null }, log: [] },
-                mannered: { population: 190, maxPop: 350, gravels: [], boulders: [], trees: 1, playerPos: { x: null, y: null }, log: [] },
-                lortholjan: { population: 230, maxPop: 400, gravels: [], boulders: [], trees: 3, playerPos: { x: null, y: null }, log: [] }
-            }
-        };
-
-        let activeFly = flies[0];
-        let currentFish = null;
-
-        const canvas = document.getElementById('gameCanvas');
+        const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
-        
-        let castLine = null;
-        let currentMend = 0;
 
-        let insects = [];
-        for(let i=0; i<8; i++) insects.push({ x: Math.random()*600, y: 50 + Math.random()*150, speed: 0.5 + Math.random()*1 });
+        function updateScoreDisplay() {
+            const scoreEl = document.getElementById('stat-score');
+            if (scoreEl) scoreEl.innerText = 'Fångster: ' + score;
+        }
+
+        function openScreen(screenId) {
+            // Dölj meny och alla skärmar
+            const mainMenu = document.getElementById('main-menu');
+            if (mainMenu) mainMenu.style.display = 'none';
+
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+            // Visa den valda skärmen
+            if (screenId === 'main-menu') {
+                if (mainMenu) mainMenu.style.display = 'flex';
+            } else {
+                const target = document.getElementById(screenId);
+                if (target) target.classList.add('active');
+
+                if (screenId === 'game-screen') {
+                    setTimeout(() => {
+                        resizeCanvas();
+                        resetFish();
+                    }, 50);
+                } else if (screenId === 'weather-screen') {
+                    fetchWeather();
+                }
+            }
+        }
 
         function resizeCanvas() {
+            if (!canvas || !canvas.parentElement) return;
             canvas.width = canvas.parentElement.clientWidth;
             canvas.height = canvas.parentElement.clientHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        function getActiveZone() {
-            return gameWorld.zones[currentZoneKey];
+            drawGame();
         }
 
-        async function fetchWeather(key) {
-            const z = saveanZones[key];
-            try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${z.lat}&longitude=${z.lon}&current=temperature_2m,precipitation,wind_speed_10m`);
-                const data = await res.json();
-                if(data && data.current) {
-                    weatherData.temp = data.current.temperature_2m;
-                    weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
-                    let flowMod = (Math.sin(dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5);
-                    weatherData.flow = Math.max(4, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
-                    weatherData.condition = data.current.precipitation > 0 ? "Regn / Dis" : "Klart / Växlande";
-                }
-            } catch(e) {
-                weatherData.temp = z.baseTemp;
-                weatherData.waterTemp = 10.0;
-                weatherData.flow = (16 + Math.sin(dayOfSeason)*6).toFixed(1);
-                weatherData.condition = "Normalt";
+        window.addEventListener('resize', () => {
+            if (document.getElementById('game-screen').classList.contains('active')) {
+                resizeCanvas();
             }
-            updateUI();
-        }
-
-        function selectZone(key, name) {
-            currentZoneKey = key;
-            ['dickson', 'mannered', 'lortholjan'].forEach(z => {
-                const btn = document.getElementById(`zone-${z}`);
-                btn.className = z === key ? 
-                    "p-2.5 rounded bg-emerald-900/60 border border-emerald-500 text-left transition" : 
-                    "p-2.5 rounded bg-stone-900 border border-stone-700 text-left transition";
-            });
-            resetAfterCatch();
-            fetchWeather(key);
-            document.getElementById('castStatus').innerText = `Flyttade till ${name}. Unik sträcka laddad.`;
-        }
-
-        function updateUI() {
-            const zone = getActiveZone();
-
-            document.getElementById('wCondition').innerText = weatherData.condition;
-            document.getElementById('wTemp').innerText = weatherData.temp;
-            document.getElementById('wWaterTemp').innerText = weatherData.waterTemp;
-            document.getElementById('wFlow').innerText = weatherData.flow + " m³/s";
-
-            document.getElementById('conservationPoints').innerText = gameWorld.points + " p";
-            document.getElementById('hudPopulation').innerText = zone.population;
-            document.getElementById('castsLeft').innerText = `${castsRemaining} / 5`;
-            document.getElementById('dayCounter').innerText = `Dag ${dayOfSeason}/7`;
-            document.getElementById('currentFlyName').innerText = activeFly.name;
-
-            document.getElementById('statGravel').innerText = zone.gravels.length + " st";
-            document.getElementById('statBoulders').innerText = zone.boulders.length + " st";
-            document.getElementById('statTrees').innerText = zone.trees + " st";
-            document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT (+150 Max)" : "Ej åtgärdat";
-
-            renderLog();
-            localStorage.setItem('savean_persistent_v6', JSON.stringify(gameWorld));
-        }
-
-        function nextDay() {
-            if(dayOfSeason < 7) {
-                dayOfSeason++;
-                castsRemaining = 5;
-                const zone = getActiveZone();
-                let breedBoost = (zone.gravels.length * 5) + (zone.boulders.length * 3) + (gameWorld.laddersFixed ? 15 : 0);
-                zone.population = Math.min(zone.maxPop, zone.population + breedBoost + 3);
-                gameWorld.points += 50;
-                fetchWeather(currentZoneKey);
-                document.getElementById('castStatus').innerText = `Dag ${dayOfSeason}. 5 nya kast tillgängliga!`;
-            } else {
-                alert("Veckan är slut (7 dagar)! Fiskekortet förnyas för nästa vecka.");
-                dayOfSeason = 1;
-                castsRemaining = 5;
-                fetchWeather(currentZoneKey);
-            }
-            updateUI();
-        }
-
-        function startPlacement(type, cost) {
-            if(gameWorld.points < cost) return alert("Inte tillräckligt med poäng!");
-            placementMode = type;
-            placementCost = cost;
-            const banner = document.getElementById('modeBanner');
-            banner.innerText = `Placeringsläge (${type === 'gravel' ? 'Lekgrus' : 'Ståndsten'}): Klicka i vattnet!`;
-            banner.classList.remove('hidden');
-        }
-
-        function startMoveRod() {
-            placementMode = 'rod';
-            const banner = document.getElementById('modeBanner');
-            banner.innerText = `Placering av ståplats: Klicka där du vill stå!`;
-            banner.classList.remove('hidden');
-        }
-
-        function doTreePlanting(cost) {
-            if(gameWorld.points < cost) return alert("Inte tillräckligt med poäng!");
-            gameWorld.points -= cost;
-            const zone = getActiveZone();
-            zone.trees += 1;
-            zone.maxPop += 12;
-            updateUI();
-            alert("Nytt kantträd planterat längs sträckan!");
-        }
-
-        function doRemoveDam(cost) {
-            if(gameWorld.laddersFixed) return alert("Vandringshindret är redan åtgärdat!");
-            if(gameWorld.points < cost) return alert("Det krävs 1000 p för detta!");
-            gameWorld.points -= cost;
-            gameWorld.laddersFixed = true;
-            // Boost all zones maxPop
-            Object.values(gameWorld.zones).forEach(z => { z.maxPop += 150; z.population += 30; });
-            updateUI();
-            alert("Vandringshinder åtgärdat! Fria vandringsvägar skapade i hela ån.");
-        }
-
-        // Canvas Animering & Unika Layouter per Sträcka
-        let flowOffset = 0;
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const zone = getActiveZone();
-
-            // Bakgrund & Layout per sträcka
-            if (currentZoneKey === 'mannered') {
-                // Mannered: Svängande sträcka (S-kurva)
-                let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-                bgGrad.addColorStop(0, '#0369a1');
-                bgGrad.addColorStop(0.5, '#0284c7');
-                bgGrad.addColorStop(1, '#075985');
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Rita krökande flodstränder
-                ctx.fillStyle = '#1c1917';
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.bezierCurveTo(canvas.width * 0.4, canvas.height * 0.6, canvas.width * 0.6, canvas.height * 0.2, canvas.width, 0);
-                ctx.lineTo(canvas.width, 0);
-                ctx.fill();
-            } else if (currentZoneKey === 'dickson') {
-                // Dickson: Lugna sel
-                let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                bgGrad.addColorStop(0, '#0284c7');
-                bgGrad.addColorStop(1, '#0369a1');
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            } else {
-                // Lorthöljan: Djup hölja med mörk central håla
-                let bgGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 40, canvas.width/2, canvas.height/2, 300);
-                bgGrad.addColorStop(0, '#0369a1');
-                bgGrad.addColorStop(1, '#022c22');
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-
-            // Lekgrus för aktuell zon
-            ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
-            zone.gravels.forEach(g => {
-                ctx.beginPath();
-                ctx.arc(g.x, g.y, 25, 0, Math.PI*2);
-                ctx.fill();
-            });
-
-            // Ståndstenar med strömningspåverkan för aktuell zon
-            zone.boulders.forEach(b => {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
-                ctx.beginPath();
-                ctx.ellipse(b.x + 12, b.y, 20, 10, 0.1, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = '#1e293b';
-                ctx.beginPath();
-                ctx.ellipse(b.x, b.y, 28, 15, 0.1, 0, Math.PI*2);
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(b.x - 45, b.y - 15);
-                ctx.quadraticCurveTo(b.x - 20, b.y - 25, b.x + 35, b.y - 12);
-                ctx.stroke();
-            });
-
-            // Kantträd för aktuell zon
-            for(let i=0; i<zone.trees; i++) {
-                let tx = 30 + (i * 65) % (canvas.width - 60);
-                ctx.fillStyle = '#15803d';
-                ctx.beginPath();
-                ctx.arc(tx, 14, 20, 0, Math.PI*2);
-                ctx.fill();
-            }
-
-            // Strömvågor
-            flowOffset += 0.9 + (parseFloat(weatherData.flow) * 0.03);
-            if(flowOffset > 40) flowOffset = 0;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-            ctx.lineWidth = 1;
-            for(let y = 30; y < canvas.height; y += 35) {
-                ctx.beginPath();
-                for(let x = -40; x < canvas.width + 40; x += 35) {
-                    ctx.lineTo(x + flowOffset, y + Math.sin((x + flowOffset) * 0.05) * 4);
-                }
-                ctx.stroke();
-            }
-
-            // Insekter
-            ctx.fillStyle = 'rgba(254, 240, 138, 0.6)';
-            insects.forEach(ins => {
-                ins.x += ins.speed;
-                if(ins.x > canvas.width) ins.x = 0;
-                ctx.beginPath();
-                ctx.arc(ins.x, ins.y + Math.sin(ins.x*0.1)*3, 2, 0, Math.PI*2);
-                ctx.fill();
-            });
-
-            // Spöposition / Ståplats
-            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
-
-            // Rita fiskare / spöposition
-            ctx.fillStyle = '#f43f5e';
-            ctx.beginPath();
-            ctx.arc(rodX, rodY, 6, 0, Math.PI*2);
-            ctx.fill();
-
-            // Kastlina & Fluga
-            if(castLine) {
-                ctx.strokeStyle = '#fef08a';
-                ctx.lineWidth = 1.2;
-                ctx.beginPath();
-                ctx.moveTo(rodX, rodY);
-                ctx.lineTo(castLine.x, castLine.y);
-                ctx.stroke();
-
-                ctx.fillStyle = '#ef4444';
-                ctx.beginPath();
-                ctx.arc(castLine.x, castLine.y, 4, 0, Math.PI*2);
-                ctx.fill();
-
-                castLine.x += 0.5 + (parseFloat(weatherData.flow) * 0.04) + (currentMend * 0.8);
-                if(castLine.x > canvas.width) castLine = null;
-
-                if(castLine && Math.random() < 0.0035 && !currentFish) {
-                    triggerBite();
-                }
-            }
-
-            requestAnimationFrame(draw);
-        }
-        requestAnimationFrame(draw);
-
-        canvas.addEventListener('click', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-            const zone = getActiveZone();
-
-            if(placementMode) {
-                if(placementMode === 'rod') {
-                    zone.playerPos = { x: clickX, y: clickY };
-                    alert("Ståplats flyttad!");
-                } else {
-                    gameWorld.points -= placementCost;
-                    if(placementMode === 'gravel') zone.gravels.push({ x: clickX, y: clickY });
-                    if(placementMode === 'boulder') {
-                        zone.boulders.push({ x: clickX, y: clickY });
-                        zone.maxPop += 15;
-                    }
-                }
-                placementMode = null;
-                document.getElementById('modeBanner').classList.add('hidden');
-                updateUI();
-                return;
-            }
-
-            if(castsRemaining <= 0) {
-                document.getElementById('castStatus').innerText = "Slut på kast idag! Klicka på 'Nästa Dag'.";
-                return;
-            }
-
-            castLine = { x: clickX, y: clickY };
-            currentMend = 0;
-            castsRemaining--;
-            updateUI();
-            document.getElementById('castStatus').innerText = "Flugan driver i strömmen...";
         });
 
-        function mendLine() {
-            if(!castLine) return;
-            currentMend = (Math.random() - 0.5) * 2;
-            document.getElementById('castStatus').innerText = "Lina mendad! Perfekt drift.";
-        }
-
-        function triggerBite() {
-            let flow = parseFloat(weatherData.flow);
-            let zone = getActiveZone();
-            let gravelBonus = zone.gravels.length;
-            let boulderBonus = zone.boulders.length;
-
-            let troutSalmonChance = 0.60 + Math.min(0.30, (gravelBonus + boulderBonus) * 0.03);
+        function changeSpot() {
+            const select = document.getElementById('spotSelect');
+            if (select) currentSpot = select.value;
             
-            let species = "Öring";
-            let rand = Math.random();
+            const names = { dickson: 'Dickson', mannered: 'Mannered', lortholjan: 'Lorthöljan' };
+            const spotEl = document.getElementById('stat-spot');
+            if (spotEl) spotEl.innerText = 'Plats: ' + names[currentSpot];
+            
+            resetFish();
+            drawGame();
+        }
 
-            if (rand < troutSalmonChance) {
-                species = Math.random() < 0.55 ? "Öring" : "Lax";
+        function moveRod(delta) {
+            if (canvas.width === 0) return;
+            rodX = Math.max(20, Math.min(canvas.width - 20, rodX + delta));
+            drawGame();
+        }
+
+        function castLine() {
+            lineCast = true;
+            drawGame();
+
+            // Kolla träff på fisken
+            if (Math.abs(rodX - fish.x) < 40 && !fish.caught) {
+                fish.caught = true;
+                score++;
+                localStorage.setItem('savean_score', score);
+                updateScoreDisplay();
+                alert("Hugg! Du fångade en praktfull Säveålax!");
+                setTimeout(resetFish, 600);
             } else {
-                species = Math.random() < 0.65 ? "Abborre" : "Gädda";
+                setTimeout(() => {
+                    lineCast = false;
+                    drawGame();
+                }, 400);
             }
-
-            let baseSize = species === "Lax" ? 82 : (species === "Gädda" ? 75 : (species === "Öring" ? 48 : 28));
-            let size = Math.floor(baseSize + (Math.random() * 20 - 10));
-
-            currentFish = { species, size };
-            document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold animate-pulse">HUGG! En ${species} på ${size} cm!</span>`;
-
-            setTimeout(() => {
-                document.getElementById('caughtFishDetails').innerText = `Du landade en ${species} (${size} cm) i ${saveanZones[currentZoneKey].name}. Gör ett aktivt val för hantering!`;
-                document.getElementById('welfareModal').classList.remove('hidden');
-                document.getElementById('welfareModal').classList.add('flex');
-            }, 800);
         }
 
-        // Fullständig nollställning av kast och alternativ vid fångad fisk
-        function resetAfterCatch() {
-            castLine = null;
-            currentMend = 0;
-            currentFish = null;
-            placementMode = null;
-            document.getElementById('modeBanner').classList.add('hidden');
-            document.getElementById('castStatus').innerText = "Alternativ nollställda. Gör nya aktiva val för nästa kast!";
+        function resetFish() {
+            if (canvas.width === 0 || canvas.height === 0) return;
+            fish.x = Math.random() * (canvas.width - 60) + 30;
+            fish.y = Math.random() * (canvas.height - 60) + 30;
+            fish.caught = false;
+            lineCast = false;
+            drawGame();
         }
 
-        function releaseFish() {
-            let wet = document.getElementById('chkWetHands').checked;
-            let net = document.getElementById('chkNet').checked;
-            let air = parseInt(document.getElementById('sliderAirTime').value);
+        function drawGame() {
+            if (!canvas || canvas.width === 0 || canvas.height === 0) return;
 
-            let score = 100 - (wet ? 0 : 35) - (net ? 0 : 20) - (air * 1.1);
-            let survived = score > 40;
-            const zone = getActiveZone();
-
-            if(survived) {
-                gameWorld.points += 70;
-                alert(`Fisken simmade piggt tillbaka! (${Math.round(score)}% överlevnad). +70 p.`);
+            // Bakgrundsfärg per plats
+            if (currentSpot === 'dickson') {
+                ctx.fillStyle = '#113322';
+            } else if (currentSpot === 'mannered') {
+                ctx.fillStyle = '#0f2b3c';
             } else {
-                zone.population = Math.max(10, zone.population - 1);
-                alert(`Fisken klarade inte hanteringen. Beståndet minskar.`);
+                ctx.fillStyle = '#211f18';
+            }
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Strömlinjer
+            ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < canvas.height; i += 25) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i + 15);
+                ctx.stroke();
             }
 
-            zone.log.unshift({ text: `${currentFish.species} (${currentFish.size} cm) - C&R (${survived ? 'Överlevde' : 'Dog'})`, date: new Date().toLocaleDateString() });
-            closeWelfareModal();
-            resetAfterCatch();
-        }
-
-        function keepFish() {
-            const zone = getActiveZone();
-            zone.population = Math.max(10, zone.population - 1);
-            zone.log.unshift({ text: `${currentFish.species} (${currentFish.size} cm) - Hemtagen`, date: new Date().toLocaleDateString() });
-            closeWelfareModal();
-            resetAfterCatch();
-        }
-
-        function closeWelfareModal() {
-            document.getElementById('welfareModal').classList.add('hidden');
-            document.getElementById('welfareModal').classList.remove('flex');
-            updateUI();
-        }
-
-        function changeFlyModal() {
-            const list = document.getElementById('flyList');
-            list.innerHTML = flies.map(f => `
-                <div onclick="activeFly = flies.find(x => x.name === '${f.name}'); updateUI(); document.getElementById('flyModal').classList.add('hidden');" class="bg-stone-900 p-2 rounded border border-stone-700 hover:border-emerald-500 cursor-pointer flex justify-between text-xs">
-                    <span class="font-bold text-stone-200">${f.name}</span>
-                    <span class="text-stone-400 text-[9px]">${f.type}</span>
-                </div>
-            `).join('');
-            document.getElementById('flyModal').classList.remove('hidden');
-        }
-
-        function renderLog() {
-            const zone = getActiveZone();
-            const logContainer = document.getElementById('catchLog');
-            if(!zone.log || zone.log.length === 0) {
-                logContainer.innerHTML = `<p class="text-stone-500 italic">Inga fångster än på denna sträcka.</p>`;
-                return;
+            // Rita fisk
+            if (!fish.caught) {
+                ctx.fillStyle = '#76c893';
+                ctx.beginPath();
+                ctx.ellipse(fish.x, fish.y, 14, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
             }
-            logContainer.innerHTML = zone.log.map(item => `
-                <div class="border-b border-stone-800 pb-1 flex justify-between">
-                    <span class="text-stone-300">${item.text}</span>
-                    <span class="text-stone-500 text-[9px]">${item.date}</span>
-                </div>
-            `).join('');
+
+            // Rita spö/handtag längst ner
+            ctx.strokeStyle = '#d4af37';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(rodX, canvas.height);
+            ctx.lineTo(rodX, canvas.height - 35);
+            ctx.stroke();
+
+            // Rita kastad lina
+            if (lineCast) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(rodX, canvas.height - 35);
+                ctx.lineTo(fish.x, fish.y);
+                ctx.stroke();
+            }
         }
 
-        fetchWeather(currentZoneKey);
+        function fetchWeather() {
+            const container = document.getElementById('weather-data');
+            if (!container) return;
+            container.innerText = "Hämtar aktuella data...";
+
+            fetch('https://api.open-meteo.com/v1/forecast?latitude=57.75&longitude=12.17&current_weather=true')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.current_weather) {
+                        const temp = data.current_weather.temperature;
+                        const wind = data.current_weather.windspeed;
+                        container.innerHTML = `
+                            <p><strong>Plats:</strong> Säveån (Jonsered)</p>
+                            <p><strong>Temperatur:</strong> ${temp} °C</p>
+                            <p><strong>Vindstyrka:</strong> ${wind} km/h</p>
+                            <br>
+                            <p><em>Optimala förhållanden för flugfiske i strömmen!</em></p>
+                        `;
+                    }
+                })
+                .catch(() => {
+                    container.innerText = "Kunde inte hämta väderdata just nu.";
+                });
+        }
+
+        // Initiera poäng vid start
+        updateScoreDisplay();
     </script>
 </body>
 </html>
