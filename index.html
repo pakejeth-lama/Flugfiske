@@ -1,667 +1,74 @@
-<!DOCTYPE html>
-<html lang="sv">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Säveån Fly Fishing</title>
-    <style>
-        :root {
-            --primary-color: #2c5e3b;
-            --accent-color: #4a7c59;
-            --bg-color: #121c15;
-            --text-color: #f4f4f4;
-            --card-bg: #223d2a;
-            --danger-color: #a93226;
-        }
+0,
+Math.PI*2
+);
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            user-select: none;
-            -webkit-user-select: none;
-        }
+ctx.fill();
+}
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            height: 100vh;
-            height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+ctx.strokeStyle="#d4af37";
+ctx.lineWidth=3;
 
-        header {
-            background: var(--primary-color);
-            padding: 8px 12px;
-            text-align: center;
-            font-size: 1rem;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
-            z-index: 10;
-            flex-shrink: 0;
-        }
+ctx.beginPath();
 
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 8px;
-            gap: 8px;
-            max-width: 900px;
-            margin: 0 auto;
-            width: 100%;
-            overflow: hidden;
-            box-sizing: border-box;
-        }
+ctx.moveTo(rodX,canvas.height);
+ctx.lineTo(rodX,canvas.height-40);
 
-        /* --- Menysystem --- */
-        .menu-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            height: 100%;
-            justify-content: center;
-        }
+ctx.stroke();
 
-        .menu-card {
-            background: linear-gradient(135deg, var(--primary-color), var(--card-bg));
-            border-radius: 12px;
-            padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.15);
-            cursor: pointer;
-        }
+if(lineCast){
 
-        .menu-card:active {
-            transform: scale(0.98);
-        }
+ctx.strokeStyle="#ffffff";
 
-        .menu-card h2 {
-            font-size: 1.05rem;
-            margin-bottom: 2px;
-        }
+ctx.beginPath();
 
-        .menu-card p {
-            font-size: 0.8rem;
-            opacity: 0.85;
-        }
+ctx.moveTo(rodX,canvas.height-40);
+ctx.lineTo(rodX,fish.y);
 
-        .menu-card .icon {
-            font-size: 1.8rem;
-        }
+ctx.stroke();
+}
+}
 
-        /* --- Sektioner --- */
-        .screen {
-            display: none;
-            flex-direction: column;
-            height: 100%;
-            width: 100%;
-            gap: 8px;
-            overflow: hidden;
-        }
+function loop(){
 
-        .screen.active {
-            display: flex;
-        }
+updateFish();
+draw();
 
-        /* Spelskärmen */
-        .stats-bar {
-            background: rgba(255,255,255,0.08);
-            padding: 6px 12px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
+requestAnimationFrame(loop);
+}
 
-        .game-layout {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            gap: 8px;
-            min-height: 0;
-            overflow: hidden;
-        }
+function loadWeather(){
 
-        .canvas-container {
-            flex: 1;
-            background: #0d2215;
-            border-radius: 10px;
-            position: relative;
-            overflow: hidden;
-            border: 2px solid var(--accent-color);
-            min-height: 0;
-        }
+fetch("https://api.open-meteo.com/v1/forecast?latitude=57.75&longitude=12.17&current_weather=true")
+.then(r=>r.json())
+.then(data=>{
 
-        canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
+document.getElementById("weatherData").innerHTML=`
+<p><strong>Plats:</strong> Jonsered</p>
+<p><strong>Temperatur:</strong> ${data.current_weather.temperature} °C</p>
+<p><strong>Vind:</strong> ${data.current_weather.windspeed} km/h</p>
+`;
 
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            flex-shrink: 0;
-        }
+})
+.catch(()=>{
 
-        .btn-group {
-            display: flex;
-            gap: 6px;
-        }
+document.getElementById("weatherData").innerText=
+"Kunde inte hämta väderdata.";
 
-        .btn {
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 9px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 0.85rem;
-            cursor: pointer;
-            text-align: center;
-            flex: 1;
-        }
+});
+}
 
-        .btn:active {
-            opacity: 0.8;
-        }
+window.addEventListener("load",()=>{
 
-        .btn-danger {
-            background: var(--danger-color);
-        }
+resizeCanvas();
+resetFish();
+updateScore();
+loop();
 
-        .btn-secondary {
-            background: #444;
-        }
+});
 
-        .select-input {
-            background: #333;
-            color: #fff;
-            border: 1px solid #555;
-            padding: 7px;
-            border-radius: 8px;
-            width: 100%;
-            font-size: 0.85rem;
-        }
+window.addEventListener("resize",resizeCanvas);
 
-        .info-box {
-            background: rgba(255,255,255,0.05);
-            padding: 12px;
-            border-radius: 10px;
-            overflow-y: auto;
-            flex: 1;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
+</script>
 
-        /* Drill-panel overlay */
-        .drill-hud {
-            background: rgba(0,0,0,0.75);
-            border: 2px solid var(--danger-color);
-            padding: 8px;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .progress-bar-container {
-            background: #333;
-            border-radius: 4px;
-            height: 12px;
-            overflow: hidden;
-            width: 100%;
-            position: relative;
-        }
-
-        .progress-fill {
-            background: var(--accent-color);
-            height: 100%;
-            width: 0%;
-            transition: width 0.1s linear;
-        }
-
-        .tension-fill {
-            background: var(--danger-color);
-            height: 100%;
-            width: 0%;
-            transition: width 0.1s linear;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* --- Liggande skärm (Landscape) utan scroll --- */
-        @media (orientation: landscape) {
-            header {
-                display: none;
-            }
-
-            main {
-                height: 100vh;
-                height: 100dvh;
-                padding: 6px;
-                gap: 6px;
-            }
-
-            .menu-container {
-                flex-direction: row;
-                gap: 10px;
-            }
-
-            .menu-card {
-                flex: 1;
-                flex-direction: column;
-                justify-content: center;
-                text-align: center;
-                gap: 8px;
-                padding: 10px;
-            }
-
-            .game-layout {
-                flex-direction: row;
-            }
-
-            .canvas-container {
-                flex: 2;
-            }
-
-            .controls {
-                width: 240px;
-                justify-content: space-between;
-            }
-        }
-    </style>
-</head>
-<body>
-
-    <header id="page-header">Säveån Fly Fishing</header>
-
-    <main>
-        <!-- HUVUDMENY -->
-        <div id="main-menu" class="menu-container">
-            <div class="menu-card" onclick="openScreen('game-screen')">
-                <div>
-                    <h2>Fiska i Säveån</h2>
-                    <p>Dickson, Mannered och Lorthöljan</p>
-                </div>
-                <div class="icon">🎣</div>
-            </div>
-
-            <div class="menu-card" onclick="openScreen('biotope-screen')">
-                <div>
-                    <h2>Biotopvård</h2>
-                    <p>Åtgärder för lax och öring</p>
-                </div>
-                <div class="icon">🌿</div>
-            </div>
-
-            <div class="menu-card" onclick="openScreen('weather-screen')">
-                <div>
-                    <h2>Väder & Vatten</h2>
-                    <p>Realtidsdata via Open-Meteo</p>
-                </div>
-                <div class="icon">⛅</div>
-            </div>
-        </div>
-
-        <!-- SPELSKÄRM -->
-        <div id="game-screen" class="screen">
-            <div class="stats-bar">
-                <span id="stat-spot">Plats: Dickson</span>
-                <span id="stat-score">Poäng: 0</span>
-            </div>
-
-            <div class="game-layout">
-                <div class="canvas-container">
-                    <canvas id="simCanvas"></canvas>
-                </div>
-
-                <div class="controls">
-                    <div>
-                        <select id="spotSelect" class="select-input" onchange="changeSpot()">
-                            <option value="dickson">Dickson</option>
-                            <option value="mannered">Mannered</option>
-                            <option value="lortholjan">Lorthöljan</option>
-                        </select>
-                    </div>
-
-                    <!-- Normala kontroller -->
-                    <div id="normal-controls">
-                        <div class="btn-group" style="margin-bottom: 6px;">
-                            <button class="btn" onclick="moveRod(-10)">⬅️ Flytta</button>
-                            <button class="btn" onclick="moveRod(10)">Flytta ➡️</button>
-                        </div>
-                        <button class="btn" onclick="castLine()">Kasta / Byt fluga</button>
-                    </div>
-
-                    <!-- Drill-kontroller (visas vid napp) -->
-                    <div id="drill-controls" class="drill-hud hidden">
-                        <div style="font-size: 0.8rem; font-weight: bold;" id="drill-info">Hugg! Drillar...</div>
-                        
-                        <div>
-                            <div style="font-size:0.7rem; display:flex; justify-content:space-between;"><span>Landning:</span><span id="progress-val">0%</span></div>
-                            <div class="progress-bar-container"><div id="progress-fill" class="progress-fill"></div></div>
-                        </div>
-
-                        <div>
-                            <div style="font-size:0.7rem; display:flex; justify-content:space-between;"><span>Tafsstressen:</span><span id="tension-val">0%</span></div>
-                            <div class="progress-bar-container"><div id="tension-fill" class="tension-fill"></div></div>
-                        </div>
-
-                        <div class="btn-group">
-                            <button class="btn btn-danger" onclick="drillPull()">Drilla hårt</button>
-                            <button class="btn" onclick="drillRelease()">Ge lina</button>
-                        </div>
-                    </div>
-
-                    <button class="btn btn-secondary" onclick="openScreen('main-menu')">Meny</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- BIOTOPVÅRD -->
-        <div id="biotope-screen" class="screen">
-            <h2 style="font-size: 1.1rem; flex-shrink: 0;">Biotopvård i Säveån</h2>
-            <div class="info-box">
-                <p><strong>Restaurering av lekområden:</strong> Genom att återställa grusbottnar och lägga ut död ved skapas skydd och lekområden för Säveålaxen och öringen.</p>
-                <br>
-                <p><strong>Friare vandringsvägar:</strong> Arbetet med att minska vandringshinder gör att fisken kan nå sina naturliga lekområden högre upp i vattensystemet.</p>
-            </div>
-            <button class="btn btn-secondary" onclick="openScreen('main-menu')" style="flex-shrink: 0;">Tillbaka till meny</button>
-        </div>
-
-        <!-- VÄDER SKÄRM -->
-        <div id="weather-screen" class="screen">
-            <h2 style="font-size: 1.1rem; flex-shrink: 0;">Väder & Vatten (Jonsered)</h2>
-            <div class="info-box" id="weather-data">
-                Laddar väderdata...
-            </div>
-            <button class="btn btn-secondary" onclick="openScreen('main-menu')" style="flex-shrink: 0;">Tillbaka till meny</button>
-        </div>
-    </main>
-
-    <script>
-        let score = parseInt(localStorage.getItem('savean_score') || '0');
-        let currentSpot = 'dickson';
-        let rodX = 150;
-        let lineCast = false;
-        let fish = { x: 50, y: 100, caught: false };
-
-        // Drill- och artvariabler
-        let isDrilling = false;
-        let drillProgress = 0;
-        let drillTension = 0;
-        let currentFish = null;
-        let drillInterval = null;
-
-        const speciesData = [
-            { name: 'Säveålax', points: 10, minW: 3.0, maxW: 12.0, sensitivity: 1.8, color: '#88c999' },
-            { name: 'Öring', points: 6, minW: 1.0, maxW: 5.0, sensitivity: 1.3, color: '#d4ac0d' },
-            { name: 'Gädda', points: 2, minW: 1.5, maxW: 7.0, sensitivity: 1.0, color: '#27ae60' },
-            { name: 'Abborre', points: 1, minW: 0.3, maxW: 1.2, sensitivity: 0.7, color: '#d35400' }
-        ];
-
-        const canvas = document.getElementById('simCanvas');
-        const ctx = canvas.getContext('2d');
-
-        function updateScoreDisplay() {
-            document.getElementById('stat-score').innerText = 'Poäng: ' + score;
-        }
-
-        function openScreen(screenId) {
-            document.getElementById('main-menu').style.display = 'none';
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-
-            if (screenId === 'main-menu') {
-                document.getElementById('main-menu').style.display = 'flex';
-                stopDrill();
-            } else {
-                document.getElementById(screenId).classList.add('active');
-            }
-
-            if (screenId === 'game-screen') {
-                setTimeout(resizeCanvas, 30);
-            } else if (screenId === 'weather-screen') {
-                fetchWeather();
-            }
-        }
-
-        function resizeCanvas() {
-            if (!canvas.parentElement) return;
-            canvas.width = canvas.parentElement.clientWidth;
-            canvas.height = canvas.parentElement.clientHeight;
-            drawGame();
-        }
-
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
-
-        function changeSpot() {
-            currentSpot = document.getElementById('spotSelect').value;
-            const names = { dickson: 'Dickson', mannered: 'Mannered', lortholjan: 'Lorthöljan' };
-            document.getElementById('stat-spot').innerText = 'Plats: ' + names[currentSpot];
-            stopDrill();
-            resetFish();
-            drawGame();
-        }
-
-        function moveRod(delta) {
-            if (isDrilling) return;
-            rodX = Math.max(20, Math.min(canvas.width - 20, rodX + delta));
-            drawGame();
-        }
-
-        function castLine() {
-            if (isDrilling) return;
-            lineCast = true;
-            
-            // Kolla om spöet är nära fisken vid kast
-            if (Math.abs(rodX - fish.x) < 35 && !fish.caught) {
-                startDrill();
-            } else {
-                setTimeout(() => {
-                    if (!isDrilling) {
-                        lineCast = false;
-                        drawGame();
-                    }
-                }, 400);
-            }
-            drawGame();
-        }
-
-        function startDrill() {
-            isDrilling = true;
-            fish.caught = true;
-            
-            // Slumpa art (lax är vanligare i Dickson/Mannered, gädda/abborre ibland)
-            const rand = Math.random();
-            let spChoice;
-            if (rand < 0.45) spChoice = speciesData[0]; // Säveålax
-            else if (rand < 0.80) spChoice = speciesData[1]; // Öring
-            else if (rand < 0.93) spChoice = speciesData[2]; // Gädda
-            else spChoice = speciesData[3]; // Abborre
-
-            const weight = (Math.random() * (spChoice.maxW - spChoice.minW) + spChoice.minW).toFixed(1);
-            currentFish = { ...spChoice, weight: parseFloat(weight) };
-
-            drillProgress = 10;
-            drillTension = 20;
-
-            document.getElementById('normal-controls').classList.add('hidden');
-            document.getElementById('drill-controls').classList.remove('hidden');
-            document.getElementById('drill-info').innerText = `${currentFish.name} (${currentFish.weight} kg)! Parera drillen.`;
-
-            // Starta drill-loop
-            if (drillInterval) clearInterval(drillInterval);
-            drillInterval = setInterval(updateDrillPhysics, 150);
-        }
-
-        function updateDrillPhysics() {
-            if (!isDrilling) return;
-
-            // Fisken stretar emot slumpmässigt beroende på känslighet/storlek
-            const resistance = (Math.random() * 8 + 4) * currentFish.sensitivity;
-            drillTension += (resistance - 5); // Om man inte gör något ökar/fluktuerar spänningen
-
-            // Begränsa värden
-            drillTension = Math.max(0, Math.min(100, drillTension));
-            drillProgress = Math.max(0, Math.min(100, drillProgress));
-
-            // Kolla tafsbrott (100% spänning)
-            if (drillTension >= 100) {
-                stopDrill();
-                alert(`Tafsbrott! ${currentFish.name} på ${currentFish.weight} kg slet sig loss då linan brast p.g.a. för hårt tryck.`);
-                resetFish();
-                return;
-            }
-
-            // Kolla landad fisk (100% progress)
-            if (drillProgress >= 100) {
-                finishLanding();
-                return;
-            }
-
-            updateDrillUI();
-        }
-
-        function drillPull() {
-            if (!isDrilling) return;
-            drillProgress += 12; // Drar in fisken snabbare
-            drillTension += 18 * currentFish.sensitivity; // Ökar risken för tafsbrott kraftigt på stora fiskar!
-        }
-
-        function drillRelease() {
-            if (!isDrilling) return;
-            drillProgress = Math.max(0, drillProgress - 6);
-            drillTension = Math.max(0, drillTension - 22); // Släpper efter och sänker spänningen
-        }
-
-        function updateDrillUI() {
-            document.getElementById('progress-fill').style.width = drillProgress + '%';
-            document.getElementById('progress-val').innerText = Math.floor(drillProgress) + '%';
-            document.getElementById('tension-fill').style.width = drillTension + '%';
-            document.getElementById('tension-val').innerText = Math.floor(drillTension) + '%';
-        }
-
-        function finishLanding() {
-            stopDrill();
-
-            // C/R mortality check: Sällan fisken dör, men risk ökar om tafsstress/drill varit brutal (hög snittstress eller max tension nått nära under drillen)
-            let mortalityRisk = 0.03; // 3% grundrisk vid c/r
-            if (drillTension > 75) mortalityRisk = 0.15; // Högre risk om man pressat hårt
-
-            const fishSurvived = Math.random() > mortalityRisk;
-
-            if (fishSurvived) {
-                score += currentFish.points;
-                localStorage.setItem('savean_score', score);
-                updateScoreDisplay();
-                alert(`Landad! Du fångade en praktfull ${currentFish.name} på ${currentFish.weight} kg (+${currentFish.points} poäng).\n\nFisken återtogs varsamt (C/R) och simmade pigg tillbaka i Säveån!`);
-            } else {
-                alert(`Tråkigt slut: ${currentFish.name} på ${currentFish.weight} kg landades, men drillen var för hård och fisken klarade inte återutsättningen trots C/R-försök.`);
-            }
-
-            resetFish();
-        }
-
-        function stopDrill() {
-            isDrilling = false;
-            if (drillInterval) clearInterval(drillInterval);
-            drillInterval = null;
-            document.getElementById('drill-controls').classList.add('hidden');
-            document.getElementById('normal-controls').classList.remove('hidden');
-        }
-
-        function resetFish() {
-            fish.x = Math.random() * (canvas.width - 40) + 20;
-            fish.y = Math.random() * (canvas.height - 60) + 40;
-            fish.caught = false;
-            lineCast = false;
-            drawGame();
-        }
-
-        function drawGame() {
-            if (canvas.width === 0 || canvas.height === 0) return;
-
-            if (currentSpot === 'dickson') {
-                ctx.fillStyle = '#113322';
-            } else if (currentSpot === 'mannered') {
-                ctx.fillStyle = '#0f2b3c';
-            } else {
-                ctx.fillStyle = '#211f18';
-            }
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < canvas.height; i += 20) {
-                ctx.beginPath();
-                ctx.moveTo(0, i);
-                ctx.lineTo(canvas.width, i + 10);
-                ctx.stroke();
-            }
-
-            if (!fish.caught) {
-                ctx.fillStyle = '#88c999';
-                ctx.beginPath();
-                ctx.ellipse(fish.x, fish.y, 12, 5, 0, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            ctx.strokeStyle = '#d4af37';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(rodX, canvas.height);
-            ctx.lineTo(rodX, canvas.height - 40);
-            ctx.stroke();
-
-            if (lineCast) {
-                ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.moveTo(rodX, canvas.height - 40);
-                ctx.lineTo(rodX, fish.y);
-                ctx.stroke();
-            }
-        }
-
-        function fetchWeather() {
-            const container = document.getElementById('weather-data');
-            container.innerText = "Hämtar aktuella data...";
-
-            fetch('https://api.open-meteo.com/v1/forecast?latitude=57.75&longitude=12.17&current_weather=true')
-                .then(res => res.json())
-                .then(data => {
-                    if (data && data.current_weather) {
-                        const temp = data.current_weather.temperature;
-                        const wind = data.current_weather.windspeed;
-                        container.innerHTML = `
-                            <p><strong>Plats:</strong> Säveån (Jonsered)</p>
-                            <p><strong>Temperatur:</strong> ${temp} °C</p>
-                            <p><strong>Vindstyrka:</strong> ${wind} km/h</p>
-                            <br>
-                            <p><em>Perfekt förhållande för flugfiske!</em></p>
-                        `;
-                    }
-                })
-                .catch(() => {
-                    container.innerText = "Kunde inte hämta väderdata just nu.";
-                });
-        }
-
-        updateScoreDisplay();
-        resetFish();
-    </script>
 </body>
 </html>
