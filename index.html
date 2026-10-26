@@ -268,8 +268,8 @@
         };
 
         const flies = [
-            { name: "Fireball", type: "Torrfluga (Öring / Lax)" },
-            { name: "Mysen", type: "Nymf / Klassiker" },
+            { name: "Fireball", type: "Laxfluga (Klassiker)" },
+            { name: "Mysen", type: "Laxfluga / Tubfluga" },
             { name: "Europa 12", type: "Torrfluga (Öring)" },
             { name: "Haröra (Goldhead)", type: "Nymf (Öring)" },
             { name: "Ullsock", type: "Laxfluga (Säveån klassiker)" },
@@ -546,7 +546,7 @@
             ctx.arc(rodX, rodY, 6, 0, Math.PI*2);
             ctx.fill();
 
-            // Kastlina & Fluga (flödar i exakt samma strömriktning åt höger som insekterna)
+            // Kastlina & Fluga med speglad/omvänd pendeleffekt
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -573,7 +573,7 @@
                         if(castLine.stretch < 0.1) castLine.stretch = 0;
                     }
 
-                    // Flödeshastighet åt höger (+X) matchad med insekterna
+                    // Flödeshastighet åt höger (+X)
                     let flowSpeed = 0.5 + (parseFloat(weatherData.flow) * 0.05) + (currentMend * 0.2);
 
                     // Första 1 sekund (60 frames): drift rakt åt höger i strömriktningen
@@ -581,16 +581,16 @@
                         castLine.x += flowSpeed;
                         castLine.y += (Math.random() - 0.5) * 0.1;
                     } else {
-                        // Ståndplatsanalys: Mitten vs sidorna
+                        // Ståndplatsanalys: Mitten vs bankerna
                         let verticalOffset = (rodY - (canvas.height / 2)) / (canvas.height * 0.35); 
                         verticalOffset = Math.max(-1, Math.min(1, verticalOffset));
 
                         if(Math.abs(verticalOffset) < 0.3) {
-                            // Står i mitten: Flyter helt rakt åt höger
+                            // Står i mitten: Flyter rakt åt höger
                             castLine.x += flowSpeed;
                             castLine.y += (Math.random() - 0.5) * 0.15;
                         } else {
-                            // Står på banken: Pendlar mjukt framåt med strömmen åt höger
+                            // Speglad pendelriktning
                             if(!castLine.swingStarted) {
                                 castLine.swingAngle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
                                 castLine.swingRadius = Math.hypot(castLine.x - rodX, castLine.y - rodY);
@@ -599,17 +599,17 @@
 
                             let swingSpeed = 0.0018 + (parseFloat(weatherData.flow) * 0.00015) + (currentMend * 0.0012);
                             
+                            // Omvänd rotation för att pendla i motsatt båge
                             if (verticalOffset < 0) {
-                                castLine.swingAngle += swingSpeed * 0.3;
-                            } else {
                                 castLine.swingAngle -= swingSpeed * 0.3;
+                            } else {
+                                castLine.swingAngle += swingSpeed * 0.3;
                             }
 
                             castLine.x = rodX + castLine.swingRadius * Math.cos(castLine.swingAngle);
                             castLine.y = rodY + castLine.swingRadius * Math.sin(castLine.swingAngle);
                             
-                            // Säkerställ att den alltid rör sig framåt med strömmen åt höger
-                            castLine.x += flowSpeed;
+                            castLine.x += flowSpeed * 0.8;
                         }
                     }
 
@@ -617,7 +617,8 @@
                         castLine = null;
                     }
 
-                    if(castLine && Math.random() < 0.0035 && !currentFish) {
+                    // Förbättrad RNG för napp (sänkt frekvens för mer balanserat/realistiskt fiske)
+                    if(castLine && Math.random() < 0.0009 && !currentFish) {
                         triggerBite();
                     }
                 }
