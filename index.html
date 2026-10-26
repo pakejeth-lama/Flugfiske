@@ -219,7 +219,7 @@
             background: #27ae60;
             height: 100%;
             width: 50%;
-            transition: width 0.1s linear, background-color 0.2s;
+            transition: width 0.2s linear, background-color 0.2s;
         }
 
         /* --- Liggande skärm (Landscape) utan scroll --- */
@@ -326,7 +326,7 @@
 
                     <!-- Drill-kontroller (visas vid hugg) -->
                     <div id="drill-controls">
-                        <div style="font-size:0.8rem; text-align:center;" id="drill-status">Fisk på! Drilla försiktigt!</div>
+                        <div style="font-size:0.8rem; text-align:center;" id="drill-status">Fisk på! Drilla försiktigt...</div>
                         <div class="tension-bar-container">
                             <div id="tension-bar"></div>
                         </div>
@@ -366,10 +366,10 @@
         let lineCast = false;
         let fish = { x: 100, y: 100, caught: false };
         
-        // Drill-variabler
+        // Drill-variabler (justerade för långsammare tempo)
         let isDrilling = false;
-        let drillProgress = 0; // 0 till 100 (100 = landad fisk)
-        let fishTension = 50;  // 0 till 100 (>90 eller <10 = tappar fisken)
+        let drillProgress = 0;
+        let fishTension = 50;
         let drillInterval = null;
 
         const canvas = document.getElementById('simCanvas');
@@ -441,9 +441,7 @@
             lineCast = true;
             drawGame();
 
-            // Kolla träff på fisken
             if (Math.abs(rodX - fish.x) < 45 && !fish.caught) {
-                // HUGG! Starta drillning
                 startDrill();
             } else {
                 setTimeout(() => {
@@ -466,42 +464,41 @@
 
             if (drillInterval) clearInterval(drillInterval);
 
+            // Körs var 200 ms (långsammare uppdatering)
             drillInterval = setInterval(() => {
                 if (!isDrilling) return;
 
-                // Fisken drar slumpmässigt i sidled eller rusar
-                let pull = (Math.random() - 0.45) * 12;
+                // Mjuka och långsamma förändringar i spänning
+                let pull = (Math.random() - 0.48) * 4;
                 if (reelingActive) {
-                    fishTension += pull + 3; // Vevar man ökar spänningen
-                    drillProgress += 1.5;    // Drar in fisken
+                    fishTension += pull + 2; 
+                    drillProgress += 1.0;    
                 } else {
-                    fishTension += pull - 25; // Släpper man efter sjunker spänningen
-                    drillProgress -= 0.5;    // Fisken simmar ut lite
+                    fishTension += pull - 1.5; 
+                    drillProgress -= 0.2;    
                 }
 
                 fishTension = Math.max(0, Math.min(100, fishTension));
 
-                // Uppdatera spänningsmätare
                 const bar = document.getElementById('tension-bar');
                 bar.style.width = fishTension + '%';
                 
-                if (fishTension > 30 && fishTension < 70) {
-                    bar.style.backgroundColor = '#27ae60'; // Bra spänning
+                if (fishTension > 25 && fishTension < 75) {
+                    bar.style.backgroundColor = '#27ae60'; 
                 } else {
-                    bar.style.backgroundColor = '#e74c3c'; // Varning! Risk att linan går eller fisken slår sig fri
+                    bar.style.backgroundColor = '#e74c3c'; 
                 }
 
-                // Kolla om man tappade fisken eller ifall den landades
-                if (fishTension <= 2) {
+                if (fishTension <= 3) {
                     stopDrill(false, "Fisken slakade linan och kom loss!");
-                } else if (fishTension >= 98) {
+                } else if (fishTension >= 97) {
                     stopDrill(false, "Linan gick av! För hårt motstånd.");
                 } else if (drillProgress >= 100) {
                     stopDrill(true, "Snyggt! Du landade en praktfull Säveålax!");
                 }
 
                 drawGame();
-            }, 100);
+            }, 200);
         }
 
         let reelingActive = false;
