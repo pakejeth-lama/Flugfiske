@@ -12,13 +12,25 @@
 </head>
 <body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col select-none">
 
+    <!-- Modal: Start / Låst Namnregistrering -->
+    <div id="nameModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-800 border border-emerald-500/50 rounded-xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3 text-center">
+            <h3 class="text-base font-bold text-emerald-400">🎣 Välkommen till Säveån!</h3>
+            <p class="text-xs text-stone-300 leading-relaxed">
+                Ange ditt fiskarnamn eller smeknamn. Detta namn låses och används för dina highscore-fångster. <br><em class="text-[10px] text-stone-400">(Vill du byta namn senare behöver du rensa webbläsarens cache/localStorage).</em>
+            </p>
+            <input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
+            <button onclick="saveInitialAnglerName()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-xs font-semibold shadow">Starta Fisket</button>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="bg-stone-800 border-b border-stone-700 py-3 px-4 shadow-md flex flex-wrap justify-between items-center gap-3">
         <div>
             <h1 class="text-xl md:text-2xl font-bold text-emerald-400 flex items-center gap-1.5">
                 <span>🎣</span> Säveån Ekosystem
             </h1>
-            <p class="text-[11px] text-stone-400">Dickson, Mannered & Lorthöljan</p>
+            <p id="headerAnglerDisplay" class="text-[11px] text-stone-400">Fiskar som: <strong class="text-emerald-300" id="currentAnglerLabel">-</strong></p>
         </div>
         
         <!-- Väder- och Vattenpanel -->
@@ -101,7 +113,7 @@
                     Klicka i strömmen för att göra ett kast!
                 </div>
 
-                <!-- Overlay för Tafsstress vid Drillar (Med rörlig stressmätare) -->
+                <!-- Overlay för Tafsstress vid Drillar -->
                 <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
                     <div id="fightCard" class="bg-stone-900/90 border border-amber-500/50 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl transition-transform duration-75">
                         <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">DRILLNING – HÅLL INNE FINGRET!</span>
@@ -132,7 +144,10 @@
                     <button onclick="openBiotopModal()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1">
                         <span>🌱</span> Biotopvård
                     </button>
-                    <button onclick="startMoveRod()" class="bg-amber-700 hover:bg-amber-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
+                    <button onclick="openHighscoreModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1">
+                        <span>🏆</span> Highscore
+                    </button>
+                    <button onclick="startMoveRod()" class="bg-stone-700 hover:bg-stone-600 text-stone-300 px-3 py-1.5 rounded text-xs font-semibold transition">
                         📍 Flytta Ståplats
                     </button>
                 </div>
@@ -177,7 +192,7 @@
                     <span>💡</span> Fisketips i Säveån
                 </h3>
                 <p class="text-[11px] text-stone-300 leading-relaxed">
-                    Håll koll på vattnet! Ibland dyker det upp sjöfåglar eller bävrar som skrämmer fisken. Om det händer bör du byta till en annan sträcka för att få ett lyckkast. Använd Biotopvård-menyn för att rusta upp ån!
+                    Håll koll på vattnet! Ibland dyker det upp sjöfåglar eller bävrar som skrämmer fisken. Dina fångster registreras automatiskt på den gemensamma Highscore-tavlan under ditt låsta smeknamn.
                 </p>
             </div>
 
@@ -242,6 +257,24 @@
         </div>
     </div>
 
+    <!-- Modal: Highscore Topplista -->
+    <div id="highscoreModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-3">
+            <div class="flex justify-between items-center border-b border-stone-700 pb-2">
+                <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1">
+                    <span>🏆</span> Säveåns Highscore (Största Fångster)
+                </h3>
+                <button onclick="closeHighscoreModal()" class="text-stone-400 hover:text-stone-100 text-xs font-bold px-2 py-1">✕</button>
+            </div>
+
+            <div id="highscoreList" class="flex flex-col gap-1.5 max-h-64 overflow-y-auto text-xs">
+                <p class="text-stone-400 italic text-center py-4">Laddar fångster från Firebase...</p>
+            </div>
+
+            <button onclick="closeHighscoreModal()" class="w-full bg-stone-700 hover:bg-stone-600 text-stone-200 py-2 rounded text-xs font-semibold">Stäng</button>
+        </div>
+    </div>
+
     <!-- Modal: C&R Välfärd -->
     <div id="welfareModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-3">
@@ -285,7 +318,105 @@
         </div>
     </div>
 
+    <!-- Firebase SDK Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCu_wYB1IljSf3PB1aAqC4hPlmTREslSA0",
+            authDomain: "flugfiske-savean.firebaseapp.com",
+            projectId: "flugfiske-savean",
+            storageBucket: "flugfiske-savean.firebasestorage.app",
+            messagingSenderId: "585947103415",
+            appId: "1:585947103415:web:5d8a63d5b79d3c8b2e8d32"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.saveCatchToFirebase = async function(anglerName, species, size, fly, zoneName) {
+            try {
+                await addDoc(collection(db, "highscores"), {
+                    angler: anglerName || "Anonym Fiskare",
+                    species: species,
+                    size: size,
+                    fly: fly,
+                    zone: zoneName,
+                    timestamp: new Date().toISOString()
+                });
+                console.log("Fångst sparad till Firebase!");
+            } catch (e) {
+                console.error("Fel vid sparande till Firebase:", e);
+            }
+        };
+
+        window.fetchHighscores = async function() {
+            const listEl = document.getElementById('highscoreList');
+            listEl.innerHTML = `<p class="text-stone-400 italic text-center py-4">Laddar fångster...</p>`;
+
+            try {
+                const q = query(collection(db, "highscores"), orderBy("size", "desc"), limit(10));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    listEl.innerHTML = `<p class="text-stone-500 italic text-center py-4">Inga highscores registrerade än. Bli den första!</p>`;
+                    return;
+                }
+
+                let html = "";
+                let rank = 1;
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
+                    html += `
+                        <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-amber-400 text-sm w-6">${medal}</span>
+                                <div>
+                                    <span class="font-bold text-stone-200 block">${data.angler}</span>
+                                    <span class="text-[10px] text-stone-400 block">${data.species} • Fluga: ${data.fly} • ${data.zone}</span>
+                                </div>
+                            </div>
+                            <span class="font-bold text-emerald-400 text-sm">${data.size} cm</span>
+                        </div>
+                    `;
+                    rank++;
+                });
+                listEl.innerHTML = html;
+            } catch (e) {
+                console.error("Fel vid hämtning av highscores:", e);
+                listEl.innerHTML = `<p class="text-rose-400 italic text-center py-4">Kunde inte ladda highscores. Kontrollera att Firestore är aktiverat i Firebase Console.</p>`;
+            }
+        };
+    </script>
+
     <script>
+        // Hantera låst användarnamn
+        let lockedAnglerName = localStorage.getItem('savean_angler_name');
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!lockedAnglerName) {
+                document.getElementById('nameModal').classList.remove('hidden');
+                document.getElementById('nameModal').classList.add('flex');
+            } else {
+                document.getElementById('currentAnglerLabel').innerText = lockedAnglerName;
+            }
+        });
+
+        function saveInitialAnglerName() {
+            let nameInput = document.getElementById('initialAnglerName').value.trim();
+            if (!nameInput) {
+                alert("Du måste ange ett fiskarnamn för att spela!");
+                return;
+            }
+            localStorage.setItem('savean_angler_name', nameInput);
+            lockedAnglerName = nameInput;
+            document.getElementById('currentAnglerLabel').innerText = lockedAnglerName;
+            document.getElementById('nameModal').classList.add('hidden');
+            document.getElementById('nameModal').classList.remove('flex');
+        }
+
         const saveanZones = {
             dickson: { name: "Säveån – Dickson", lat: 57.742, lon: 12.195, baseTemp: 11 },
             mannered: { name: "Säveån – Mannered", lat: 57.738, lon: 12.180, baseTemp: 11 },
@@ -308,10 +439,10 @@
         
         let placementMode = null; 
         let placementCost = 0;
-        let wildlifeDisturbance = false; // Spårar om sjöfåglar/bävrar stör sträckan
+        let wildlifeDisturbance = false;
 
         let todayStr = new Date().toISOString().split('T')[0];
-        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v9')) || {
+        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v11')) || {
             points: 700,
             laddersFixed: false,
             lastPlayedDate: todayStr,
@@ -390,13 +521,12 @@
                     "p-2.5 rounded bg-stone-900 border border-stone-700 text-left transition";
             });
             
-            // Slumpa om sträckan drabbas av djurliv (bäver/fåglar) vid zonbyte
             wildlifeDisturbance = Math.random() < 0.25;
             const alertBox = document.getElementById('wildlifeAlert');
             if (wildlifeDisturbance) {
                 let events = [
                     "🦫 En bäver simmar i poolen! Fisken är skrämd. Byt sträcka!",
-                    "🦆 Ett gäng knipor och sjöfåglar plaskar i nacken. Inget fiske här just nu!",
+                    "🦆 Ett gäng knipor plaskar i nacken. Inget fiske här just nu!",
                     "🦦 En utter rör sig i strömfåran och skrämmer storfisken. Prova en annan zon!"
                 ];
                 document.getElementById('wildlifeText').innerText = events[Math.floor(Math.random() * events.length)];
@@ -430,7 +560,7 @@
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
 
             renderLog();
-            localStorage.setItem('savean_persistent_v9', JSON.stringify(gameWorld));
+            localStorage.setItem('savean_persistent_v11', JSON.stringify(gameWorld));
         }
 
         function nextDay() {
@@ -462,6 +592,17 @@
         function closeBiotopModal() {
             document.getElementById('biotopModal').classList.add('hidden');
             document.getElementById('biotopModal').classList.remove('flex');
+        }
+
+        function openHighscoreModal() {
+            document.getElementById('highscoreModal').classList.remove('hidden');
+            document.getElementById('highscoreModal').classList.add('flex');
+            if (window.fetchHighscores) window.fetchHighscores();
+        }
+
+        function closeHighscoreModal() {
+            document.getElementById('highscoreModal').classList.add('hidden');
+            document.getElementById('highscoreModal').classList.remove('flex');
         }
 
         function startPlacement(type, cost) {
@@ -671,7 +812,6 @@
                         castLine = null;
                     }
 
-                    // Om sjöfåglar eller bävrar är på platsen kan det inte nappa!
                     if(castLine && !wildlifeDisturbance && Math.random() < 0.0009 && !currentFish) {
                         triggerBite();
                     }
@@ -905,6 +1045,7 @@
         }
 
         function releaseFish() {
+            let anglerName = lockedAnglerName || "Anonym Fiskare";
             let wet = document.getElementById('chkWetHands').checked;
             let net = document.getElementById('chkNet').checked;
             let air = parseInt(document.getElementById('sliderAirTime').value);
@@ -925,21 +1066,33 @@
                 }
 
                 gameWorld.points += earnedPoints;
-                alert(`Fisken simmade piggt tillbaka! (+${earnedPoints} p).`);
+                
+                // Spara till Firebase Highscore med det låsta namnet
+                if (window.saveCatchToFirebase) {
+                    window.saveCatchToFirebase(anglerName, currentFish.species, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
+                }
+
+                alert(`Fisken simmade piggt tillbaka! (+${earnedPoints} p). Fångsten registrerades på Highscore!`);
             } else {
                 zone.population = Math.max(10, zone.population - 1);
                 alert(`Fisken klarade inte hanteringen.`);
             }
 
-            zone.log.unshift({ text: `${currentFish.species} (${currentFish.size} cm) - C&R`, date: new Date().toLocaleDateString() });
+            zone.log.unshift({ text: `${currentFish.species} (${currentFish.size} cm) - C&R (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
         }
 
         function keepFish() {
+            let anglerName = lockedAnglerName || "Anonym Fiskare";
             const zone = getActiveZone();
             zone.population = Math.max(10, zone.population - 1);
-            zone.log.unshift({ text: `${currentFish.species} (${currentFish.size} cm) - Hemtagen`, date: new Date().toLocaleDateString() });
+            
+            if (window.saveCatchToFirebase) {
+                window.saveCatchToFirebase(anglerName, currentFish.species, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
+            }
+
+            zone.log.unshift({ text: `${currentFish.species} (${currentFish.size} cm) - Hemtagen (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
         }
