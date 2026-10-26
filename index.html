@@ -17,7 +17,7 @@
         <div class="bg-stone-800 border border-emerald-500/50 rounded-xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3 text-center">
             <h3 class="text-base font-bold text-emerald-400">🎣 Välkommen till Säveån!</h3>
             <p class="text-xs text-stone-300 leading-relaxed">
-                Ange ditt fiskarnamn eller smeknamn. Detta namn låses och används för dina highscore-fångster. <br><em class="text-[10px] text-stone-400">(Vill du byta namn senare behöver du rensa webbläsarens cache/localStorage).</em>
+                Ange ditt fiskarnamn eller smeknamn. Detta namn sparas i molnet för att skydda dina dagliga kast och highscore. <br><em class="text-[10px] text-stone-400">(Dina 5 kast per dag följer dig nu i molnet).</em>
             </p>
             <input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
             <button onclick="saveInitialAnglerName()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-xs font-semibold shadow">Starta Fisket</button>
@@ -194,10 +194,10 @@
             <!-- Information / Guide -->
             <div class="bg-stone-800 p-3 rounded-xl border border-stone-700 flex flex-col gap-1.5">
                 <h3 class="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                    <span>💡</span> Ekologisk balans & Fisketips
+                    <span>💡</span> Utveckling & Fisketips
                 </h3>
                 <p class="text-[11px] text-stone-300 leading-relaxed">
-                    Tryck direkt på den gröna gubben på skärmen för att veva hem lina snabbt! Ta bort gäddor under 80 cm och abborrar under 38 cm för att säkra laxsmolten och kamma hem naturvårdspoäng.
+                    Fisket börjar trögt! Lägg ut lekgrus, ståndstenar och förbättra biotopen för att få fler och större hugg. Molnet synkar dina 5 dagliga kast automatiskt!
                 </p>
             </div>
 
@@ -236,7 +236,7 @@
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Placera Ståndsten</h4>
-                        <p class="text-[9px] text-stone-400">Skapar ström & färnans ståndplatser</p>
+                        <p class="text-[9px] text-stone-400">Skapar ström & ståndplatser</p>
                     </div>
                     <button onclick="startPlacement('boulder', 200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">200 p</button>
                 </div>
@@ -260,7 +260,7 @@
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center border-emerald-500/40">
                     <div>
                         <h4 class="font-bold text-amber-300 text-xs">Riv Vandringshinder</h4>
-                        <p class="text-[9px] text-stone-400">Enorm effekt (+150 max)</p>
+                        <p class="text-[9px] text-stone-400">Enorm effekt på hela ån</p>
                     </div>
                     <button onclick="doRemoveDam(1000)" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1.5 rounded text-[11px]">1000 p</button>
                 </div>
@@ -334,7 +334,7 @@
     <!-- Firebase SDK Modules -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCu_wYB1IljSf3PB1aAqC4hPlmTREslSA0",
@@ -358,7 +358,6 @@
                     zone: zoneName,
                     timestamp: new Date().toISOString()
                 });
-                console.log("Fångst sparad till Firebase!");
             } catch (e) {
                 console.error("Fel vid sparande till Firebase:", e);
             }
@@ -399,24 +398,82 @@
                 listEl.innerHTML = html;
             } catch (e) {
                 console.error("Fel vid hämtning av highscores:", e);
-                listEl.innerHTML = `<p class="text-rose-400 italic text-center py-4">Kunde inte ladda highscores. Kontrollera att Firestore är aktiverat i Firebase Console.</p>`;
+                listEl.innerHTML = `<p class="text-rose-400 italic text-center py-4">Kunde inte ladda highscores.</p>`;
             }
+        };
+
+        window.savePlayerStateToFirebase = async function(anglerName, stateData) {
+            try {
+                await setDoc(doc(db, "players", anglerName), stateData, { merge: true });
+            } catch (e) {
+                console.error("Fel vid molnsynk av spelarstatus:", e);
+            }
+        };
+
+        window.loadPlayerStateFromFirebase = async function(anglerName) {
+            try {
+                const docSnap = await getDoc(doc(db, "players", anglerName));
+                if (docSnap.exists()) {
+                    return docSnap.data();
+                }
+            } catch (e) {
+                console.error("Fel vid hämtning av spelarstatus från molnet:", e);
+            }
+            return null;
         };
     </script>
 
     <script>
         let lockedAnglerName = localStorage.getItem('savean_angler_name');
-        
-        window.addEventListener('DOMContentLoaded', () => {
+        let todayStr = new Date().toISOString().split('T')[0];
+
+        let gameWorld = {
+            points: 700,
+            laddersFixed: false,
+            lastPlayedDate: todayStr,
+            dayOfSeason: 1,
+            castsRemaining: 5,
+            zones: {
+                dickson: { population: 210, maxPop: 380, gravels: [], boulders: [], trees: 2, bushes: 2, playerPos: { x: null, y: null }, log: [] },
+                mannered: { population: 190, maxPop: 350, gravels: [], boulders: [], trees: 1, bushes: 2, playerPos: { x: null, y: null }, log: [] },
+                kahogsforsen: { population: 240, maxPop: 420, gravels: [], boulders: [], trees: 1, bushes: 1, playerPos: { x: null, y: null }, log: [] },
+                lortholjan: { population: 230, maxPop: 400, gravels: [], boulders: [], trees: 3, bushes: 3, playerPos: { x: null, y: null }, log: [] },
+                finngosagrundet: { population: 220, maxPop: 390, gravels: [], boulders: [], trees: 4, bushes: 4, playerPos: { x: null, y: null }, log: [] }
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', async () => {
             if (!lockedAnglerName) {
                 document.getElementById('nameModal').classList.remove('hidden');
                 document.getElementById('nameModal').classList.add('flex');
             } else {
                 document.getElementById('currentAnglerLabel').innerText = lockedAnglerName;
+                await initCloudSession();
             }
         });
 
-        function saveInitialAnglerName() {
+        async function initCloudSession() {
+            if (!lockedAnglerName) return;
+            let cloudState = await window.loadPlayerStateFromFirebase(lockedAnglerName);
+            if (cloudState) {
+                if (cloudState.lastPlayedDate === todayStr) {
+                    gameWorld = cloudState;
+                } else {
+                    gameWorld = cloudState;
+                    gameWorld.lastPlayedDate = todayStr;
+                    gameWorld.castsRemaining = 5;
+                    gameWorld.dayOfSeason = (gameWorld.dayOfSeason || 1) + 1;
+                    if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
+                    await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
+                }
+            } else {
+                await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
+            }
+            updateUI();
+            fetchWeather(currentZoneKey);
+        }
+
+        async function saveInitialAnglerName() {
             let nameInput = document.getElementById('initialAnglerName').value.trim();
             if (!nameInput) {
                 alert("Du måste ange ett fiskarnamn för att spela!");
@@ -427,6 +484,7 @@
             document.getElementById('currentAnglerLabel').innerText = lockedAnglerName;
             document.getElementById('nameModal').classList.add('hidden');
             document.getElementById('nameModal').classList.remove('flex');
+            await initCloudSession();
         }
 
         const saveanZones = {
@@ -454,28 +512,6 @@
         let placementMode = null; 
         let placementCost = 0;
         let wildlifeDisturbance = false;
-
-        let todayStr = new Date().toISOString().split('T')[0];
-        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v22')) || {
-            points: 700,
-            laddersFixed: false,
-            lastPlayedDate: todayStr,
-            dayOfSeason: 1,
-            castsRemaining: 5,
-            zones: {
-                dickson: { population: 210, maxPop: 380, gravels: [], boulders: [], trees: 2, bushes: 2, playerPos: { x: null, y: null }, log: [] },
-                mannered: { population: 190, maxPop: 350, gravels: [], boulders: [], trees: 1, bushes: 2, playerPos: { x: null, y: null }, log: [] },
-                kahogsforsen: { population: 240, maxPop: 420, gravels: [], boulders: [], trees: 1, bushes: 1, playerPos: { x: null, y: null }, log: [] },
-                lortholjan: { population: 230, maxPop: 400, gravels: [], boulders: [], trees: 3, bushes: 3, playerPos: { x: null, y: null }, log: [] },
-                finngosagrundet: { population: 220, maxPop: 390, gravels: [], boulders: [], trees: 4, bushes: 4, playerPos: { x: null, y: null }, log: [] }
-            }
-        };
-
-        if (gameWorld.lastPlayedDate !== todayStr) {
-            gameWorld.lastPlayedDate = todayStr;
-            gameWorld.dayOfSeason = 1;
-            gameWorld.castsRemaining = 5;
-        }
 
         let activeFly = flies[0];
         let currentFish = null;
@@ -595,10 +631,13 @@
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
 
             renderLog();
-            localStorage.setItem('savean_persistent_v22', JSON.stringify(gameWorld));
+            
+            if (lockedAnglerName && window.savePlayerStateToFirebase) {
+                window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
+            }
         }
 
-        function nextDay() {
+        async function nextDay() {
             if(gameWorld.castsRemaining > 0) {
                 alert(`Du har fortfarande ${gameWorld.castsRemaining} kast kvar på Dag ${gameWorld.dayOfSeason}!`);
                 return;
@@ -664,7 +703,7 @@
             zone.trees += 1;
             zone.maxPop += 12;
             updateUI();
-            alert("Nytt kantträd planterat!");
+            alert("Nytt kantträd planterat! Biotopen förbättras.");
         }
 
         function doBushPlanting(cost) {
@@ -684,7 +723,7 @@
             gameWorld.laddersFixed = true;
             Object.values(gameWorld.zones).forEach(z => { z.maxPop += 150; z.population += 30; });
             updateUI();
-            alert("Vandringshinder åtgärdat i hela ån!");
+            alert("Vandringshinder åtgärdat i hela ån! Fisket tar ett enormt kliv framåt!");
         }
 
         let flowOffset = 0;
@@ -716,7 +755,6 @@
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Forsblock
                 ctx.fillStyle = '#0f172a';
                 ctx.beginPath();
                 ctx.ellipse(canvas.width * 0.35, canvas.height * 0.45, 40, 20, 0.15, 0, Math.PI * 2);
@@ -726,7 +764,6 @@
                 ctx.lineWidth = 2.5;
                 ctx.stroke();
 
-                // Vitt skum
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
                 ctx.beginPath();
                 ctx.arc(canvas.width * 0.35 - 30, canvas.height * 0.45 - 6, 14, 0, Math.PI * 2);
@@ -874,7 +911,7 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Kastlina & Orangebrun liten fluga
+            // Kastlina & Orangebrun fluga
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -883,7 +920,6 @@
                 ctx.lineTo(castLine.x, castLine.y);
                 ctx.stroke();
 
-                // Liten orangebrun fluga-prick
                 ctx.fillStyle = '#c2410c';
                 ctx.beginPath();
                 ctx.arc(castLine.x, castLine.y, 3.5, 0, Math.PI * 2);
@@ -901,7 +937,16 @@
                         castLine = null;
                     }
 
-                    if(castLine && !wildlifeDisturbance && Math.random() < 0.0009 && !currentFish) {
+                    // Dynamisk beräkning av hugg-chans (Startar lågt, blir bättre med biotoper och väder)
+                    let biotopeMultiplier = 0.4 + (zone.gravels.length * 0.35) + (zone.boulders.length * 0.4) + (zone.trees * 0.15) + (zone.bushes * 0.15) + (gameWorld.laddersFixed ? 1.2 : 0);
+                    let wTempNum = parseFloat(weatherData.waterTemp) || 10;
+                    let wFlowNum = parseFloat(weatherData.flow) || 15;
+                    let tempFactor = (wTempNum >= 7 && wTempNum <= 16) ? 1.25 : 0.7;
+                    let flowFactor = (wFlowNum >= 10 && wFlowNum <= 28) ? 1.25 : 0.6;
+                    
+                    let dynamicBiteChance = 0.00003 * biotopeMultiplier * tempFactor * flowFactor;
+
+                    if(castLine && !wildlifeDisturbance && Math.random() < dynamicBiteChance && !currentFish) {
                         triggerBite(false);
                     }
                 }
@@ -937,7 +982,6 @@
             let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
 
-            // Klickade man direkt på den gröna pricken (fiskaren) när man har en aktiv lina? -> Hemtagning!
             if (castLine && Math.hypot(clickX - rodX, clickY - rodY) < 25) {
                 pullLine();
                 return;
@@ -963,7 +1007,7 @@
             }
 
             if(gameWorld.castsRemaining <= 0) {
-                alert("Slut på kast för idag! Kom tillbaka imorgon eller klicka på Nästa Dag.");
+                alert("Slut på kast för idag! Molnet har noterat att dina 5 kast är slut. Kom tillbaka imorgon.");
                 return;
             }
             
@@ -975,16 +1019,18 @@
                 radius: castRadius
             };
             gameWorld.castsRemaining--;
+            updateUI(); // Sparar direkt till Firebase i bakgrunden!
 
             let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < 35);
-            if (hitRise && !wildlifeDisturbance && Math.random() < 0.6) {
+            let biotopeMultiplier = 0.4 + (zone.gravels.length * 0.35) + (zone.boulders.length * 0.4) + (gameWorld.laddersFixed ? 1.2 : 0);
+
+            if (hitRise && !wildlifeDisturbance && Math.random() < (0.3 + (biotopeMultiplier * 0.15))) {
                 setTimeout(() => {
                     if (castLine && !currentFish) triggerBite(true);
                 }, 1200);
             }
 
-            updateUI();
-            let statusText = hitRise ? "Snyggt kast i vaket! Väntar hugg..." : "Flugan driver med strömmen...";
+            let statusText = hitRise ? "Snyggt kast i vaket! Väntar hugg..." : "Flugan driver med strömmen i det sträva vattnet...";
             document.getElementById('castStatus').innerText = statusText;
             document.getElementById('canvasNotification').innerText = statusText;
             document.getElementById('canvasNotification').classList.remove('hidden');
@@ -1016,7 +1062,8 @@
             let pullMsg = `Vevat hem lina (kvar: ${Math.round(currentDist)}px)...`;
             document.getElementById('castStatus').innerText = pullMsg;
 
-            if(!wildlifeDisturbance && Math.random() < 0.28 && !currentFish) {
+            let biotopeMultiplier = 0.4 + (zone.gravels.length * 0.35) + (zone.boulders.length * 0.4);
+            if(!wildlifeDisturbance && Math.random() < (0.15 + (biotopeMultiplier * 0.05)) && !currentFish) {
                 triggerBite(false);
             }
         }
@@ -1026,16 +1073,13 @@
             let gravelBonus = zone.gravels.length;
             let boulderBonus = zone.boulders.length;
 
-            let biotopeFlowProtection = Math.min(0.25, (gravelBonus + boulderBonus) * 0.035);
+            let biotopeFlowProtection = Math.min(0.35, (gravelBonus + boulderBonus) * 0.05);
 
-            let troutSalmonChance = 0.50 + biotopeFlowProtection + Math.min(0.20, (gravelBonus + boulderBonus) * 0.02);
+            let troutSalmonChance = 0.45 + biotopeFlowProtection + Math.min(0.25, (gravelBonus + boulderBonus) * 0.03);
             let graylingChance = 0.20 + (boulderBonus * 0.02);
 
-            if (isRiseBonus) troutSalmonChance += 0.15;
-            
-            if (currentZoneKey === 'kahogsforsen') {
-                troutSalmonChance = 0.90;
-            }
+            if (isRiseBonus) troutSalmonChance += 0.20;
+            if (currentZoneKey === 'kahogsforsen') troutSalmonChance = 0.85;
             
             let species = "Öring";
             let gender = "";
@@ -1049,25 +1093,25 @@
                 species = Math.random() < 0.65 ? "Abborre" : "Gädda";
             }
 
-            // Slumpa kön på lax och öring
             if (species === "Lax" || species === "Öring") {
                 gender = Math.random() < 0.5 ? "Hona" : "Hane";
             }
 
             let baseSize = 40;
-            if (species === "Lax") baseSize = 92;
-            else if (species === "Gädda") baseSize = 75;
-            else if (species === "Öring") baseSize = 48;
+            if (species === "Lax") baseSize = 85;
+            else if (species === "Gädda") baseSize = 70;
+            else if (species === "Öring") baseSize = 44;
             else if (species === "Färna") {
                 let maxFerna = boulderBonus > 0 ? 62 : 45;
-                baseSize = 32 + Math.random() * (maxFerna - 32);
+                baseSize = 30 + Math.random() * (maxFerna - 30);
             } else {
-                baseSize = 28;
+                baseSize = 25;
             }
 
-            let size = Math.floor(baseSize + (Math.random() * 20 - 5) + (isRiseBonus ? 6 : 0));
+            // Biotoper och dagars framsteg ger större fiskar!
+            let biotopeSizeBonus = (gravelBonus * 1.5) + (boulderBonus * 2.0) + (zone.trees * 0.5) + (gameWorld.laddersFixed ? 12 : 0) + (gameWorld.dayOfSeason * 1.2);
+            let size = Math.floor(baseSize + (Math.random() * 18 - 4) + biotopeSizeBonus + (isRiseBonus ? 6 : 0));
             
-            // Sätt maxgräns för lax till 122 cm
             if (species === "Lax" && size > 122) size = 122;
             if (species === "Färna" && size > 62) size = 62;
 
@@ -1329,9 +1373,6 @@
                 </div>
             `).join('');
         }
-
-        fetchWeather(currentZoneKey);
-        initRises();
     </script>
 </body>
 </html>
