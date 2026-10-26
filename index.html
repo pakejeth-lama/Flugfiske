@@ -135,8 +135,8 @@
             <!-- Kontroller -->
             <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-1.5">
-                    <button onclick="mendLine()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
-                        🌊 Menda Lina
+                    <button onclick="mendLine()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1">
+                        <span>🧵</span> Menda Lina
                     </button>
                     <button onclick="changeFlyModal()" class="bg-stone-700 hover:bg-stone-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
                         🪰 Byt Fluga
@@ -164,7 +164,7 @@
                 </h3>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-1.5 text-[10px]">
                     <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
-                        <span class="text-stone-400 block">Lekgrus</span>
+                        <span class="text-stone-400 block">Lekgrus & Buskar</span>
                         <span id="statGravel" class="font-bold text-stone-100">0 st</span>
                     </div>
                     <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
@@ -172,7 +172,7 @@
                         <span id="statBoulders" class="font-bold text-stone-100">0 st</span>
                     </div>
                     <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
-                        <span class="text-stone-400 block">Kantträd</span>
+                        <span class="text-stone-400 block">Kantträd & Buskar</span>
                         <span id="statTrees" class="font-bold text-stone-100">2 st</span>
                     </div> 
                     <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
@@ -189,10 +189,10 @@
             <!-- Information / Guide -->
             <div class="bg-stone-800 p-3 rounded-xl border border-stone-700 flex flex-col gap-1.5">
                 <h3 class="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                    <span>💡</span> Fisketips i Säveån
+                    <span>💡</span> Ekologisk balans & Fisketips
                 </h3>
                 <p class="text-[11px] text-stone-300 leading-relaxed">
-                    Håll koll på vattnet! Ibland dyker det upp sjöfåglar eller bävrar som skrämmer fisken. Dina fångster registreras automatiskt på den gemensamma Highscore-tavlan under ditt låsta smeknamn.
+                    Stora rovfiskar håller efter sina artfränder och skapar balans. Mindre gäddor och abborrar äter smolt och yngel – ta gärna upp dem för att skydda laxen! Dina fångster hamnar på den gemensamma Highscore-tavlan.
                 </p>
             </div>
 
@@ -242,6 +242,14 @@
                         <p class="text-[9px] text-stone-400">Skugga & insektsfall</p>
                     </div>
                     <button onclick="doTreePlanting(100)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">100 p</button>
+                </div>
+
+                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-bold text-stone-200 text-xs">Plantera Buske</h4>
+                        <p class="text-[9px] text-stone-400">Tät vegetation & insekter</p>
+                    </div>
+                    <button onclick="doBushPlanting(75)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">75 p</button>
                 </div>
 
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center border-emerald-500/40">
@@ -303,7 +311,7 @@
                     Varsam C&R
                 </button>
                 <button onclick="keepFish()" class="bg-stone-700 hover:bg-stone-600 text-stone-300 px-3 py-2 rounded text-xs font-semibold">
-                    Behåll
+                    Behåll / Avliva
                 </button>
             </div>
         </div>
@@ -392,7 +400,6 @@
     </script>
 
     <script>
-        // Hantera låst användarnamn
         let lockedAnglerName = localStorage.getItem('savean_angler_name');
         
         window.addEventListener('DOMContentLoaded', () => {
@@ -442,16 +449,16 @@
         let wildlifeDisturbance = false;
 
         let todayStr = new Date().toISOString().split('T')[0];
-        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v11')) || {
+        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v12')) || {
             points: 700,
             laddersFixed: false,
             lastPlayedDate: todayStr,
             dayOfSeason: 1,
             castsRemaining: 5,
             zones: {
-                dickson: { population: 210, maxPop: 380, gravels: [], boulders: [], trees: 2, playerPos: { x: null, y: null }, log: [] },
-                mannered: { population: 190, maxPop: 350, gravels: [], boulders: [], trees: 1, playerPos: { x: null, y: null }, log: [] },
-                lortholjan: { population: 230, maxPop: 400, gravels: [], boulders: [], trees: 3, playerPos: { x: null, y: null }, log: [] }
+                dickson: { population: 210, maxPop: 380, gravels: [], boulders: [], trees: 2, bushes: 2, playerPos: { x: null, y: null }, log: [] },
+                mannered: { population: 190, maxPop: 350, gravels: [], boulders: [], trees: 1, bushes: 2, playerPos: { x: null, y: null }, log: [] },
+                lortholjan: { population: 230, maxPop: 400, gravels: [], boulders: [], trees: 3, bushes: 3, playerPos: { x: null, y: null }, log: [] }
             }
         };
 
@@ -556,11 +563,11 @@
 
             document.getElementById('statGravel').innerText = zone.gravels.length + " st";
             document.getElementById('statBoulders').innerText = zone.boulders.length + " st";
-            document.getElementById('statTrees').innerText = zone.trees + " st";
+            document.getElementById('statTrees').innerText = `${zone.trees} träd, ${zone.bushes} buskar`;
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
 
             renderLog();
-            localStorage.setItem('savean_persistent_v11', JSON.stringify(gameWorld));
+            localStorage.setItem('savean_persistent_v12', JSON.stringify(gameWorld));
         }
 
         function nextDay() {
@@ -573,7 +580,7 @@
                 gameWorld.dayOfSeason++;
                 gameWorld.castsRemaining = 5;
                 const zone = getActiveZone();
-                let breedBoost = (zone.gravels.length * 5) + (zone.boulders.length * 3) + (gameWorld.laddersFixed ? 15 : 0);
+                let breedBoost = (zone.gravels.length * 5) + (zone.boulders.length * 3) + (zone.bushes * 2) + (gameWorld.laddersFixed ? 15 : 0);
                 zone.population = Math.min(zone.maxPop, zone.population + breedBoost + 3);
                 gameWorld.points += 50;
                 fetchWeather(currentZoneKey);
@@ -630,6 +637,16 @@
             zone.maxPop += 12;
             updateUI();
             alert("Nytt kantträd planterat!");
+        }
+
+        function doBushPlanting(cost) {
+            if(gameWorld.points < cost) return alert("Inte tillräckligt med poäng!");
+            gameWorld.points -= cost;
+            const zone = getActiveZone();
+            zone.bushes += 1;
+            zone.maxPop += 8;
+            updateUI();
+            alert("Ny buske planterad längs kanten!");
         }
 
         function doRemoveDam(cost) {
@@ -716,6 +733,15 @@
                 ctx.fill();
             }
 
+            // Buskar
+            for(let i=0; i<zone.bushes; i++) {
+                let bx = 50 + (i * 85) % (canvas.width - 50);
+                ctx.fillStyle = '#166534';
+                ctx.beginPath();
+                ctx.ellipse(bx, 18, 16, 8, 0, 0, Math.PI*2);
+                ctx.fill();
+            }
+
             // Strömvågor
             flowOffset += 0.9 + (parseFloat(weatherData.flow) * 0.03);
             if(flowOffset > 40) flowOffset = 0;
@@ -739,21 +765,32 @@
                 ctx.fill();
             });
 
-            // Spöposition / Ståplats
+            // Spöposition / Detaljerad Fiskare (Grön jacka, svart keps, spö)
             let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
 
-            ctx.fillStyle = '#f43f5e';
+            ctx.fillStyle = '#111827'; // Svart keps
+            ctx.fillRect(rodX - 5, rodY - 14, 10, 4);
+            ctx.fillStyle = '#15803d'; // Grön jacka
+            ctx.fillRect(rodX - 6, rodY - 10, 12, 14);
+            ctx.fillStyle = '#fecdd3'; // Ansikte
             ctx.beginPath();
-            ctx.arc(rodX, rodY, 6, 0, Math.PI*2);
+            ctx.arc(rodX, rodY - 11, 3.5, 0, Math.PI*2);
             ctx.fill();
+            // Spö
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(rodX, rodY - 5);
+            ctx.lineTo(rodX + 10, rodY - 20);
+            ctx.stroke();
 
             // Kastlina & Fluga
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
                 ctx.beginPath();
-                ctx.moveTo(rodX, rodY);
+                ctx.moveTo(rodX, rodY - 15);
                 ctx.lineTo(castLine.x, castLine.y);
                 ctx.stroke();
 
@@ -890,7 +927,7 @@
         function mendLine() {
             if(!castLine || isFighting) return;
             currentMend = (Math.random() - 0.5) * 2;
-            document.getElementById('castStatus').innerText = "Lina mendad!";
+            document.getElementById('castStatus').innerText = "Lina mendad med flugrullen!";
         }
 
         function triggerBite() {
@@ -1055,24 +1092,33 @@
             const zone = getActiveZone();
 
             let earnedPoints = 0;
+            let ecoMsg = "";
 
             if(survived) {
+                // Ekologisk kontroll för rovfiskar vid C&R
                 if(currentFish.species === "Lax") {
                     earnedPoints = 100;
+                    ecoMsg = "Laxen simmade piggt tillbaka! (+100 p).";
                 } else if(currentFish.species === "Öring") {
                     earnedPoints = 50;
+                    ecoMsg = "Öringen simmade piggt tillbaka! (+50 p).";
+                } else if((currentFish.species === "Gädda" && currentFish.size < 70) || (currentFish.species === "Abborre" && currentFish.size < 30)) {
+                    earnedPoints = -20;
+                    zone.population = Math.max(10, zone.population - 4);
+                    ecoMsg = "Varning: Du släppte tillbaka en mindre rovfisk som äter upp smolt och öringyngel! Beståndet minskar (-20 p).";
                 } else {
                     earnedPoints = 30;
+                    ecoMsg = "Den stora rovfisken simmade tillbaka och håller efter sina artfränder (+30 p).";
                 }
 
                 gameWorld.points += earnedPoints;
                 
-                // Spara till Firebase Highscore med det låsta namnet
+                // Spara till Firebase Highscore
                 if (window.saveCatchToFirebase) {
                     window.saveCatchToFirebase(anglerName, currentFish.species, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
                 }
 
-                alert(`Fisken simmade piggt tillbaka! (+${earnedPoints} p). Fångsten registrerades på Highscore!`);
+                alert(`${ecoMsg} Fångsten registrerades på Highscore!`);
             } else {
                 zone.population = Math.max(10, zone.population - 1);
                 alert(`Fisken klarade inte hanteringen.`);
@@ -1086,13 +1132,25 @@
         function keepFish() {
             let anglerName = lockedAnglerName || "Anonym Fiskare";
             const zone = getActiveZone();
-            zone.population = Math.max(10, zone.population - 1);
             
+            let earnedPoints = 0;
+            let msg = "";
+
+            if((currentFish.species === "Gädda" && currentFish.size < 70) || (currentFish.species === "Abborre" && currentFish.size < 30)) {
+                earnedPoints = 40;
+                gameWorld.points += earnedPoints;
+                msg = `Du tog bort en skadlig smårovfisk som hotade laxsmolten! (+40 naturvårdspoäng).`;
+            } else {
+                zone.population = Math.max(10, zone.population - 1);
+                msg = `Fisk hemtagen. Beståndet minskar något.`;
+            }
+
             if (window.saveCatchToFirebase) {
                 window.saveCatchToFirebase(anglerName, currentFish.species, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
             }
 
             zone.log.unshift({ text: `${currentFish.species} (${currentFish.size} cm) - Hemtagen (${anglerName})`, date: new Date().toLocaleDateString() });
+            alert(msg);
             closeWelfareModal();
             resetAfterCatch();
         }
