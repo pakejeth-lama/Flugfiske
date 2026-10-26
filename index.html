@@ -195,7 +195,7 @@
                     <span>💡</span> Ekologisk balans & Fisketips
                 </h3>
                 <p class="text-[11px] text-stone-300 leading-relaxed">
-                    Fler biotopåtgärder (grus och ståndstenar) ökar vattenhastigheten och tränger undan abborre och gädda. Håll utkik efter grova färnor (upp till 62 cm) bakom stenarna!
+                    Fler biotopåtgärder (grus och ståndstenar) ökar vattenhastigheten och gynnar öring, lax och färna. Ta bort mindre gäddor och abborrar för att kamma hem naturvårdspoäng!
                 </p>
             </div>
 
@@ -454,7 +454,7 @@
         let wildlifeDisturbance = false;
 
         let todayStr = new Date().toISOString().split('T')[0];
-        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v17')) || {
+        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v18')) || {
             points: 700,
             laddersFixed: false,
             lastPlayedDate: todayStr,
@@ -528,7 +528,6 @@
                     weatherData.temp = data.current.temperature_2m;
                     weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
                     let zone = getActiveZone();
-                    // Biotopåtgärder (grus + ståndstenar) ökar vattenhastigheten!
                     let biotopeFlowBonus = (zone.gravels.length * 0.8) + (zone.boulders.length * 1.2);
                     let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5) + biotopeFlowBonus;
                     weatherData.flow = Math.max(4, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
@@ -594,7 +593,7 @@
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
 
             renderLog();
-            localStorage.setItem('savean_persistent_v17', JSON.stringify(gameWorld));
+            localStorage.setItem('savean_persistent_v18', JSON.stringify(gameWorld));
         }
 
         function nextDay() {
@@ -653,7 +652,6 @@
             placementMode = 'rod';
             const banner = document.getElementById('modeBanner');
             banner.innerText = `Placera ståplats: Klicka där du vill stå!`;
-            banner.classList.add('hidden');
             banner.classList.remove('hidden');
         }
 
@@ -813,7 +811,7 @@
                 ctx.fill();
             }
 
-            // Strömvågor (ökar farten beroende på antal grus och stenar)
+            // Strömvågor
             let biotopeSpeedBonus = (zone.gravels.length * 0.35) + (zone.boulders.length * 0.5);
             let baseFlowMult = currentZoneKey === 'kahogsforsen' ? 2.0 : 0.9;
             let totalFlowMult = baseFlowMult + biotopeSpeedBonus;
@@ -941,7 +939,7 @@
                         zone.boulders.push({ x: clickX, y: clickY });
                         zone.maxPop += 15;
                     }
-                    fetchWeather(currentZoneKey); // Uppdatera vattenhastigheten direkt!
+                    fetchWeather(currentZoneKey);
                 }
                 placementMode = null;
                 document.getElementById('modeBanner').classList.add('hidden');
@@ -1010,11 +1008,10 @@
             let gravelBonus = zone.gravels.length;
             let boulderBonus = zone.boulders.length;
 
-            // Fler biotopåtgärder (grus och ståndstenar) ger högre ström och minskar andelen gäddor/abborrar
             let biotopeFlowProtection = Math.min(0.25, (gravelBonus + boulderBonus) * 0.035);
 
             let troutSalmonChance = 0.50 + biotopeFlowProtection + Math.min(0.20, (gravelBonus + boulderBonus) * 0.02);
-            let graylingChance = 0.20 + (boulderBonus * 0.02); // Färna/Öring/Lax gynnas
+            let graylingChance = 0.20 + (boulderBonus * 0.02);
 
             if (isRiseBonus) troutSalmonChance += 0.15;
             
@@ -1033,13 +1030,11 @@
                 species = Math.random() < 0.65 ? "Abborre" : "Gädda";
             }
 
-            // Storlekslogik (Färna normalt upp till 40cm, men upp till 62cm bakom stenar!)
             let baseSize = 40;
             if (species === "Lax") baseSize = 82;
             else if (species === "Gädda") baseSize = 75;
             else if (species === "Öring") baseSize = 48;
             else if (species === "Färna") {
-                // Om det finns ståndstenar kan färnorna bli riktigt grova (upp till 62 cm)
                 let maxFerna = boulderBonus > 0 ? 62 : 45;
                 baseSize = 32 + Math.random() * (maxFerna - 32);
             } else {
@@ -1237,7 +1232,7 @@
             let msg = "";
 
             if((currentFish.species === "Gädda" && currentFish.size < 70) || (currentFish.species === "Abborre" && currentFish.size < 30)) {
-                earnedPoints = 40;
+                earnedPoints = 40; // Återställt så man faktiskt får poängen!
                 gameWorld.points += earnedPoints;
                 msg = `Du tog bort en skadlig smårovfisk som hotade laxsmolten! (+40 naturvårdspoäng).`;
             } else {
