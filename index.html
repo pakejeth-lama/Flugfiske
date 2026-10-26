@@ -113,7 +113,7 @@
                 </div>
 
                 <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg">
-                    Klicka i strömmen för att kasta. Använd Hemtagning för att veva in!
+                    Klicka i strömmen för att kasta. <strong>Tryck direkt på gröna gubben</strong> för att veva hem lina!
                 </div>
 
                 <!-- Overlay för Tafsstress vid Drillar -->
@@ -195,7 +195,7 @@
                     <span>💡</span> Ekologisk balans & Fisketips
                 </h3>
                 <p class="text-[11px] text-stone-300 leading-relaxed">
-                    Fler biotopåtgärder (grus och ståndstenar) ökar vattenhastigheten och gynnar öring, lax och färna. Ta bort mindre gäddor och abborrar för att kamma hem naturvårdspoäng!
+                    Tryck på den gröna gubben på skärmen för att veva hem lina snabbt! Vid hugg känner du nu på spöt om det är tungt, mittemellan eller lätt innan du landar fisken.
                 </p>
             </div>
 
@@ -454,7 +454,7 @@
         let wildlifeDisturbance = false;
 
         let todayStr = new Date().toISOString().split('T')[0];
-        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v18')) || {
+        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v19')) || {
             points: 700,
             laddersFixed: false,
             lastPlayedDate: todayStr,
@@ -593,7 +593,7 @@
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
 
             renderLog();
-            localStorage.setItem('savean_persistent_v18', JSON.stringify(gameWorld));
+            localStorage.setItem('savean_persistent_v19', JSON.stringify(gameWorld));
         }
 
         function nextDay() {
@@ -860,16 +860,16 @@
                 ctx.fill();
             });
 
-            // Spöposition
+            // Spöposition / Grön prick (Fiskare)
             let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
 
             ctx.fillStyle = '#14532d';
             ctx.beginPath();
-            ctx.arc(rodX, rodY, 7, 0, Math.PI*2);
+            ctx.arc(rodX, rodY, 9, 0, Math.PI*2);
             ctx.fill();
             ctx.strokeStyle = '#22c55e';
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 2;
             ctx.stroke();
 
             // Kastlina & Fluga
@@ -928,6 +928,15 @@
             const clickY = e.clientY - rect.top;
             const zone = getActiveZone();
 
+            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
+            let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
+
+            // Klickade man direkt på den gröna pricken (fiskaren) när man har en aktiv lina? -> Hemtagning!
+            if (castLine && Math.hypot(clickX - rodX, clickY - rodY) < 25) {
+                pullLine();
+                return;
+            }
+
             if(placementMode) {
                 if(placementMode === 'rod') {
                     zone.playerPos = { x: clickX, y: clickY };
@@ -951,9 +960,6 @@
                 alert("Slut på kast för idag! Kom tillbaka imorgon eller klicka på Nästa Dag.");
                 return;
             }
-
-            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
             
             let castRadius = Math.hypot(clickX - rodX, clickY - rodY);
 
@@ -1046,6 +1052,16 @@
 
             currentFish = { species, size };
 
+            // Hemlig / spännande beskrivning baserat på vikt/storlek istället för att avslöja direkt!
+            let feelDescription = "";
+            if (size > 65) {
+                feelDescription = "HUGG! Det hugger tungt och brutalt i strömmen – en riktig best som drar lina!";
+            } else if (size > 42) {
+                feelDescription = "HUGG! Ett stadigt mothugg, det känns mittemellan och spjärnar emot bra!";
+            } else {
+                feelDescription = "HUGG! Det känns lätt och pigg i strömmen!";
+            }
+
             if ("vibrate" in navigator) {
                 if (size > 80) {
                     navigator.vibrate([200, 100, 300, 100, 400]);
@@ -1056,7 +1072,7 @@
                 }
             }
 
-            document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold animate-pulse">HUGG! En ${species} på ${size} cm! Håll fingret nedtryckt!</span>`;
+            document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold animate-pulse">${feelDescription} Håll fingret nedtryckt!</span>`;
 
             startFightMode();
         }
@@ -1232,7 +1248,7 @@
             let msg = "";
 
             if((currentFish.species === "Gädda" && currentFish.size < 70) || (currentFish.species === "Abborre" && currentFish.size < 30)) {
-                earnedPoints = 40; // Återställt så man faktiskt får poängen!
+                earnedPoints = 40;
                 gameWorld.points += earnedPoints;
                 msg = `Du tog bort en skadlig smårovfisk som hotade laxsmolten! (+40 naturvårdspoäng).`;
             } else {
