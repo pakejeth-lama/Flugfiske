@@ -285,7 +285,6 @@
         let placementMode = null; // 'gravel', 'boulder', 'rod'
         let placementCost = 0;
 
-        // Sparad progression med helt unika biotopdata per sträcka
         let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v6')) || {
             points: 700,
             laddersFixed: false,
@@ -433,22 +432,18 @@
             if(gameWorld.points < cost) return alert("Det krävs 1000 p för detta!");
             gameWorld.points -= cost;
             gameWorld.laddersFixed = true;
-            // Boost all zones maxPop
             Object.values(gameWorld.zones).forEach(z => { z.maxPop += 150; z.population += 30; });
             updateUI();
             alert("Vandringshinder åtgärdat! Fria vandringsvägar skapade i hela ån.");
         }
 
-        // Canvas Animering & Unika Layouter per Sträcka
         let flowOffset = 0;
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const zone = getActiveZone();
 
-            // Bakgrund & Layout per sträcka
             if (currentZoneKey === 'mannered') {
-                // Mannered: Svängande sträcka (S-kurva)
                 let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
                 bgGrad.addColorStop(0, '#0369a1');
                 bgGrad.addColorStop(0.5, '#0284c7');
@@ -456,7 +451,6 @@
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Rita krökande flodstränder
                 ctx.fillStyle = '#1c1917';
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
@@ -464,14 +458,12 @@
                 ctx.lineTo(canvas.width, 0);
                 ctx.fill();
             } else if (currentZoneKey === 'dickson') {
-                // Dickson: Lugna sel
                 let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
                 bgGrad.addColorStop(0, '#0284c7');
                 bgGrad.addColorStop(1, '#0369a1');
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             } else {
-                // Lorthöljan: Djup hölja med mörk central håla
                 let bgGrad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 40, canvas.width/2, canvas.height/2, 300);
                 bgGrad.addColorStop(0, '#0369a1');
                 bgGrad.addColorStop(1, '#022c22');
@@ -479,7 +471,7 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // Lekgrus för aktuell zon
+            // Lekgrus
             ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
             zone.gravels.forEach(g => {
                 ctx.beginPath();
@@ -487,7 +479,7 @@
                 ctx.fill();
             });
 
-            // Ståndstenar med strömningspåverkan för aktuell zon
+            // Ståndstenar
             zone.boulders.forEach(b => {
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
                 ctx.beginPath();
@@ -510,7 +502,7 @@
                 ctx.stroke();
             });
 
-            // Kantträd för aktuell zon
+            // Kantträd
             for(let i=0; i<zone.trees; i++) {
                 let tx = 30 + (i * 65) % (canvas.width - 60);
                 ctx.fillStyle = '#15803d';
@@ -546,13 +538,13 @@
             let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
 
-            // Rita fiskare / spöposition
+            // Rita fiskare
             ctx.fillStyle = '#f43f5e';
             ctx.beginPath();
             ctx.arc(rodX, rodY, 6, 0, Math.PI*2);
             ctx.fill();
 
-            // Kastlina & Fluga
+            // Kastlina & Fluga med dynamisk strömdrift beroende på ståplats
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -567,8 +559,16 @@
                 ctx.fill();
 
                 if(!isFighting) {
-                    castLine.x += 0.5 + (parseFloat(weatherData.flow) * 0.04) + (currentMend * 0.8);
-                    if(castLine.x > canvas.width) castLine = null;
+                    // Driftsberäkning: Om man står vid sidan drag-sveps flugan mot kanten, står man i mitten driftar den rakt
+                    let centerDist = (rodX - (canvas.width / 2)) / (canvas.width / 2); // -1 (vänster) till +1 (höger)
+                    
+                    let forwardSpeed = 0.5 + (parseFloat(weatherData.flow) * 0.04) + (currentMend * 0.8);
+                    let sideSweep = centerDist * 0.6; // Svep mot den kant man står närmare
+
+                    castLine.x += forwardSpeed;
+                    castLine.y += sideSweep;
+
+                    if(castLine.x > canvas.width || castLine.y < 0 || castLine.y > canvas.height) castLine = null;
 
                     if(castLine && Math.random() < 0.0035 && !currentFish) {
                         triggerBite();
@@ -580,7 +580,6 @@
         }
         requestAnimationFrame(draw);
 
-        // Håll-ine eventlyssnare för Drill-momentet (mus + touch)
         window.addEventListener('mousedown', () => { if(isFighting) isPressingScreen = true; });
         window.addEventListener('mouseup', () => { isPressingScreen = false; });
         window.addEventListener('touchstart', (e) => { 
@@ -661,7 +660,6 @@
             startFightMode();
         }
 
-        // Starta Drill- & Tafsstress-momentet
         function startFightMode() {
             isFighting = true;
             isPressingScreen = false;
@@ -736,7 +734,6 @@
             }
         }
 
-        // Fullständig nollställning av kast och alternativ vid fångad fisk
         function resetAfterCatch() {
             if(fightInterval) clearInterval(fightInterval);
             isFighting = false;
@@ -760,9 +757,25 @@
             let survived = score > 40;
             const zone = getActiveZone();
 
+            let earnedPoints = 0;
+
             if(survived) {
-                gameWorld.points += 70;
-                alert(`Fisken simmade piggt tillbaka! (${Math.round(score)}% överlevnad). +70 p.`);
+                // Poängberäkning per art och storlek
+                if(currentFish.species === "Lax") {
+                    earnedPoints = 100;
+                } else if(currentFish.species === "Öring") {
+                    earnedPoints = 50;
+                } else if(currentFish.species === "Abborre" && currentFish.size <= 30) {
+                    earnedPoints = -20;
+                } else if(currentFish.species === "Gädda" && currentFish.size <= 80) {
+                    earnedPoints = -20;
+                } else {
+                    earnedPoints = 30; // Större abborre/gädda
+                }
+
+                gameWorld.points += earnedPoints;
+                let ptsMsg = earnedPoints >= 0 ? `+${earnedPoints} p` : `${earnedPoints} p`;
+                alert(`Fisken simmade piggt tillbaka! (${Math.round(score)}% överlevnad). ${ptsMsg}.`);
             } else {
                 zone.population = Math.max(10, zone.population - 1);
                 alert(`Fisken klarade inte hanteringen. Beståndet minskar.`);
