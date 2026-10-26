@@ -96,9 +96,9 @@
                     Klicka i strömmen för att göra ett kast!
                 </div>
 
-                <!-- Overlay för Tafsstress vid Drillar -->
+                <!-- Overlay för Tafsstress vid Drillar (Med rörlig stressmätare) -->
                 <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
-                    <div class="bg-stone-900/90 border border-amber-500/50 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl">
+                    <div id="fightCard" class="bg-stone-900/90 border border-amber-500/50 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl transition-transform duration-75">
                         <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">DRILLNING – HÅLL INNE FINGRET!</span>
                         <div class="flex justify-between text-[11px] text-stone-300 font-semibold">
                             <span>Tafsstress:</span>
@@ -281,20 +281,29 @@
         let currentZoneKey = 'dickson';
         let weatherData = { temp: 11, waterTemp: 10, flow: 18, condition: "Molnigt" };
         
-        let dayOfSeason = 1;
-        let castsRemaining = 5;
         let placementMode = null; // 'gravel', 'boulder', 'rod'
         let placementCost = 0;
 
-        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v6')) || {
+        // Persistens med datumstyrd vecka (1 vecka i spelet = 1 dag i verkligheten, 35 kast totalt)
+        let todayStr = new Date().toISOString().split('T')[0];
+        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v8')) || {
             points: 700,
             laddersFixed: false,
+            lastPlayedDate: todayStr,
+            dayOfSeason: 1,
+            castsRemaining: 5,
             zones: {
                 dickson: { population: 210, maxPop: 380, gravels: [], boulders: [], trees: 2, playerPos: { x: null, y: null }, log: [] },
                 mannered: { population: 190, maxPop: 350, gravels: [], boulders: [], trees: 1, playerPos: { x: null, y: null }, log: [] },
                 lortholjan: { population: 230, maxPop: 400, gravels: [], boulders: [], trees: 3, playerPos: { x: null, y: null }, log: [] }
             }
         };
+
+        if (gameWorld.lastPlayedDate !== todayStr) {
+            gameWorld.lastPlayedDate = todayStr;
+            gameWorld.dayOfSeason = 1;
+            gameWorld.castsRemaining = 5;
+        }
 
         let activeFly = flies[0];
         let currentFish = null;
@@ -335,14 +344,14 @@
                 if(data && data.current) {
                     weatherData.temp = data.current.temperature_2m;
                     weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
-                    let flowMod = (Math.sin(dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5);
+                    let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5);
                     weatherData.flow = Math.max(4, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
                     weatherData.condition = data.current.precipitation > 0 ? "Regn / Dis" : "Klart / Växlande";
                 }
             } catch(e) {
                 weatherData.temp = z.baseTemp;
                 weatherData.waterTemp = 10.0;
-                weatherData.flow = (16 + Math.sin(dayOfSeason)*6).toFixed(1);
+                weatherData.flow = (16 + Math.sin(gameWorld.dayOfSeason)*6).toFixed(1);
                 weatherData.condition = "Normalt";
             }
             updateUI();
@@ -371,8 +380,8 @@
 
             document.getElementById('conservationPoints').innerText = gameWorld.points + " p";
             document.getElementById('hudPopulation').innerText = zone.population;
-            document.getElementById('castsLeft').innerText = `${castsRemaining} / 5`;
-            document.getElementById('dayCounter').innerText = `Dag ${dayOfSeason}/7`;
+            document.getElementById('castsLeft').innerText = `${gameWorld.castsRemaining} / 5`;
+            document.getElementById('dayCounter').innerText = `Dag ${gameWorld.dayOfSeason}/7`;
             document.getElementById('currentFlyName').innerText = activeFly.name;
 
             document.getElementById('statGravel').innerText = zone.gravels.length + " st";
@@ -381,24 +390,26 @@
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT (+150 Max)" : "Ej åtgärdat";
 
             renderLog();
-            localStorage.setItem('savean_persistent_v6', JSON.stringify(gameWorld));
+            localStorage.setItem('savean_persistent_v8', JSON.stringify(gameWorld));
         }
 
         function nextDay() {
-            if(dayOfSeason < 7) {
-                dayOfSeason++;
-                castsRemaining = 5;
+            if(gameWorld.castsRemaining > 0) {
+                alert(`Du har fortfarande ${gameWorld.castsRemaining} kast kvar på Dag ${gameWorld.dayOfSeason}! Förbruka dem först eller fortsätt fiska.`);
+                return;
+            }
+
+            if(gameWorld.dayOfSeason < 7) {
+                gameWorld.dayOfSeason++;
+                gameWorld.castsRemaining = 5;
                 const zone = getActiveZone();
                 let breedBoost = (zone.gravels.length * 5) + (zone.boulders.length * 3) + (gameWorld.laddersFixed ? 15 : 0);
                 zone.population = Math.min(zone.maxPop, zone.population + breedBoost + 3);
                 gameWorld.points += 50;
                 fetchWeather(currentZoneKey);
-                document.getElementById('castStatus').innerText = `Dag ${dayOfSeason}. 5 nya kast tillgängliga!`;
+                document.getElementById('castStatus').innerText = `Gick vidare till Dag ${gameWorld.dayOfSeason}/7. 5 nya kast!`;
             } else {
-                alert("Veckan är slut (7 dagar)! Fiskekortet förnyas för nästa vecka.");
-                dayOfSeason = 1;
-                castsRemaining = 5;
-                fetchWeather(currentZoneKey);
+                alert("Du har klarat alla 7 dagar (35 kast) för idag! Kom tillbaka imorgon för en ny fiskewecka. Du kan fortfarande spendera poäng på biotopvård.");
             }
             updateUI();
         }
@@ -526,7 +537,7 @@
                 ctx.stroke();
             }
 
-            // Insekter (flyttar sig åt höger, i samma strömriktning som flugorna)
+            // Insekter
             ctx.fillStyle = 'rgba(254, 240, 138, 0.6)';
             insects.forEach(ins => {
                 ins.x += ins.speed + (parseFloat(weatherData.flow) * 0.05);
@@ -546,7 +557,7 @@
             ctx.arc(rodX, rodY, 6, 0, Math.PI*2);
             ctx.fill();
 
-            // Kastlina & Fluga med speglad/omvänd pendeleffekt
+            // Kastlina & Fluga
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -573,24 +584,19 @@
                         if(castLine.stretch < 0.1) castLine.stretch = 0;
                     }
 
-                    // Flödeshastighet åt höger (+X)
                     let flowSpeed = 0.5 + (parseFloat(weatherData.flow) * 0.05) + (currentMend * 0.2);
 
-                    // Första 1 sekund (60 frames): drift rakt åt höger i strömriktningen
                     if(castLine.framesElapsed <= 60) {
                         castLine.x += flowSpeed;
                         castLine.y += (Math.random() - 0.5) * 0.1;
                     } else {
-                        // Ståndplatsanalys: Mitten vs bankerna
                         let verticalOffset = (rodY - (canvas.height / 2)) / (canvas.height * 0.35); 
                         verticalOffset = Math.max(-1, Math.min(1, verticalOffset));
 
                         if(Math.abs(verticalOffset) < 0.3) {
-                            // Står i mitten: Flyter rakt åt höger
                             castLine.x += flowSpeed;
                             castLine.y += (Math.random() - 0.5) * 0.15;
                         } else {
-                            // Speglad pendelriktning
                             if(!castLine.swingStarted) {
                                 castLine.swingAngle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
                                 castLine.swingRadius = Math.hypot(castLine.x - rodX, castLine.y - rodY);
@@ -599,7 +605,6 @@
 
                             let swingSpeed = 0.0018 + (parseFloat(weatherData.flow) * 0.00015) + (currentMend * 0.0012);
                             
-                            // Omvänd rotation för att pendla i motsatt båge
                             if (verticalOffset < 0) {
                                 castLine.swingAngle -= swingSpeed * 0.3;
                             } else {
@@ -617,7 +622,6 @@
                         castLine = null;
                     }
 
-                    // Förbättrad RNG för napp (sänkt frekvens för mer balanserat/realistiskt fiske)
                     if(castLine && Math.random() < 0.0009 && !currentFish) {
                         triggerBite();
                     }
@@ -664,8 +668,8 @@
                 return;
             }
 
-            if(castsRemaining <= 0) {
-                document.getElementById('castStatus').innerText = "Slut på kast idag! Klicka på 'Nästa Dag'.";
+            if(gameWorld.castsRemaining <= 0) {
+                alert("Slut på kast för idag! Du har förbrukat dina 5 kast för denna dag. Klicka på 'Nästa Dag' för att gå vidare eller kom tillbaka imorgon.");
                 return;
             }
 
@@ -683,7 +687,7 @@
                 swingStarted: false 
             };
             currentMend = 0;
-            castsRemaining--;
+            gameWorld.castsRemaining--;
             updateUI();
             document.getElementById('castStatus').innerText = "Flugan driver med strömmen åt höger...";
         });
@@ -758,6 +762,16 @@
 
                 tippetStress = Math.max(0, Math.min(100, tippetStress));
 
+                // Simulera att fisken kämpar och drar mätaren/kortet över skärmen
+                let intensityFactor = (currentFish.size / 115) * 45;
+                let fightOffsetX = (Math.random() - 0.5) * (30 + intensityFactor) + Math.sin(fightTimeRemaining * 6) * (20 + intensityFactor * 0.5);
+                let fightOffsetY = (Math.random() - 0.5) * (20 + intensityFactor) + Math.cos(fightTimeRemaining * 5) * (15 + intensityFactor * 0.5);
+                
+                const card = document.getElementById('fightCard');
+                if (card) {
+                    card.style.transform = `translate(${fightOffsetX}px, ${fightOffsetY}px)`;
+                }
+
                 if ("vibrate" in navigator) {
                     if (tippetStress > 75) {
                         navigator.vibrate(currentFish.size > 75 ? [80, 40, 80] : 40);
@@ -803,6 +817,9 @@
             isFighting = false;
             isPressingScreen = false;
             if(fightInterval) clearInterval(fightInterval);
+            
+            const card = document.getElementById('fightCard');
+            if (card) card.style.transform = 'translate(0px, 0px)';
             document.getElementById('fightOverlay').classList.add('hidden');
 
             if(success) {
@@ -821,6 +838,9 @@
             if(fightInterval) clearInterval(fightInterval);
             isFighting = false;
             isPressingScreen = false;
+            
+            const card = document.getElementById('fightCard');
+            if (card) card.style.transform = 'translate(0px, 0px)';
             document.getElementById('fightOverlay').classList.add('hidden');
 
             castLine = null;
