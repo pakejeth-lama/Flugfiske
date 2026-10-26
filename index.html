@@ -171,10 +171,6 @@
             opacity: 0.8;
         }
 
-        .btn-danger {
-            background: #a93226;
-        }
-
         .btn-secondary {
             background: #444;
         }
@@ -197,29 +193,6 @@
             flex: 1;
             font-size: 0.9rem;
             line-height: 1.4;
-        }
-
-        /* Drill-overlay */
-        #drill-controls {
-            display: none;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .tension-bar-container {
-            background: #333;
-            border-radius: 6px;
-            height: 14px;
-            width: 100%;
-            overflow: hidden;
-            position: relative;
-        }
-
-        #tension-bar {
-            background: #27ae60;
-            height: 100%;
-            width: 50%;
-            transition: width 0.2s linear, background-color 0.2s;
         }
 
         /* --- Liggande skärm (Landscape) utan scroll --- */
@@ -255,7 +228,7 @@
             }
 
             .controls {
-                width: 240px;
+                width: 220px;
                 justify-content: space-between;
             }
         }
@@ -315,24 +288,12 @@
                         </select>
                     </div>
 
-                    <!-- Vanliga fiskekontroller -->
-                    <div id="normal-controls">
-                        <div class="btn-group" style="margin-bottom: 8px;">
-                            <button class="btn" onclick="moveRod(-15)">⬅️ Flytta</button>
-                            <button class="btn" onclick="moveRod(15)">Flytta ➡️</button>
-                        </div>
-                        <button class="btn" onclick="castLine()">Kasta flugan</button>
+                    <div class="btn-group">
+                        <button class="btn" onclick="moveRod(-15)">⬅️ Flytta</button>
+                        <button class="btn" onclick="moveRod(15)">Flytta ➡️</button>
                     </div>
 
-                    <!-- Drill-kontroller (visas vid hugg) -->
-                    <div id="drill-controls">
-                        <div style="font-size:0.8rem; text-align:center;" id="drill-status">Fisk på! Drilla försiktigt...</div>
-                        <div class="tension-bar-container">
-                            <div id="tension-bar"></div>
-                        </div>
-                        <button class="btn btn-danger" onmousedown="startReeling()" onmouseup="stopReeling()" ontouchstart="startReeling()" ontouchend="stopReeling()">Håll mot / Veva</button>
-                    </div>
-
+                    <button class="btn" onclick="castLine()">Kasta flugan</button>
                     <button class="btn btn-secondary" onclick="openScreen('main-menu')">Meny</button>
                 </div>
             </div>
@@ -365,12 +326,6 @@
         let rodX = 150;
         let lineCast = false;
         let fish = { x: 100, y: 100, caught: false };
-        
-        // Drill-variabler (justerade för långsammare tempo)
-        let isDrilling = false;
-        let drillProgress = 0;
-        let fishTension = 50;
-        let drillInterval = null;
 
         const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
@@ -381,7 +336,6 @@
         }
 
         function openScreen(screenId) {
-            stopDrill(false);
             const mainMenu = document.getElementById('main-menu');
             if (mainMenu) mainMenu.style.display = 'none';
 
@@ -418,7 +372,6 @@
         });
 
         function changeSpot() {
-            if (isDrilling) return;
             const select = document.getElementById('spotSelect');
             if (select) currentSpot = select.value;
             
@@ -431,100 +384,32 @@
         }
 
         function moveRod(delta) {
-            if (canvas.width === 0 || isDrilling) return;
+            if (canvas.width === 0) return;
             rodX = Math.max(20, Math.min(canvas.width - 20, rodX + delta));
             drawGame();
         }
 
         function castLine() {
-            if (isDrilling) return;
             lineCast = true;
             drawGame();
 
-            if (Math.abs(rodX - fish.x) < 45 && !fish.caught) {
-                startDrill();
+            if (Math.abs(rodX - fish.x) < 40 && !fish.caught) {
+                fish.caught = true;
+                score++;
+                localStorage.setItem('savean_score', score);
+                updateScoreDisplay();
+                alert("Hugg! Du fångade en praktfull Säveålax!");
+                setTimeout(resetFish, 600);
             } else {
                 setTimeout(() => {
-                    if (!isDrilling) {
-                        lineCast = false;
-                        drawGame();
-                    }
+                    lineCast = false;
+                    drawGame();
                 }, 400);
             }
         }
 
-        function startDrill() {
-            isDrilling = true;
-            drillProgress = 20;
-            fishTension = 50;
-
-            document.getElementById('normal-controls').style.display = 'none';
-            document.getElementById('drill-controls').style.display = 'flex';
-            document.getElementById('spotSelect').disabled = true;
-
-            if (drillInterval) clearInterval(drillInterval);
-
-            // Körs var 200 ms (långsammare uppdatering)
-            drillInterval = setInterval(() => {
-                if (!isDrilling) return;
-
-                // Mjuka och långsamma förändringar i spänning
-                let pull = (Math.random() - 0.48) * 4;
-                if (reelingActive) {
-                    fishTension += pull + 2; 
-                    drillProgress += 1.0;    
-                } else {
-                    fishTension += pull - 1.5; 
-                    drillProgress -= 0.2;    
-                }
-
-                fishTension = Math.max(0, Math.min(100, fishTension));
-
-                const bar = document.getElementById('tension-bar');
-                bar.style.width = fishTension + '%';
-                
-                if (fishTension > 25 && fishTension < 75) {
-                    bar.style.backgroundColor = '#27ae60'; 
-                } else {
-                    bar.style.backgroundColor = '#e74c3c'; 
-                }
-
-                if (fishTension <= 3) {
-                    stopDrill(false, "Fisken slakade linan och kom loss!");
-                } else if (fishTension >= 97) {
-                    stopDrill(false, "Linan gick av! För hårt motstånd.");
-                } else if (drillProgress >= 100) {
-                    stopDrill(true, "Snyggt! Du landade en praktfull Säveålax!");
-                }
-
-                drawGame();
-            }, 200);
-        }
-
-        let reelingActive = false;
-        function startReeling() { reelingActive = true; }
-        function stopReeling() { reelingActive = false; }
-
-        function stopDrill(success, message) {
-            isDrilling = false;
-            if (drillInterval) clearInterval(drillInterval);
-            document.getElementById('drill-controls').style.display = 'none';
-            document.getElementById('normal-controls').style.display = 'flex';
-            document.getElementById('spotSelect').disabled = false;
-
-            if (success) {
-                score++;
-                localStorage.setItem('savean_score', score);
-                updateScoreDisplay();
-                fish.caught = true;
-            }
-
-            if (message) alert(message);
-            setTimeout(resetFish, 500);
-        }
-
         function resetFish() {
-            if (canvas.width === 0 || canvas.height === 0 || isDrilling) return;
+            if (canvas.width === 0 || canvas.height === 0) return;
             fish.x = Math.random() * (canvas.width - 60) + 30;
             fish.y = Math.random() * (canvas.height - 60) + 30;
             fish.caught = false;
@@ -556,7 +441,7 @@
             if (!fish.caught) {
                 ctx.fillStyle = '#76c893';
                 ctx.beginPath();
-                ctx.ellipse(fish.x, fish.y, isDrilling ? 18 : 14, isDrilling ? 8 : 6, 0, 0, Math.PI * 2);
+                ctx.ellipse(fish.x, fish.y, 14, 6, 0, 0, Math.PI * 2);
                 ctx.fill();
             }
 
@@ -567,8 +452,8 @@
             ctx.lineTo(rodX, canvas.height - 35);
             ctx.stroke();
 
-            if (lineCast || isDrilling) {
-                ctx.strokeStyle = fishTension > 80 ? '#ff3333' : 'rgba(255,255,255,0.9)';
+            if (lineCast) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
                 ctx.moveTo(rodX, canvas.height - 35);
