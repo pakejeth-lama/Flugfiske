@@ -544,7 +544,7 @@
             ctx.arc(rodX, rodY, 6, 0, Math.PI*2);
             ctx.fill();
 
-            // Kastlina & Fluga med pendeleffekt
+            // Kastlina & Fluga med gummibandseffekt och positionsbaserad drift
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -559,26 +559,42 @@
                 ctx.fill();
 
                 if(!isFighting) {
-                    // Beräkna pendelvinkel & fast linlängd baserat på utkastets startpunkt
-                    let currentAngle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
-                    
-                    // Strömstyrkan och mendning roterar vinkeln
-                    let swingSpeed = 0.008 + (parseFloat(weatherData.flow) * 0.0006) + (currentMend * 0.005);
-                    
-                    // Avgör om vi pendlar mot vänster eller höger strandkant
-                    let targetAngle = rodX < canvas.width / 2 ? Math.PI : 0; 
-
-                    if (rodX < canvas.width / 2) {
-                        currentAngle += swingSpeed; // Svep mot vänster strand
-                    } else {
-                        currentAngle -= swingSpeed; // Svep mot höger strand
+                    // Gummibandseffekt vid landing (sträcker ut linan lite extra i kastets riktning)
+                    if(castLine.stretch > 0) {
+                        let dirX = (castLine.x - rodX) / castLine.radius;
+                        let dirY = (castLine.y - rodY) / castLine.radius;
+                        castLine.x += dirX * castLine.stretch;
+                        castLine.y += dirY * castLine.stretch;
+                        castLine.stretch *= 0.85; // Mjuk dämpning tillbaka till naturligt sträckt lina
+                        if(castLine.stretch < 0.1) castLine.stretch = 0;
                     }
 
-                    // Räkna ut flugans nya X och Y med bevarad radie (linlängd)
-                    castLine.x = rodX + castLine.radius * Math.cos(currentAngle);
-                    castLine.y = rodY + castLine.radius * Math.sin(currentAngle);
+                    // Hur nära mitten står vi? (-1 vid vänster kant, 0 i mitten, +1 vid höger kant)
+                    let centerOffset = (rodX - (canvas.width / 2)) / (canvas.width * 0.35); 
+                    centerOffset = Math.max(-1, Math.min(1, centerOffset));
 
-                    // Om flugan hamnar utanför skärmen/stranden släpps kasten
+                    let flowSpeed = 0.15 + (parseFloat(weatherData.flow) * 0.008) + (currentMend * 0.2);
+
+                    if(Math.abs(centerOffset) < 0.25) {
+                        // Står i mitten: Linan flyter rakt nedströms/höger i strömfåran (ingen pendel)
+                        castLine.x += flowSpeed * 1.5;
+                        castLine.y += (Math.random() - 0.5) * 0.2; // Lätt naturligt vobblande i strömmen
+                    } else {
+                        // Står på sidan: Pendlar mjukt i en båge mot samma strandkant som ståplatsen
+                        let currentAngle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
+                        let swingSpeed = 0.0025 + (parseFloat(weatherData.flow) * 0.0002) + (currentMend * 0.002);
+
+                        if (centerOffset < 0) {
+                            currentAngle += swingSpeed; // Vänster strand
+                        } else {
+                            currentAngle -= swingSpeed; // Höger strand
+                        }
+
+                        castLine.x = rodX + castLine.radius * Math.cos(currentAngle);
+                        castLine.y = rodY + castLine.radius * Math.sin(currentAngle);
+                    }
+
+                    // Släpp kasten om flugan åker utanför vattnet
                     if(castLine.x < 0 || castLine.x > canvas.width || castLine.y < 0 || castLine.y > canvas.height) {
                         castLine = null;
                     }
@@ -637,14 +653,14 @@
             let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
             
-            // Spara fast radie (linlängd) för pendeln
             let castRadius = Math.hypot(clickX - rodX, clickY - rodY);
 
-            castLine = { x: clickX, y: clickY, radius: castRadius };
+            // Skapar kasten med initial gummibands-stretch (1.8 px per frame dämpning)
+            castLine = { x: clickX, y: clickY, radius: castRadius, stretch: 2.2 };
             currentMend = 0;
             castsRemaining--;
             updateUI();
-            document.getElementById('castStatus').innerText = "Flugan pendlar gött i strömmen...";
+            document.getElementById('castStatus').innerText = "Flugan driver lugnt & fint i strömmen...";
         });
 
         function mendLine() {
