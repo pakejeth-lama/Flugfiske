@@ -97,22 +97,27 @@
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
                 <!-- Canvas HUD -->
-                <div class="absolute top-2 left-2 bg-stone-900/80 backdrop-blur px-2.5 py-1 rounded border border-stone-700 text-[11px] flex gap-2.5">
+                <div class="absolute top-2 left-2 bg-stone-900/80 backdrop-blur px-2.5 py-1 rounded border border-stone-700 text-[11px] flex gap-2.5 z-20">
                     <span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Fireball</strong></span>
                     <span>Bestånd: <strong id="hudPopulation" class="text-emerald-400">210</strong> st</span>
                     <span>Kast idag: <strong id="castsLeft" class="text-amber-400">5 / 5</strong></span>
                 </div>
 
+                <!-- Notis / Hugg-status på spelplanen -->
+                <div id="canvasNotification" class="hidden absolute top-12 left-1/2 -translate-x-1/2 bg-stone-900/95 border border-amber-500/80 px-3.5 py-2 rounded-lg text-xs font-bold text-amber-400 shadow-2xl text-center z-30 max-w-xs animate-pulse">
+                    <!-- Text fylls i dynamiskt -->
+                </div>
+
                 <!-- Störningsbanner för bäver/fåglar -->
-                <div id="wildlifeAlert" class="hidden absolute top-12 left-1/2 -translate-x-1/2 bg-amber-600/90 text-stone-950 px-3 py-1.5 rounded-lg font-bold text-xs shadow-xl animate-pulse text-center border border-amber-400">
+                <div id="wildlifeAlert" class="hidden absolute top-12 left-1/2 -translate-x-1/2 bg-amber-600/90 text-stone-950 px-3 py-1.5 rounded-lg font-bold text-xs shadow-xl animate-pulse text-center border border-amber-400 z-30">
                     🦫 <span id="wildlifeText">En bäver plaskar vid nacken! Fisken är skrämd. Byt sträcka!</span>
                 </div>
 
-                <div id="modeBanner" class="hidden absolute top-2 right-2 bg-amber-500 text-stone-950 px-2.5 py-0.5 rounded font-bold text-[10px] shadow-lg animate-bounce">
+                <div id="modeBanner" class="hidden absolute top-2 right-2 bg-amber-500 text-stone-950 px-2.5 py-0.5 rounded font-bold text-[10px] shadow-lg animate-bounce z-20">
                     Aktivt läge: Klicka i vattnet!
                 </div>
 
-                <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg">
+                <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg z-20">
                     Klicka i strömmen för att kasta. <strong>Tryck direkt på gröna gubben</strong> för att veva hem lina!
                 </div>
 
@@ -451,7 +456,7 @@
         let wildlifeDisturbance = false;
 
         let todayStr = new Date().toISOString().split('T')[0];
-        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v21')) || {
+        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v22')) || {
             points: 700,
             laddersFixed: false,
             lastPlayedDate: todayStr,
@@ -590,7 +595,7 @@
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
 
             renderLog();
-            localStorage.setItem('savean_persistent_v21', JSON.stringify(gameWorld));
+            localStorage.setItem('savean_persistent_v22', JSON.stringify(gameWorld));
         }
 
         function nextDay() {
@@ -869,7 +874,7 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Kastlina & Enkelkrok
+            // Kastlina & Orangebrun liten fluga
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -878,13 +883,13 @@
                 ctx.lineTo(castLine.x, castLine.y);
                 ctx.stroke();
 
-                ctx.strokeStyle = '#e2e8f0';
-                ctx.lineWidth = 1.5;
+                // Liten orangebrun fluga-prick
+                ctx.fillStyle = '#c2410c';
                 ctx.beginPath();
-                ctx.moveTo(castLine.x, castLine.y - 5);
-                ctx.lineTo(castLine.x, castLine.y + 2);
-                ctx.arc(castLine.x + 3, castLine.y + 2, 3, Math.PI, 0, false);
-                ctx.lineTo(castLine.x + 6, castLine.y);
+                ctx.arc(castLine.x, castLine.y, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#7c2d12';
+                ctx.lineWidth = 1;
                 ctx.stroke();
 
                 if(!isFighting) {
@@ -979,7 +984,11 @@
             }
 
             updateUI();
-            document.getElementById('castStatus').innerText = hitRise ? "Snyggt kast i vaket! Väntar hugg..." : "Flugan driver med strömmen...";
+            let statusText = hitRise ? "Snyggt kast i vaket! Väntar hugg..." : "Flugan driver med strömmen...";
+            document.getElementById('castStatus').innerText = statusText;
+            document.getElementById('canvasNotification').innerText = statusText;
+            document.getElementById('canvasNotification').classList.remove('hidden');
+            setTimeout(() => { document.getElementById('canvasNotification').classList.add('hidden'); }, 3000);
         });
 
         function pullLine() {
@@ -993,6 +1002,7 @@
             if (currentDist <= 20) {
                 castLine = null;
                 document.getElementById('castStatus').innerText = "Flugan vevad in till land!";
+                document.getElementById('canvasNotification').classList.add('hidden');
                 return;
             }
             
@@ -1003,7 +1013,8 @@
             castLine.y = rodY + currentDist * Math.sin(angle);
             castLine.radius = currentDist;
             
-            document.getElementById('castStatus').innerText = `Vevat hem lina (kvar: ${Math.round(currentDist)}px)...`;
+            let pullMsg = `Vevat hem lina (kvar: ${Math.round(currentDist)}px)...`;
+            document.getElementById('castStatus').innerText = pullMsg;
 
             if(!wildlifeDisturbance && Math.random() < 0.28 && !currentFish) {
                 triggerBite(false);
@@ -1027,6 +1038,7 @@
             }
             
             let species = "Öring";
+            let gender = "";
             let rand = Math.random();
 
             if (rand < troutSalmonChance) {
@@ -1037,8 +1049,13 @@
                 species = Math.random() < 0.65 ? "Abborre" : "Gädda";
             }
 
+            // Slumpa kön på lax och öring
+            if (species === "Lax" || species === "Öring") {
+                gender = Math.random() < 0.5 ? "Hona" : "Hane";
+            }
+
             let baseSize = 40;
-            if (species === "Lax") baseSize = 82;
+            if (species === "Lax") baseSize = 92;
             else if (species === "Gädda") baseSize = 75;
             else if (species === "Öring") baseSize = 48;
             else if (species === "Färna") {
@@ -1048,14 +1065,19 @@
                 baseSize = 28;
             }
 
-            let size = Math.floor(baseSize + (Math.random() * 15 - 5) + (isRiseBonus ? 6 : 0));
+            let size = Math.floor(baseSize + (Math.random() * 20 - 5) + (isRiseBonus ? 6 : 0));
+            
+            // Sätt maxgräns för lax till 122 cm
+            if (species === "Lax" && size > 122) size = 122;
             if (species === "Färna" && size > 62) size = 62;
 
-            currentFish = { species, size };
+            currentFish = { species, size, gender };
 
             let feelDescription = "";
-            if (size > 65) {
-                feelDescription = "HUGG! Det hugger tungt och brutalt i strömmen – en riktig best som drar lina!";
+            if (size > 85) {
+                feelDescription = "HUGG! Ett brutalt hugg och enorm tyngd – en riktig jätte som rusar lina!";
+            } else if (size > 65) {
+                feelDescription = "HUGG! Det hugger tungt och kraftfullt i strömmen!";
             } else if (size > 42) {
                 feelDescription = "HUGG! Ett stadigt mothugg, det känns mittemellan och spjärnar emot bra!";
             } else {
@@ -1063,7 +1085,7 @@
             }
 
             if ("vibrate" in navigator) {
-                if (size > 80) {
+                if (size > 90) {
                     navigator.vibrate([200, 100, 300, 100, 400]);
                 } else if (size > 50) {
                     navigator.vibrate([150, 100, 200]);
@@ -1072,7 +1094,11 @@
                 }
             }
 
-            document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold animate-pulse">${feelDescription} Håll fingret nedtryckt!</span>`;
+            document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">${feelDescription} Håll fingret nedtryckt!</span>`;
+            
+            const notif = document.getElementById('canvasNotification');
+            notif.innerHTML = `${feelDescription}<br><span class="text-stone-200 text-[10px]">Håll fingret nedtryckt för drillning!</span>`;
+            notif.classList.remove('hidden');
 
             startFightMode();
         }
@@ -1162,10 +1188,12 @@
             const card = document.getElementById('fightCard');
             if (card) card.style.transform = 'translate(0px, 0px)';
             document.getElementById('fightOverlay').classList.add('hidden');
+            document.getElementById('canvasNotification').classList.add('hidden');
 
             if(success) {
                 if ("vibrate" in navigator) navigator.vibrate([100, 100, 300]);
-                document.getElementById('caughtFishDetails').innerText = `Du landade en ${currentFish.species} (${currentFish.size} cm) i ${saveanZones[currentZoneKey].name}. Gör ett aktivt val för hantering!`;
+                let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+                document.getElementById('caughtFishDetails').innerText = `Du landade en ${currentFish.species}${genderStr} på ${currentFish.size} cm i ${saveanZones[currentZoneKey].name}. Gör ett aktivt val för hantering!`;
                 document.getElementById('welfareModal').classList.remove('hidden');
                 document.getElementById('welfareModal').classList.add('flex');
             } else {
@@ -1183,6 +1211,7 @@
             const card = document.getElementById('fightCard');
             if (card) card.style.transform = 'translate(0px, 0px)';
             document.getElementById('fightOverlay').classList.add('hidden');
+            document.getElementById('canvasNotification').classList.add('hidden');
 
             castLine = null;
             currentFish = null;
@@ -1203,14 +1232,15 @@
 
             let earnedPoints = 0;
             let ecoMsg = "";
+            let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
 
             if(survived) {
                 if(currentFish.species === "Lax") {
                     earnedPoints = 100;
-                    ecoMsg = "Laxen simmade piggt tillbaka! (+100 p).";
+                    ecoMsg = `Laxen${genderStr} simmade piggt tillbaka! (+100 p).`;
                 } else if(currentFish.species === "Öring") {
                     earnedPoints = 50;
-                    ecoMsg = "Öringen simmade piggt tillbaka! (+50 p).";
+                    ecoMsg = `Öringen${genderStr} simmade piggt tillbaka! (+50 p).`;
                 } else if(currentFish.species === "Färna") {
                     earnedPoints = 40;
                     ecoMsg = "Den strömvane färnan simmade tillbaka till ståndstenen! (+40 p).";
@@ -1226,7 +1256,7 @@
                 gameWorld.points += earnedPoints;
                 
                 if (window.saveCatchToFirebase) {
-                    window.saveCatchToFirebase(anglerName, currentFish.species, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
+                    window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
                 }
 
                 alert(`${ecoMsg} Fångsten registrerades på Highscore!`);
@@ -1235,7 +1265,7 @@
                 alert(`Fisken klarade inte hanteringen.`);
             }
 
-            zone.log.unshift({ text: `${currentFish.species} (${currentFish.size} cm) - C&R (${anglerName})`, date: new Date().toLocaleDateString() });
+            zone.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - C&R (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
         }
@@ -1246,6 +1276,7 @@
             
             let earnedPoints = 0;
             let msg = "";
+            let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
 
             if((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
                 earnedPoints = 40;
@@ -1257,10 +1288,10 @@
             }
 
             if (window.saveCatchToFirebase) {
-                window.saveCatchToFirebase(anglerName, currentFish.species, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
+                window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
             }
 
-            zone.log.unshift({ text: `${currentFish.species} (${currentFish.size} cm) - Hemtagen (${anglerName})`, date: new Date().toLocaleDateString() });
+            zone.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - Hemtagen (${anglerName})`, date: new Date().toLocaleDateString() });
             alert(msg);
             closeWelfareModal();
             resetAfterCatch();
