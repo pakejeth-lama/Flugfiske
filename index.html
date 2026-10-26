@@ -113,7 +113,7 @@
                 </div>
 
                 <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg">
-                    Klicka i strömmen för att göra ett kast! (Sikta på vakande fisk för huggbonus!)
+                    Klicka i strömmen för att kasta. Använd Hemtagning för att veva in!
                 </div>
 
                 <!-- Overlay för Tafsstress vid Drillar -->
@@ -138,7 +138,7 @@
             <!-- Kontroller -->
             <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex items-center gap-1.5">
-                    <button onclick="pullLine()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1">
+                    <button onclick="pullLine()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1 shadow">
                         <span>⬅️</span> Hemtagning
                     </button>
                     <button onclick="changeFlyModal()" class="bg-stone-700 hover:bg-stone-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
@@ -195,7 +195,7 @@
                     <span>💡</span> Ekologisk balans & Fisketips
                 </h3>
                 <p class="text-[11px] text-stone-300 leading-relaxed">
-                    Håll utkik efter vakande fisk (ringar i vattnet)! Att lägga flugan i ett vak ger huggbonus. Stora rovfiskar håller efter sina artfränder, medan mindre gäddor/abborrar bör tas bort då de äter upp laxsmolten.
+                    Kåhögsforsen bjuder på hård ström och vilda forsblock. Använd Hemtagning-knappen för att veva hem lina steg för steg och trigga hugg!
                 </p>
             </div>
 
@@ -454,7 +454,7 @@
         let wildlifeDisturbance = false;
 
         let todayStr = new Date().toISOString().split('T')[0];
-        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v14')) || {
+        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v15')) || {
             points: 700,
             laddersFixed: false,
             lastPlayedDate: todayStr,
@@ -477,7 +477,7 @@
 
         let activeFly = flies[0];
         let currentFish = null;
-        let rises = []; // Vakande fisk-ringar
+        let rises = [];
 
         let isFighting = false;
         let isPressingScreen = false;
@@ -490,7 +490,6 @@
         const ctx = canvas.getContext('2d');
         
         let castLine = null;
-        let currentPull = 0;
 
         let insects = [];
         for(let i=0; i<8; i++) insects.push({ x: Math.random()*600, y: 50 + Math.random()*150, speed: 0.5 + Math.random()*1 });
@@ -590,7 +589,7 @@
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
 
             renderLog();
-            localStorage.setItem('savean_persistent_v14', JSON.stringify(gameWorld));
+            localStorage.setItem('savean_persistent_v15', JSON.stringify(gameWorld));
         }
 
         function nextDay() {
@@ -688,7 +687,7 @@
 
             const zone = getActiveZone();
 
-            // Unika bakgrunder
+            // Unika bakgrunder & miljöer
             if (currentZoneKey === 'mannered') {
                 let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
                 bgGrad.addColorStop(0, '#0369a1');
@@ -704,12 +703,31 @@
                 ctx.lineTo(canvas.width, 0);
                 ctx.fill();
             } else if (currentZoneKey === 'kahogsforsen') {
+                // Hård fors med skummande ström och forsblock (stenar)
                 let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
                 bgGrad.addColorStop(0, '#0284c7');
-                bgGrad.addColorStop(0.5, '#38bdf8');
+                bgGrad.addColorStop(0.3, '#38bdf8');
+                bgGrad.addColorStop(0.7, '#0284c7');
                 bgGrad.addColorStop(1, '#0369a1');
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Rita fasta forsblock / stora stenar i hård forsen
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.ellipse(canvas.width * 0.35, canvas.height * 0.45, 40, 20, 0.15, 0, Math.PI * 2);
+                ctx.ellipse(canvas.width * 0.68, canvas.height * 0.65, 50, 24, -0.1, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                // Skummande vитtt skum vid forsblocken
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+                ctx.beginPath();
+                ctx.arc(canvas.width * 0.35 - 30, canvas.height * 0.45 - 6, 14, 0, Math.PI * 2);
+                ctx.arc(canvas.width * 0.68 + 35, canvas.height * 0.65 - 6, 16, 0, Math.PI * 2);
+                ctx.fill();
             } else if (currentZoneKey === 'finngosagrundet') {
                 let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, 0);
                 bgGrad.addColorStop(0, '#065f46');
@@ -718,7 +736,7 @@
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Stort överhängande träd upptill för Finngösagrundet
+                // Stort överhängande träd upptill
                 ctx.fillStyle = '#064e3b';
                 ctx.beginPath();
                 ctx.ellipse(canvas.width * 0.5, 10, canvas.width * 0.45, 35, 0, 0, Math.PI * 2);
@@ -772,7 +790,7 @@
                 ctx.stroke();
             });
 
-            // Kantträd (för andra zoner än Finngösagrundet)
+            // Kantträd
             if (currentZoneKey !== 'finngosagrundet') {
                 for(let i=0; i<zone.trees; i++) {
                     let tx = 30 + (i * 65) % (canvas.width - 60);
@@ -792,12 +810,12 @@
                 ctx.fill();
             }
 
-            // Strömvågor
-            let flowMultiplier = currentZoneKey === 'kahogsforsen' ? 1.8 : 0.9;
+            // Strömvågor (vildare i forsen)
+            let flowMultiplier = currentZoneKey === 'kahogsforsen' ? 2.0 : 0.9;
             flowOffset += flowMultiplier + (parseFloat(weatherData.flow) * 0.03);
             if(flowOffset > 40) flowOffset = 0;
-            ctx.strokeStyle = currentZoneKey === 'kahogsforsen' ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.18)';
-            ctx.lineWidth = currentZoneKey === 'kahogsforsen' ? 1.5 : 1;
+            ctx.strokeStyle = currentZoneKey === 'kahogsforsen' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.18)';
+            ctx.lineWidth = currentZoneKey === 'kahogsforsen' ? 1.8 : 1;
             for(let y = 30; y < canvas.height; y += 35) {
                 ctx.beginPath();
                 for(let x = -40; x < canvas.width + 40; x += 35) {
@@ -806,7 +824,7 @@
                 ctx.stroke();
             }
 
-            // Vakande fisk (Ritsar/Cirklar i vattnet)
+            // Vakande fisk (ringar)
             rises.forEach(r => {
                 r.timer++;
                 if(r.timer > 150) {
@@ -842,7 +860,7 @@
             let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
 
-            ctx.fillStyle = '#14532d'; // Mörkgrön prick
+            ctx.fillStyle = '#14532d';
             ctx.beginPath();
             ctx.arc(rodX, rodY, 7, 0, Math.PI*2);
             ctx.fill();
@@ -865,50 +883,9 @@
                 ctx.fill();
 
                 if(!isFighting) {
-                    castLine.framesElapsed++;
-
-                    if(castLine.stretch > 0) {
-                        let dirX = (castLine.x - rodX) / castLine.radius;
-                        let dirY = (castLine.y - rodY) / castLine.radius;
-                        castLine.x += dirX * castLine.stretch;
-                        castLine.y += dirY * castLine.stretch;
-                        castLine.stretch *= 0.85;
-                        if(castLine.stretch < 0.1) castLine.stretch = 0;
-                    }
-
-                    let flowSpeed = (0.5 + (parseFloat(weatherData.flow) * 0.05) + currentPull) * (currentZoneKey === 'kahogsforsen' ? 1.4 : 1.0);
-
-                    if(castLine.framesElapsed <= 60) {
-                        castLine.x += flowSpeed;
-                        castLine.y += (Math.random() - 0.5) * 0.1;
-                    } else {
-                        let verticalOffset = (rodY - (canvas.height / 2)) / (canvas.height * 0.35); 
-                        verticalOffset = Math.max(-1, Math.min(1, verticalOffset));
-
-                        if(Math.abs(verticalOffset) < 0.3) {
-                            castLine.x += flowSpeed;
-                            castLine.y += (Math.random() - 0.5) * 0.15;
-                        } else {
-                            if(!castLine.swingStarted) {
-                                castLine.swingAngle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
-                                castLine.swingRadius = Math.hypot(castLine.x - rodX, castLine.y - rodY);
-                                castLine.swingStarted = true;
-                            }
-
-                            let swingSpeed = 0.0018 + (parseFloat(weatherData.flow) * 0.00015) + (currentPull * 0.001);
-                            
-                            if (verticalOffset < 0) {
-                                castLine.swingAngle -= swingSpeed * 0.3;
-                            } else {
-                                castLine.swingAngle += swingSpeed * 0.3;
-                            }
-
-                            castLine.x = rodX + castLine.swingRadius * Math.cos(castLine.swingAngle);
-                            castLine.y = rodY + castLine.swingRadius * Math.sin(castLine.swingAngle);
-                            
-                            castLine.x += flowSpeed * 0.8;
-                        }
-                    }
+                    let flowSpeed = (0.5 + (parseFloat(weatherData.flow) * 0.05)) * (currentZoneKey === 'kahogsforsen' ? 1.5 : 1.0);
+                    castLine.x += flowSpeed;
+                    castLine.y += (Math.random() - 0.5) * 0.1;
 
                     if(castLine.x < 0 || castLine.x > canvas.width || castLine.y < 0 || castLine.y > canvas.height) {
                         castLine = null;
@@ -978,15 +955,10 @@
             castLine = { 
                 x: clickX, 
                 y: clickY, 
-                radius: castRadius, 
-                stretch: 2.2, 
-                framesElapsed: 0,
-                swingStarted: false 
+                radius: castRadius
             };
-            currentPull = 0;
             gameWorld.castsRemaining--;
 
-            // Kolla om man träffade nära ett vak (inom 35 pixlar)
             let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < 35);
             if (hitRise && !wildlifeDisturbance && Math.random() < 0.6) {
                 setTimeout(() => {
@@ -998,20 +970,31 @@
             document.getElementById('castStatus').innerText = hitRise ? "Snyggt kast i vaket! Väntar hugg..." : "Flugan driver med strömmen...";
         });
 
+        // Förbättrad Hemtagning: Vevar in linan steg för steg mot fiskaren vid varje tryck
         function pullLine() {
             if(!castLine || isFighting) return;
-            currentPull += 0.5;
             
             let zone = getActiveZone();
             let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
             
-            castLine.x += (rodX - castLine.x) * 0.1;
-            castLine.y += (rodY - castLine.y) * 0.1;
+            let currentDist = Math.hypot(castLine.x - rodX, castLine.y - rodY);
+            if (currentDist <= 20) {
+                castLine = null;
+                document.getElementById('castStatus').innerText = "Flugan vevad in till land!";
+                return;
+            }
+            
+            let angle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
+            currentDist -= 30; // Kortar ner linan med 30 pixlar per tryck
+            
+            castLine.x = rodX + currentDist * Math.cos(angle);
+            castLine.y = rodY + currentDist * Math.sin(angle);
+            castLine.radius = currentDist;
+            
+            document.getElementById('castStatus').innerText = `Vevat hem lina (kvar: ${Math.round(currentDist)}px)...`;
 
-            document.getElementById('castStatus').innerText = "Tar hem lina...";
-
-            if(!wildlifeDisturbance && Math.random() < 0.25 && !currentFish) {
+            if(!wildlifeDisturbance && Math.random() < 0.28 && !currentFish) {
                 triggerBite(false);
             }
         }
@@ -1022,7 +1005,7 @@
             let boulderBonus = zone.boulders.length;
 
             let troutSalmonChance = 0.60 + Math.min(0.30, (gravelBonus + boulderBonus) * 0.03);
-            if (isRiseBonus) troutSalmonChance += 0.15; // Högre chans på fin fisk vid vak
+            if (isRiseBonus) troutSalmonChance += 0.15;
             
             let species = "Öring";
             let rand = Math.random();
@@ -1161,7 +1144,6 @@
             document.getElementById('fightOverlay').classList.add('hidden');
 
             castLine = null;
-            currentPull = 0;
             currentFish = null;
             placementMode = null;
             document.getElementById('modeBanner').classList.add('hidden');
