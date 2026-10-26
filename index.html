@@ -303,6 +303,7 @@
         let isPressingScreen = false;
         let tippetStress = 0;
         let fightTimeRemaining = 5.0;
+        let totalFightDuration = 5.0;
         let fightInterval = null;
 
         const canvas = document.getElementById('gameCanvas');
@@ -511,7 +512,7 @@
                 ctx.fill();
             }
 
-            // Strömvågor
+            // Strömvågor (går åt höger)
             flowOffset += 0.9 + (parseFloat(weatherData.flow) * 0.03);
             if(flowOffset > 40) flowOffset = 0;
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
@@ -544,7 +545,7 @@
             ctx.arc(rodX, rodY, 6, 0, Math.PI*2);
             ctx.fill();
 
-            // Kastlina & Fluga med 1 sekunders rak drift följt av ståndplatsanpassad pendel
+            // Kastlina & Fluga med strömriktning mot höger (+X)
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -573,21 +574,21 @@
 
                     let flowSpeed = 0.2 + (parseFloat(weatherData.flow) * 0.008) + (currentMend * 0.2);
 
-                    // De första 60 bildrutorna (1 sekund vid 60fps) åker flugan rakt längs strömriktningen
+                    // Första 1 sekund (60 frames): drift rakt åt höger i strömriktningen (+X)
                     if(castLine.framesElapsed <= 60) {
                         castLine.x += flowSpeed;
                         castLine.y += (Math.random() - 0.5) * 0.1;
                     } else {
-                        // Efter 1 sekund: Ta hänsyn till ståndplats
-                        let centerOffset = (rodX - (canvas.width / 2)) / (canvas.width * 0.35); 
-                        centerOffset = Math.max(-1, Math.min(1, centerOffset));
+                        // Avgör ståplats: Toppbank, bottenbank eller mitten
+                        let verticalOffset = (rodY - (canvas.height / 2)) / (canvas.height * 0.35); 
+                        verticalOffset = Math.max(-1, Math.min(1, verticalOffset));
 
-                        if(Math.abs(centerOffset) < 0.25) {
-                            // Står i mitten: Fortsätt flyta rakt längs strömmen (ingen pendel)
+                        if(Math.abs(verticalOffset) < 0.3) {
+                            // Står i mitten av ån: Flyter rakt åt höger i strömfåran
                             castLine.x += flowSpeed;
                             castLine.y += (Math.random() - 0.5) * 0.15;
                         } else {
-                            // Står på sidan: Pendla mjukt i en båge mot samma strandkant
+                            // Står på banken (uppe eller nere): Pendlar mjukt med strömmen åt höger
                             if(!castLine.swingStarted) {
                                 castLine.swingAngle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
                                 castLine.swingRadius = Math.hypot(castLine.x - rodX, castLine.y - rodY);
@@ -595,14 +596,21 @@
                             }
 
                             let swingSpeed = 0.0018 + (parseFloat(weatherData.flow) * 0.00015) + (currentMend * 0.0012);
-                            if (centerOffset < 0) {
-                                castLine.swingAngle += swingSpeed; // Vänster strand
+                            
+                            // Strömmen går alltid åt höger (+X), så vinkeln rör sig mot höger sida (0 radianer)
+                            if (verticalOffset < 0) {
+                                // Står på övre banken -> pendlar framåt/höger
+                                castLine.swingAngle += swingSpeed * 0.5;
                             } else {
-                                castLine.swingAngle -= swingSpeed; // Höger strand
+                                // Står på undre banken -> pendlar framåt/höger
+                                castLine.swingAngle -= swingSpeed * 0.5;
                             }
 
                             castLine.x = rodX + castLine.swingRadius * Math.cos(castLine.swingAngle);
                             castLine.y = rodY + castLine.swingRadius * Math.sin(castLine.swingAngle);
+                            
+                            // Se till att flugan alltid rör sig åt höger med strömmen
+                            castLine.x += flowSpeed * 0.8;
                         }
                     }
 
@@ -707,6 +715,18 @@
             let size = Math.floor(baseSize + (Math.random() * 20 - 10));
 
             currentFish = { species, size };
+
+            // Vibrera vid napp (kraftigare vibration för större fisk / lax)
+            if ("vibrate" in navigator) {
+                if (size > 80) {
+                    navigator.vibrate([200, 100, 300, 100, 400]);
+                } else if (size > 50) {
+                    navigator.vibrate([150, 100, 200]);
+                } else {
+                    navigator.vibrate(100);
+                }
+            }
+
             document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold animate-pulse">HUGG! En ${species} på ${size} cm! Håll fingret nedtryckt för att drilla!</span>`;
 
             startFightMode();
@@ -716,7 +736,10 @@
             isFighting = true;
             isPressingScreen = false;
             tippetStress = 20;
-            fightTimeRemaining = 5.0;
+
+            // Dynamisk drilltid baserat på fiskens storlek (5s för små fiskar, upp till 15s för jättelaxar på 115cm)
+            totalFightDuration = Math.min(15, Math.max(5, (currentFish.size / 115) * 15));
+            fightTimeRemaining = totalFightDuration;
 
             document.getElementById('fightOverlay').classList.remove('hidden');
             updateFightHUD();
@@ -735,7 +758,16 @@
                     tippetStress -= 5.0;
                 }
 
-                tippetStress = Math.max(0, Math.min(100, tippetStress));
+                    tippetStress = Math.max(0, Math.min(100, tippetStress));
+
+                // Pulserande haptisk vibration under drillningen baserat på tafsstress och fiskstorlek
+                if ("vibrate" in navigator) {
+                    if (tippetStress > 75) {
+                        navigator.vibrate(currentFish.size > 75 ? [80, 40, 80] : 40);
+                    } else if (currentFish.size > 80 && Math.random() < 0.3) {
+                        navigator.vibrate(60);
+                    }
+                }
 
                 if(fightTimeRemaining <= 0) {
                     fightTimeRemaining = 0;
@@ -777,10 +809,12 @@
             document.getElementById('fightOverlay').classList.add('hidden');
 
             if(success) {
+                if ("vibrate" in navigator) navigator.vibrate([100, 100, 300]);
                 document.getElementById('caughtFishDetails').innerText = `Du landade en ${currentFish.species} (${currentFish.size} cm) i ${saveanZones[currentZoneKey].name}. Gör ett aktivt val för hantering!`;
                 document.getElementById('welfareModal').classList.remove('hidden');
                 document.getElementById('welfareModal').classList.add('flex');
             } else {
+                if ("vibrate" in navigator) navigator.vibrate(400);
                 alert("Tafsen brast! Fisken var för stark och slet sig.");
                 resetAfterCatch();
             }
