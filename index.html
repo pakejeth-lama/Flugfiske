@@ -95,6 +95,24 @@
                 <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg">
                     Klicka i strömmen för att göra ett kast!
                 </div>
+
+                <!-- Overlay för Tafsstress vid Drillar -->
+                <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
+                    <div class="bg-stone-900/90 border border-amber-500/50 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl">
+                        <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">DRILLNING – HÅLL INNE FINGRET!</span>
+                        <div class="flex justify-between text-[11px] text-stone-300 font-semibold">
+                            <span>Tafsstress:</span>
+                            <span id="stressValueText">0%</span>
+                        </div>
+                        <div class="w-full bg-stone-950 h-4 rounded-full overflow-hidden border border-stone-700 p-0.5">
+                            <div id="stressBar" class="bg-emerald-500 h-full w-0% rounded-full transition-all duration-75"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-stone-400">
+                            <span>Tid kvar: <strong id="fightTimeText" class="text-emerald-400">5.0s</strong></span>
+                            <span>Släpp om mätaren blir röd!</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Kontroller -->
@@ -280,6 +298,13 @@
 
         let activeFly = flies[0];
         let currentFish = null;
+
+        // Drill- & Tafsstress-variabler
+        let isFighting = false;
+        let isPressingScreen = false;
+        let tippetStress = 0;
+        let fightTimeRemaining = 5.0;
+        let fightInterval = null;
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -541,11 +566,13 @@
                 ctx.arc(castLine.x, castLine.y, 4, 0, Math.PI*2);
                 ctx.fill();
 
-                castLine.x += 0.5 + (parseFloat(weatherData.flow) * 0.04) + (currentMend * 0.8);
-                if(castLine.x > canvas.width) castLine = null;
+                if(!isFighting) {
+                    castLine.x += 0.5 + (parseFloat(weatherData.flow) * 0.04) + (currentMend * 0.8);
+                    if(castLine.x > canvas.width) castLine = null;
 
-                if(castLine && Math.random() < 0.0035 && !currentFish) {
-                    triggerBite();
+                    if(castLine && Math.random() < 0.0035 && !currentFish) {
+                        triggerBite();
+                    }
                 }
             }
 
@@ -553,7 +580,20 @@
         }
         requestAnimationFrame(draw);
 
+        // Håll-ine eventlyssnare för Drill-momentet (mus + touch)
+        window.addEventListener('mousedown', () => { if(isFighting) isPressingScreen = true; });
+        window.addEventListener('mouseup', () => { isPressingScreen = false; });
+        window.addEventListener('touchstart', (e) => { 
+            if(isFighting) {
+                isPressingScreen = true; 
+                e.preventDefault();
+            }
+        }, { passive: false });
+        window.addEventListener('touchend', () => { isPressingScreen = false; });
+
         canvas.addEventListener('click', (e) => {
+            if(isFighting) return;
+
             const rect = canvas.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
             const clickY = e.clientY - rect.top;
@@ -590,7 +630,7 @@
         });
 
         function mendLine() {
-            if(!castLine) return;
+            if(!castLine || isFighting) return;
             currentMend = (Math.random() - 0.5) * 2;
             document.getElementById('castStatus').innerText = "Lina mendad! Perfekt drift.";
         }
@@ -616,17 +656,93 @@
             let size = Math.floor(baseSize + (Math.random() * 20 - 10));
 
             currentFish = { species, size };
-            document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold animate-pulse">HUGG! En ${species} på ${size} cm!</span>`;
+            document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold animate-pulse">HUGG! En ${species} på ${size} cm! Håll fingret nedtryckt för att drilla!</span>`;
 
-            setTimeout(() => {
-                document.getElementById('caughtFishDetails').innerText = `Du landade en ${species} (${size} cm) i ${saveanZones[currentZoneKey].name}. Gör ett aktivt val för hantering!`;
+            startFightMode();
+        }
+
+        // Starta Drill- & Tafsstress-momentet
+        function startFightMode() {
+            isFighting = true;
+            isPressingScreen = false;
+            tippetStress = 20;
+            fightTimeRemaining = 5.0;
+
+            document.getElementById('fightOverlay').classList.remove('hidden');
+            updateFightHUD();
+
+            if(fightInterval) clearInterval(fightInterval);
+
+            fightInterval = setInterval(() => {
+                if(!isFighting) return;
+
+                let pullForce = (Math.random() - 0.35) * 4;
+
+                if(isPressingScreen) {
+                    tippetStress += 6.5 + pullForce;
+                    fightTimeRemaining -= 0.1;
+                } else {
+                    tippetStress -= 5.0;
+                }
+
+                tippetStress = Math.max(0, Math.min(100, tippetStress));
+
+                if(fightTimeRemaining <= 0) {
+                    fightTimeRemaining = 0;
+                    finishFight(true);
+                    return;
+                }
+
+                if(tippetStress >= 100) {
+                    finishFight(false);
+                    return;
+                }
+
+                updateFightHUD();
+            }, 100);
+        }
+
+        function updateFightHUD() {
+            const bar = document.getElementById('stressBar');
+            const stressText = document.getElementById('stressValueText');
+            const timeText = document.getElementById('fightTimeText');
+
+            stressText.innerText = Math.round(tippetStress) + "%";
+            timeText.innerText = fightTimeRemaining.toFixed(1) + "s";
+            bar.style.width = tippetStress + "%";
+
+            if(tippetStress < 55) {
+                bar.className = "bg-emerald-500 h-full rounded-full transition-all duration-75";
+            } else if(tippetStress < 80) {
+                bar.className = "bg-amber-500 h-full rounded-full transition-all duration-75";
+            } else {
+                bar.className = "bg-rose-600 h-full rounded-full transition-all duration-75 animate-pulse";
+            }
+        }
+
+        function finishFight(success) {
+            isFighting = false;
+            isPressingScreen = false;
+            if(fightInterval) clearInterval(fightInterval);
+            document.getElementById('fightOverlay').classList.add('hidden');
+
+            if(success) {
+                document.getElementById('caughtFishDetails').innerText = `Du landade en ${currentFish.species} (${currentFish.size} cm) i ${saveanZones[currentZoneKey].name}. Gör ett aktivt val för hantering!`;
                 document.getElementById('welfareModal').classList.remove('hidden');
                 document.getElementById('welfareModal').classList.add('flex');
-            }, 800);
+            } else {
+                alert("Tafsen brast! Fisken var för stark och slet sig.");
+                resetAfterCatch();
+            }
         }
 
         // Fullständig nollställning av kast och alternativ vid fångad fisk
         function resetAfterCatch() {
+            if(fightInterval) clearInterval(fightInterval);
+            isFighting = false;
+            isPressingScreen = false;
+            document.getElementById('fightOverlay').classList.add('hidden');
+
             castLine = null;
             currentMend = 0;
             currentFish = null;
@@ -672,6 +788,7 @@
         }
 
         function changeFlyModal() {
+            if(isFighting) return;
             const list = document.getElementById('flyList');
             list.innerHTML = flies.map(f => `
                 <div onclick="activeFly = flies.find(x => x.name === '${f.name}'); updateUI(); document.getElementById('flyModal').classList.add('hidden');" class="bg-stone-900 p-2 rounded border border-stone-700 hover:border-emerald-500 cursor-pointer flex justify-between text-xs">
