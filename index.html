@@ -83,7 +83,7 @@
                 
                 <!-- Canvas HUD -->
                 <div class="absolute top-2 left-2 bg-stone-900/80 backdrop-blur px-2.5 py-1 rounded border border-stone-700 text-[11px] flex gap-2.5">
-                    <span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Klinkhåmer</strong></span>
+                    <span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Fireball</strong></span>
                     <span>Bestånd: <strong id="hudPopulation" class="text-emerald-400">210</strong> st</span>
                     <span>Kast idag: <strong id="castsLeft" class="text-amber-400">5 / 5</strong></span>
                 </div>
@@ -268,7 +268,8 @@
         };
 
         const flies = [
-            { name: "Klinkhåmer", type: "Torrfluga (Öring)" },
+            { name: "Fireball", type: "Torrfluga (Öring / Lax)" },
+            { name: "Mysen", type: "Nymf / Klassiker" },
             { name: "Europa 12", type: "Torrfluga (Öring)" },
             { name: "Haröra (Goldhead)", type: "Nymf (Öring)" },
             { name: "Ullsock", type: "Laxfluga (Säveån klassiker)" },
@@ -512,7 +513,7 @@
                 ctx.fill();
             }
 
-            // Strömvågor (går åt höger)
+            // Strömvågor (flyttar sig åt höger)
             flowOffset += 0.9 + (parseFloat(weatherData.flow) * 0.03);
             if(flowOffset > 40) flowOffset = 0;
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
@@ -525,10 +526,10 @@
                 ctx.stroke();
             }
 
-            // Insekter
+            // Insekter (flyttar sig åt höger, i samma strömriktning som flugorna)
             ctx.fillStyle = 'rgba(254, 240, 138, 0.6)';
             insects.forEach(ins => {
-                ins.x += ins.speed;
+                ins.x += ins.speed + (parseFloat(weatherData.flow) * 0.05);
                 if(ins.x > canvas.width) ins.x = 0;
                 ctx.beginPath();
                 ctx.arc(ins.x, ins.y + Math.sin(ins.x*0.1)*3, 2, 0, Math.PI*2);
@@ -545,7 +546,7 @@
             ctx.arc(rodX, rodY, 6, 0, Math.PI*2);
             ctx.fill();
 
-            // Kastlina & Fluga med strömriktning mot höger (+X)
+            // Kastlina & Fluga (flödar i exakt samma strömriktning åt höger som insekterna)
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -572,23 +573,24 @@
                         if(castLine.stretch < 0.1) castLine.stretch = 0;
                     }
 
-                    let flowSpeed = 0.2 + (parseFloat(weatherData.flow) * 0.008) + (currentMend * 0.2);
+                    // Flödeshastighet åt höger (+X) matchad med insekterna
+                    let flowSpeed = 0.5 + (parseFloat(weatherData.flow) * 0.05) + (currentMend * 0.2);
 
-                    // Första 1 sekund (60 frames): drift rakt åt höger i strömriktningen (+X)
+                    // Första 1 sekund (60 frames): drift rakt åt höger i strömriktningen
                     if(castLine.framesElapsed <= 60) {
                         castLine.x += flowSpeed;
                         castLine.y += (Math.random() - 0.5) * 0.1;
                     } else {
-                        // Avgör ståplats: Toppbank, bottenbank eller mitten
+                        // Ståndplatsanalys: Mitten vs sidorna
                         let verticalOffset = (rodY - (canvas.height / 2)) / (canvas.height * 0.35); 
                         verticalOffset = Math.max(-1, Math.min(1, verticalOffset));
 
                         if(Math.abs(verticalOffset) < 0.3) {
-                            // Står i mitten av ån: Flyter rakt åt höger i strömfåran
+                            // Står i mitten: Flyter helt rakt åt höger
                             castLine.x += flowSpeed;
                             castLine.y += (Math.random() - 0.5) * 0.15;
                         } else {
-                            // Står på banken (uppe eller nere): Pendlar mjukt med strömmen åt höger
+                            // Står på banken: Pendlar mjukt framåt med strömmen åt höger
                             if(!castLine.swingStarted) {
                                 castLine.swingAngle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
                                 castLine.swingRadius = Math.hypot(castLine.x - rodX, castLine.y - rodY);
@@ -597,20 +599,17 @@
 
                             let swingSpeed = 0.0018 + (parseFloat(weatherData.flow) * 0.00015) + (currentMend * 0.0012);
                             
-                            // Strömmen går alltid åt höger (+X), så vinkeln rör sig mot höger sida (0 radianer)
                             if (verticalOffset < 0) {
-                                // Står på övre banken -> pendlar framåt/höger
-                                castLine.swingAngle += swingSpeed * 0.5;
+                                castLine.swingAngle += swingSpeed * 0.3;
                             } else {
-                                // Står på undre banken -> pendlar framåt/höger
-                                castLine.swingAngle -= swingSpeed * 0.5;
+                                castLine.swingAngle -= swingSpeed * 0.3;
                             }
 
                             castLine.x = rodX + castLine.swingRadius * Math.cos(castLine.swingAngle);
                             castLine.y = rodY + castLine.swingRadius * Math.sin(castLine.swingAngle);
                             
-                            // Se till att flugan alltid rör sig åt höger med strömmen
-                            castLine.x += flowSpeed * 0.8;
+                            // Säkerställ att den alltid rör sig framåt med strömmen åt höger
+                            castLine.x += flowSpeed;
                         }
                     }
 
@@ -685,7 +684,7 @@
             currentMend = 0;
             castsRemaining--;
             updateUI();
-            document.getElementById('castStatus').innerText = "Flugan driver rakt i strömmen...";
+            document.getElementById('castStatus').innerText = "Flugan driver med strömmen åt höger...";
         });
 
         function mendLine() {
@@ -716,7 +715,6 @@
 
             currentFish = { species, size };
 
-            // Vibrera vid napp (kraftigare vibration för större fisk / lax)
             if ("vibrate" in navigator) {
                 if (size > 80) {
                     navigator.vibrate([200, 100, 300, 100, 400]);
@@ -737,7 +735,6 @@
             isPressingScreen = false;
             tippetStress = 20;
 
-            // Dynamisk drilltid baserat på fiskens storlek (5s för små fiskar, upp till 15s för jättelaxar på 115cm)
             totalFightDuration = Math.min(15, Math.max(5, (currentFish.size / 115) * 15));
             fightTimeRemaining = totalFightDuration;
 
@@ -758,9 +755,8 @@
                     tippetStress -= 5.0;
                 }
 
-                    tippetStress = Math.max(0, Math.min(100, tippetStress));
+                tippetStress = Math.max(0, Math.min(100, tippetStress));
 
-                // Pulserande haptisk vibration under drillningen baserat på tafsstress och fiskstorlek
                 if ("vibrate" in navigator) {
                     if (tippetStress > 75) {
                         navigator.vibrate(currentFish.size > 75 ? [80, 40, 80] : 40);
