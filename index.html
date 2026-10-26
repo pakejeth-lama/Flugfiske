@@ -544,7 +544,7 @@
             ctx.arc(rodX, rodY, 6, 0, Math.PI*2);
             ctx.fill();
 
-            // Kastlina & Fluga med dynamisk strömdrift beroende på ståplats
+            // Kastlina & Fluga med pendeleffekt
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -559,16 +559,29 @@
                 ctx.fill();
 
                 if(!isFighting) {
-                    // Driftsberäkning: Om man står vid sidan drag-sveps flugan mot kanten, står man i mitten driftar den rakt
-                    let centerDist = (rodX - (canvas.width / 2)) / (canvas.width / 2); // -1 (vänster) till +1 (höger)
+                    // Beräkna pendelvinkel & fast linlängd baserat på utkastets startpunkt
+                    let currentAngle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
                     
-                    let forwardSpeed = 0.5 + (parseFloat(weatherData.flow) * 0.04) + (currentMend * 0.8);
-                    let sideSweep = centerDist * 0.6; // Svep mot den kant man står närmare
+                    // Strömstyrkan och mendning roterar vinkeln
+                    let swingSpeed = 0.008 + (parseFloat(weatherData.flow) * 0.0006) + (currentMend * 0.005);
+                    
+                    // Avgör om vi pendlar mot vänster eller höger strandkant
+                    let targetAngle = rodX < canvas.width / 2 ? Math.PI : 0; 
 
-                    castLine.x += forwardSpeed;
-                    castLine.y += sideSweep;
+                    if (rodX < canvas.width / 2) {
+                        currentAngle += swingSpeed; // Svep mot vänster strand
+                    } else {
+                        currentAngle -= swingSpeed; // Svep mot höger strand
+                    }
 
-                    if(castLine.x > canvas.width || castLine.y < 0 || castLine.y > canvas.height) castLine = null;
+                    // Räkna ut flugans nya X och Y med bevarad radie (linlängd)
+                    castLine.x = rodX + castLine.radius * Math.cos(currentAngle);
+                    castLine.y = rodY + castLine.radius * Math.sin(currentAngle);
+
+                    // Om flugan hamnar utanför skärmen/stranden släpps kasten
+                    if(castLine.x < 0 || castLine.x > canvas.width || castLine.y < 0 || castLine.y > canvas.height) {
+                        castLine = null;
+                    }
 
                     if(castLine && Math.random() < 0.0035 && !currentFish) {
                         triggerBite();
@@ -621,17 +634,23 @@
                 return;
             }
 
-            castLine = { x: clickX, y: clickY };
+            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
+            let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
+            
+            // Spara fast radie (linlängd) för pendeln
+            let castRadius = Math.hypot(clickX - rodX, clickY - rodY);
+
+            castLine = { x: clickX, y: clickY, radius: castRadius };
             currentMend = 0;
             castsRemaining--;
             updateUI();
-            document.getElementById('castStatus').innerText = "Flugan driver i strömmen...";
+            document.getElementById('castStatus').innerText = "Flugan pendlar gött i strömmen...";
         });
 
         function mendLine() {
             if(!castLine || isFighting) return;
             currentMend = (Math.random() - 0.5) * 2;
-            document.getElementById('castStatus').innerText = "Lina mendad! Perfekt drift.";
+            document.getElementById('castStatus').innerText = "Lina mendad! Justerade driften.";
         }
 
         function triggerBite() {
@@ -760,7 +779,6 @@
             let earnedPoints = 0;
 
             if(survived) {
-                // Poängberäkning per art och storlek
                 if(currentFish.species === "Lax") {
                     earnedPoints = 100;
                 } else if(currentFish.species === "Öring") {
@@ -770,7 +788,7 @@
                 } else if(currentFish.species === "Gädda" && currentFish.size <= 80) {
                     earnedPoints = -20;
                 } else {
-                    earnedPoints = 30; // Större abborre/gädda
+                    earnedPoints = 30;
                 }
 
                 gameWorld.points += earnedPoints;
