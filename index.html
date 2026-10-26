@@ -195,7 +195,7 @@
                     <span>💡</span> Ekologisk balans & Fisketips
                 </h3>
                 <p class="text-[11px] text-stone-300 leading-relaxed">
-                    Kåhögsforsen bjuder på hård ström och vilda forsblock. Använd Hemtagning-knappen för att veva hem lina steg för steg och trigga hugg!
+                    Fler biotopåtgärder (grus och ståndstenar) ökar vattenhastigheten och tränger undan abborre och gädda. Håll utkik efter grova färnor (upp till 62 cm) bakom stenarna!
                 </p>
             </div>
 
@@ -226,7 +226,7 @@
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Placera Lekgrus</h4>
-                        <p class="text-[9px] text-stone-400">Ger mer öring & lax på sträckan</p>
+                        <p class="text-[9px] text-stone-400">Ökar vattenhastighet & lax/öring</p>
                     </div>
                     <button onclick="startPlacement('gravel', 150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">150 p</button>
                 </div>
@@ -234,7 +234,7 @@
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Placera Ståndsten</h4>
-                        <p class="text-[9px] text-stone-400">Skapar ståndplatser & strömvak</p>
+                        <p class="text-[9px] text-stone-400">Skapar ström & färnans ståndplatser</p>
                     </div>
                     <button onclick="startPlacement('boulder', 200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">200 p</button>
                 </div>
@@ -454,7 +454,7 @@
         let wildlifeDisturbance = false;
 
         let todayStr = new Date().toISOString().split('T')[0];
-        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v15')) || {
+        let gameWorld = JSON.parse(localStorage.getItem('savean_persistent_v17')) || {
             points: 700,
             laddersFixed: false,
             lastPlayedDate: todayStr,
@@ -527,14 +527,19 @@
                 if(data && data.current) {
                     weatherData.temp = data.current.temperature_2m;
                     weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
-                    let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5);
+                    let zone = getActiveZone();
+                    // Biotopåtgärder (grus + ståndstenar) ökar vattenhastigheten!
+                    let biotopeFlowBonus = (zone.gravels.length * 0.8) + (zone.boulders.length * 1.2);
+                    let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5) + biotopeFlowBonus;
                     weatherData.flow = Math.max(4, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
                     weatherData.condition = data.current.precipitation > 0 ? "Regn / Dis" : "Klart / Växlande";
                 }
             } catch(e) {
                 weatherData.temp = z.baseTemp;
                 weatherData.waterTemp = 10.0;
-                weatherData.flow = (16 + Math.sin(gameWorld.dayOfSeason)*6).toFixed(1);
+                let zone = getActiveZone();
+                let biotopeFlowBonus = (zone.gravels.length * 0.8) + (zone.boulders.length * 1.2);
+                weatherData.flow = (16 + Math.sin(gameWorld.dayOfSeason)*6 + biotopeFlowBonus).toFixed(1);
                 weatherData.condition = "Normalt";
             }
             updateUI();
@@ -589,7 +594,7 @@
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
 
             renderLog();
-            localStorage.setItem('savean_persistent_v15', JSON.stringify(gameWorld));
+            localStorage.setItem('savean_persistent_v17', JSON.stringify(gameWorld));
         }
 
         function nextDay() {
@@ -648,6 +653,7 @@
             placementMode = 'rod';
             const banner = document.getElementById('modeBanner');
             banner.innerText = `Placera ståplats: Klicka där du vill stå!`;
+            banner.classList.add('hidden');
             banner.classList.remove('hidden');
         }
 
@@ -687,7 +693,6 @@
 
             const zone = getActiveZone();
 
-            // Unika bakgrunder & miljöer
             if (currentZoneKey === 'mannered') {
                 let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
                 bgGrad.addColorStop(0, '#0369a1');
@@ -703,7 +708,6 @@
                 ctx.lineTo(canvas.width, 0);
                 ctx.fill();
             } else if (currentZoneKey === 'kahogsforsen') {
-                // Hård fors med skummande ström och forsblock (stenar)
                 let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
                 bgGrad.addColorStop(0, '#0284c7');
                 bgGrad.addColorStop(0.3, '#38bdf8');
@@ -712,7 +716,7 @@
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Rita fasta forsblock / stora stenar i hård forsen
+                // Forsblock
                 ctx.fillStyle = '#0f172a';
                 ctx.beginPath();
                 ctx.ellipse(canvas.width * 0.35, canvas.height * 0.45, 40, 20, 0.15, 0, Math.PI * 2);
@@ -722,7 +726,7 @@
                 ctx.lineWidth = 2.5;
                 ctx.stroke();
 
-                // Skummande vитtt skum vid forsblocken
+                // Vitt skum
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
                 ctx.beginPath();
                 ctx.arc(canvas.width * 0.35 - 30, canvas.height * 0.45 - 6, 14, 0, Math.PI * 2);
@@ -736,7 +740,6 @@
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Stort överhängande träd upptill
                 ctx.fillStyle = '#064e3b';
                 ctx.beginPath();
                 ctx.ellipse(canvas.width * 0.5, 10, canvas.width * 0.45, 35, 0, 0, Math.PI * 2);
@@ -810,12 +813,15 @@
                 ctx.fill();
             }
 
-            // Strömvågor (vildare i forsen)
-            let flowMultiplier = currentZoneKey === 'kahogsforsen' ? 2.0 : 0.9;
-            flowOffset += flowMultiplier + (parseFloat(weatherData.flow) * 0.03);
+            // Strömvågor (ökar farten beroende på antal grus och stenar)
+            let biotopeSpeedBonus = (zone.gravels.length * 0.35) + (zone.boulders.length * 0.5);
+            let baseFlowMult = currentZoneKey === 'kahogsforsen' ? 2.0 : 0.9;
+            let totalFlowMult = baseFlowMult + biotopeSpeedBonus;
+
+            flowOffset += totalFlowMult + (parseFloat(weatherData.flow) * 0.03);
             if(flowOffset > 40) flowOffset = 0;
-            ctx.strokeStyle = currentZoneKey === 'kahogsforsen' ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.18)';
-            ctx.lineWidth = currentZoneKey === 'kahogsforsen' ? 1.8 : 1;
+            ctx.strokeStyle = totalFlowMult > 2.5 ? 'rgba(255, 255, 255, 0.5)' : 'rgba(255, 255, 255, 0.18)';
+            ctx.lineWidth = totalFlowMult > 2.5 ? 2 : 1;
             for(let y = 30; y < canvas.height; y += 35) {
                 ctx.beginPath();
                 for(let x = -40; x < canvas.width + 40; x += 35) {
@@ -824,7 +830,7 @@
                 ctx.stroke();
             }
 
-            // Vakande fisk (ringar)
+            // Vakande fisk
             rises.forEach(r => {
                 r.timer++;
                 if(r.timer > 150) {
@@ -856,7 +862,7 @@
                 ctx.fill();
             });
 
-            // Spöposition / Stilren mörkgrön prick
+            // Spöposition
             let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
 
@@ -935,6 +941,7 @@
                         zone.boulders.push({ x: clickX, y: clickY });
                         zone.maxPop += 15;
                     }
+                    fetchWeather(currentZoneKey); // Uppdatera vattenhastigheten direkt!
                 }
                 placementMode = null;
                 document.getElementById('modeBanner').classList.add('hidden');
@@ -970,7 +977,6 @@
             document.getElementById('castStatus').innerText = hitRise ? "Snyggt kast i vaket! Väntar hugg..." : "Flugan driver med strömmen...";
         });
 
-        // Förbättrad Hemtagning: Vevar in linan steg för steg mot fiskaren vid varje tryck
         function pullLine() {
             if(!castLine || isFighting) return;
             
@@ -986,7 +992,7 @@
             }
             
             let angle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
-            currentDist -= 30; // Kortar ner linan med 30 pixlar per tryck
+            currentDist -= 30;
             
             castLine.x = rodX + currentDist * Math.cos(angle);
             castLine.y = rodY + currentDist * Math.sin(angle);
@@ -1004,20 +1010,44 @@
             let gravelBonus = zone.gravels.length;
             let boulderBonus = zone.boulders.length;
 
-            let troutSalmonChance = 0.60 + Math.min(0.30, (gravelBonus + boulderBonus) * 0.03);
+            // Fler biotopåtgärder (grus och ståndstenar) ger högre ström och minskar andelen gäddor/abborrar
+            let biotopeFlowProtection = Math.min(0.25, (gravelBonus + boulderBonus) * 0.035);
+
+            let troutSalmonChance = 0.50 + biotopeFlowProtection + Math.min(0.20, (gravelBonus + boulderBonus) * 0.02);
+            let graylingChance = 0.20 + (boulderBonus * 0.02); // Färna/Öring/Lax gynnas
+
             if (isRiseBonus) troutSalmonChance += 0.15;
+            
+            if (currentZoneKey === 'kahogsforsen') {
+                troutSalmonChance = 0.90;
+            }
             
             let species = "Öring";
             let rand = Math.random();
 
             if (rand < troutSalmonChance) {
-                species = Math.random() < 0.55 ? "Öring" : "Lax";
+                species = Math.random() < 0.50 ? "Öring" : (Math.random() < 0.70 ? "Lax" : "Färna");
+            } else if (rand < troutSalmonChance + graylingChance) {
+                species = "Färna";
             } else {
                 species = Math.random() < 0.65 ? "Abborre" : "Gädda";
             }
 
-            let baseSize = species === "Lax" ? 82 : (species === "Gädda" ? 75 : (species === "Öring" ? 48 : 28));
-            let size = Math.floor(baseSize + (Math.random() * 20 - 10) + (isRiseBonus ? 8 : 0));
+            // Storlekslogik (Färna normalt upp till 40cm, men upp till 62cm bakom stenar!)
+            let baseSize = 40;
+            if (species === "Lax") baseSize = 82;
+            else if (species === "Gädda") baseSize = 75;
+            else if (species === "Öring") baseSize = 48;
+            else if (species === "Färna") {
+                // Om det finns ståndstenar kan färnorna bli riktigt grova (upp till 62 cm)
+                let maxFerna = boulderBonus > 0 ? 62 : 45;
+                baseSize = 32 + Math.random() * (maxFerna - 32);
+            } else {
+                baseSize = 28;
+            }
+
+            let size = Math.floor(baseSize + (Math.random() * 15 - 5) + (isRiseBonus ? 6 : 0));
+            if (species === "Färna" && size > 62) size = 62;
 
             currentFish = { species, size };
 
@@ -1170,6 +1200,9 @@
                 } else if(currentFish.species === "Öring") {
                     earnedPoints = 50;
                     ecoMsg = "Öringen simmade piggt tillbaka! (+50 p).";
+                } else if(currentFish.species === "Färna") {
+                    earnedPoints = 40;
+                    ecoMsg = "Den strömvane färnan simmade tillbaka till ståndstenen! (+40 p).";
                 } else if((currentFish.species === "Gädda" && currentFish.size < 70) || (currentFish.species === "Abborre" && currentFish.size < 30)) {
                     earnedPoints = -20;
                     zone.population = Math.max(10, zone.population - 4);
