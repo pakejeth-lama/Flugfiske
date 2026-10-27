@@ -79,22 +79,6 @@
             </h1>
             <p id="headerAnglerDisplay" class="text-[11px] text-stone-400">Fiskar som: <strong class="text-emerald-300" id="currentAnglerLabel">-</strong></p>
         </div>
-        
-        <!-- Väder- och Vattenpanel -->
-        <div class="flex items-center gap-3 bg-stone-900 px-4 py-2 rounded-xl border border-emerald-500/30 shadow-inner">
-            <div class="text-center px-2 border-r border-stone-700">
-                <span class="block text-[9px] uppercase tracking-wider text-stone-400 font-semibold">Väder</span>
-                <span id="wCondition" class="text-xs font-bold text-stone-200">Laddar...</span>
-            </div>
-            <div class="text-center px-2 border-r border-stone-700">
-                <span class="block text-[9px] uppercase tracking-wider text-stone-400 font-semibold">Luft / Vatten</span>
-                <span class="text-xs font-bold text-emerald-400"><span id="wTemp">-</span>°C / <span id="wWaterTemp">-</span>°C</span>
-            </div>
-            <div class="text-center px-2">
-                <span class="block text-[9px] uppercase tracking-wider text-stone-400 font-semibold">Vattenföring</span>
-                <span id="wFlow" class="text-xs font-bold text-blue-400">- m³/s</span>
-            </div>
-        </div>
 
         <div class="flex items-center gap-2 text-xs">
             <div class="bg-stone-900 px-3 py-1.5 rounded-lg border border-stone-700 text-center">
@@ -145,35 +129,37 @@
                 </div>
             </div>
 
-            <!-- Canvas Spelyta (Dubbelt så hög i stående / standard i liggande) -->
+            <!-- Canvas Spelyta (Tillbakaställd till 16/9 i liggande, dubbel höjd i stående) -->
             <div id="gameContainer" class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[4/5] md:aspect-[16/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
-                <!-- Canvas HUD -->
-                <div class="absolute top-2 left-2 bg-stone-900/80 backdrop-blur px-2.5 py-1 rounded border border-stone-700 text-[11px] flex gap-2.5 z-20">
-                    <span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Fireball</strong></span>
-                    <span>Bestånd: <strong id="hudPopulation" class="text-emerald-400">210</strong> st</span>
-                    <span>Kast idag: <strong id="castsLeft" class="text-amber-400">5 / 5</strong></span>
+                <!-- Canvas HUD (Innehåller nu även väder och vattenföring) -->
+                <div class="absolute top-2 left-2 right-2 bg-stone-900/85 backdrop-blur px-2.5 py-1.5 rounded border border-stone-700 text-[10px] md:text-[11px] flex flex-wrap justify-between items-center gap-2 z-20">
+                    <div class="flex items-center gap-2.5">
+                        <span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Fireball</strong></span>
+                        <span>Bestånd: <strong id="hudPopulation" class="text-emerald-400">210</strong> st</span>
+                        <span>Kast: <strong id="castsLeft" class="text-amber-400">5 / 5</strong></span>
+                    </div>
+                    <div class="flex items-center gap-2.5 border-t md:border-t-0 border-stone-700 pt-1 md:pt-0">
+                        <span>Väder: <strong id="wCondition" class="text-stone-200">-</strong></span>
+                        <span>Temp: <strong class="text-emerald-400"><span id="wTemp">-</span>°C / <span id="wWaterTemp">-</span>°C</strong></span>
+                        <span>Vatten: <strong id="wFlow" class="text-blue-400">- m³/s</strong></span>
+                    </div>
                 </div>
 
                 <!-- Notis / Hugg-status -->
-                <div id="canvasNotification" class="hidden absolute top-12 left-1/2 -translate-x-1/2 bg-stone-900/95 border border-amber-500/80 px-3.5 py-2 rounded-lg text-xs font-bold text-amber-400 shadow-2xl text-center z-30 max-w-xs animate-pulse"></div>
+                <div id="canvasNotification" class="hidden absolute top-16 left-1/2 -translate-x-1/2 bg-stone-900/95 border border-amber-500/80 px-3.5 py-2 rounded-lg text-xs font-bold text-amber-400 shadow-2xl text-center z-30 max-w-xs animate-pulse"></div>
 
                 <!-- Störningsbanner -->
-                <div id="wildlifeAlert" class="hidden absolute top-12 left-1/2 -translate-x-1/2 bg-amber-600/90 text-stone-950 px-3 py-1.5 rounded-lg font-bold text-xs shadow-xl animate-pulse text-center border border-amber-400 z-30">
+                <div id="wildlifeAlert" class="hidden absolute top-16 left-1/2 -translate-x-1/2 bg-amber-600/90 text-stone-950 px-3 py-1.5 rounded-lg font-bold text-xs shadow-xl animate-pulse text-center border border-amber-400 z-30">
                     🦫 <span id="wildlifeText">En bäver plaskar vid nacken!</span>
                 </div>
 
-                <div id="modeBanner" class="hidden absolute top-2 right-2 bg-amber-500 text-stone-950 px-2.5 py-0.5 rounded font-bold text-[10px] shadow-lg animate-bounce z-20">
+                <div id="modeBanner" class="hidden absolute top-12 right-2 bg-amber-500 text-stone-950 px-2.5 py-0.5 rounded font-bold text-[10px] shadow-lg animate-bounce z-20">
                     Aktivt läge: Klicka i vattnet!
                 </div>
 
-                <!-- Mjukare text -->
-                <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg z-20">
-                    Klicka för kast. Klicka på gröna gubben för Hemtagning.
-                </div>
-
-                <!-- Overlay för Tafsstress (Rör sig fritt över skärmen som en rusande fisk) -->
+                <!-- Overlay för Tafsstress -->
                 <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
                     <div id="fightCard" class="bg-stone-900/95 border-2 border-amber-500/80 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl animate-fight-rush transition-all duration-75">
                         <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">Drillning – Håll inne fingret!</span>
@@ -210,7 +196,7 @@
                 </div>
 
                 <div id="castStatus" class="text-[11px] font-medium text-stone-300 text-center bg-stone-900/60 py-1 rounded border border-stone-700/50">
-                    Redo för kast. Klicka på spelytan!
+                    Redo för kast. Klicka för kast, klicka på gröna gubben för Hemtagning!
                 </div>
             </div>
 
@@ -1109,7 +1095,6 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const zone = getActiveZone();
-            // Startpunkt nere till vänster (om inte spelaren har flyttat den själv)
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : 40;
             let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 40;
 
@@ -1174,18 +1159,18 @@
                 ctx.stroke();
             }
 
-            // === STRANDKANT ===
+            // === STRANDKANT (Flyttad längre ned så att HUD/text inte överlappar) ===
             ctx.fillStyle = '#1c1917';
-            ctx.fillRect(0, 0, canvas.width, 24);
+            ctx.fillRect(0, 0, canvas.width, 36);
             ctx.fillRect(0, canvas.height - 24, canvas.width, 24);
             ctx.fillStyle = '#14532d';
-            ctx.fillRect(0, 0, canvas.width, 10);
+            ctx.fillRect(0, 0, canvas.width, 14);
             ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
 
             // === TRÄD OCH BUSKAR ===
             for (let i = 0; i < (zone.trees || 2); i++) {
                 let tx = 50 + (i * 130) % (canvas.width - 80);
-                let ty = i % 2 === 0 ? 12 : canvas.height - 12;
+                let ty = i % 2 === 0 ? 16 : canvas.height - 12;
                 ctx.fillStyle = '#78350f';
                 ctx.fillRect(tx - 3, ty - 6, 6, 12);
                 ctx.fillStyle = '#166534';
@@ -1199,7 +1184,7 @@
 
             for (let i = 0; i < (zone.bushes || 2); i++) {
                 let bx = 90 + (i * 150) % (canvas.width - 100);
-                let by = i % 2 === 0 ? 16 : canvas.height - 16;
+                let by = i % 2 === 0 ? 20 : canvas.height - 16;
                 ctx.fillStyle = '#15803d';
                 ctx.beginPath();
                 ctx.ellipse(bx, by, 14, 7, 0, 0, Math.PI * 2);
@@ -1263,7 +1248,7 @@
             
             ctx.strokeStyle = currentFlow > 14 ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.2)';
             ctx.lineWidth = currentFlow > 14 ? 1.5 : 1;
-            for(let y = 35; y < canvas.height - 25; y += 35) {
+            for(let y = 45; y < canvas.height - 25; y += 35) {
                 ctx.beginPath();
                 for(let x = -40; x < canvas.width + 40; x += 35) {
                     ctx.lineTo(x + flowOffset, y + Math.sin((x + flowOffset) * 0.05) * 4);
@@ -1381,7 +1366,6 @@
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : 40;
             let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 40;
 
-            // Klick direkt på gröna gubben = Ryckvis hemtagning
             if (Math.hypot(clickX - rodX, clickY - rodY) < 25) {
                 if (castLine) {
                     let angle = Math.atan2(rodY - castLine.y, rodX - castLine.x);
@@ -1497,7 +1481,6 @@
             currentFish = { species, size, gender };
             let feelDescription = size > 85 ? "HUGG! En riktig jätte till lax rusar lina!" : (size > 65 ? "HUGG! Tunga knixar i spöt!" : "HUGG! Pigg fisk som kämpar!");
 
-            // HUGGVIBRATION + SKÄRMSKAK
             if ("vibrate" in navigator) {
                 navigator.vibrate(size > 85 ? [400, 100, 400, 100, 600] : [200, 80, 200]);
             }
@@ -1573,7 +1556,6 @@
             bar.style.width = tippetStress + "%";
             bar.className = tippetStress < 55 ? "bg-emerald-500 h-full rounded-full transition-all duration-75" : (tippetStress < 80 ? "bg-amber-500 h-full rounded-full transition-all duration-75" : "bg-rose-600 h-full rounded-full transition-all duration-75 animate-pulse");
 
-            // Drillningsfönstret rör sig nu fram och tillbaka över skärmen och simulerar en rusande fisk!
             let rushX = (Math.sin(Date.now() * 0.015) * (currentFish.size > 80 ? 45 : 25)) + ((Math.random() - 0.5) * 15);
             let rushY = (Math.cos(Date.now() * 0.012) * (currentFish.size > 80 ? 30 : 15)) + ((Math.random() - 0.5) * 15);
             let rot = (Math.sin(Date.now() * 0.01) * (currentFish.size > 80 ? 6 : 3));
@@ -1613,7 +1595,7 @@
             currentFish = null;
             placementMode = null;
             document.getElementById('modeBanner').classList.add('hidden');
-            document.getElementById('castStatus').innerText = "Redo för kast. Klicka på spelytan!";
+            document.getElementById('castStatus').innerText = "Redo för kast. Klicka för kast, klicka på gröna gubben för Hemtagning!";
         }
 
         function releaseFish() {
