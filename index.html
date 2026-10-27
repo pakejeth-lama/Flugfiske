@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flugfiskarens Ekosystem – Säveån</title>
+    <title>Flugfiskarens Ekosystem – Säveån Open World</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -15,9 +15,9 @@
     <!-- Modal: Start / Låst Namnregistrering -->
     <div id="nameModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-800 border border-emerald-500/50 rounded-xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3 text-center">
-            <h3 class="text-base font-bold text-emerald-400">🎣 Välkommen till Säveån!</h3>
+            <h3 class="text-base font-bold text-emerald-400">🎣 Välkommen till Säveån Open World!</h3>
             <p class="text-xs text-stone-300 leading-relaxed">
-                Ange ditt fiskarnamn eller smeknamn. Detta namn sparas i molnet för att skydda dina dagliga kast, fångster och biotope-insatser.
+                Ange ditt fiskarnamn. Din poäng och dina kast är personliga, men biotopvården bygger ni gemensamt på de öppna sträckorna i molnet!
             </p>
             <input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
             <button onclick="saveInitialAnglerName()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-xs font-semibold shadow">Starta Fisket</button>
@@ -28,7 +28,7 @@
     <header class="bg-stone-800 border-b border-stone-700 py-3 px-4 shadow-md flex flex-wrap justify-between items-center gap-3">
         <div>
             <h1 class="text-xl md:text-2xl font-bold text-emerald-400 flex items-center gap-1.5">
-                <span>🎣</span> Säveån Ekosystem
+                <span>🌍</span> Säveån Open World
             </h1>
             <p id="headerAnglerDisplay" class="text-[11px] text-stone-400">Fiskar som: <strong class="text-emerald-300" id="currentAnglerLabel">-</strong></p>
         </div>
@@ -69,9 +69,9 @@
             <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-col gap-1.5">
                 <div class="flex justify-between items-center text-xs">
                     <span class="font-bold text-emerald-400 flex items-center gap-1">
-                        <span>🗺️</span> Välj Fiskeplats:
+                        <span>🗺️</span> Välj Gemensam Fiskeplats:
                     </span>
-                    <span class="text-[9px] text-stone-400">Klicka för att byta zon</span>
+                    <span class="text-[9px] text-stone-400">Hämtar zonen live från molnet</span>
                 </div>
                 <div id="riverMap" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-1.5 text-xs">
                     <button onclick="selectZone('dickson', 'Dickson')" id="zone-dickson" class="p-2 rounded bg-emerald-900/60 border border-emerald-500 text-left transition">
@@ -169,7 +169,7 @@
             <!-- Ekosystemstatus -->
             <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700">
                 <h3 class="text-xs font-bold text-stone-200 mb-1.5 flex items-center gap-1">
-                    <span>📊</span> Biotopstatus för aktuell sträcka
+                    <span>📊</span> Biotopstatus (Gemensam sträcka)
                 </h3>
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-1.5 text-[10px]">
                     <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
@@ -228,7 +228,7 @@
         <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-sm w-full p-4 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-700 pb-2">
                 <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1">
-                    <span>🌱</span> Biotopvård (Dubbla priser)
+                    <span>🌱</span> Gemensam Biotopvård
                 </h3>
                 <button onclick="closeBiotopModal()" class="text-stone-400 hover:text-stone-100 text-xs font-bold px-2 py-1">✕</button>
             </div>
@@ -237,7 +237,7 @@
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Placera Lekgrus</h4>
-                        <p class="text-[9px] text-stone-400">Lokal lekplats för lax & öring</p>
+                        <p class="text-[9px] text-stone-400">Syns för alla i open world</p>
                     </div>
                     <button onclick="startPlacement('gravel', 300)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">300 p</button>
                 </div>
@@ -245,15 +245,15 @@
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Placera Ståndsten</h4>
-                        <p class="text-[9px] text-stone-400">Skapar lokal strömlä & ståndplats</p>
+                        <p class="text-[9px] text-stone-400">Skapar ståndplats för alla</p>
                     </div>
                     <button onclick="startPlacement('boulder', 400)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">400 p</button>
                 </div>
 
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
                     <div>
-                        <h4 class="font-bold text-stone-200 text-xs">Skapa Uppväxtplats för Smolten</h4>
-                        <p class="text-[9px] text-stone-400">Längs kanten – Skyddar yngel</p>
+                        <h4 class="font-bold text-stone-200 text-xs">Skapa Uppväxtplats</h4>
+                        <p class="text-[9px] text-stone-400">Skyddar smolt gemensamt</p>
                     </div>
                     <button onclick="startPlacement('nursery', 250)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">250 p</button>
                 </div>
@@ -261,7 +261,7 @@
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Plantera Kantträd</h4>
-                        <p class="text-[9px] text-stone-400">Skugga & insektsfall</p>
+                        <p class="text-[9px] text-stone-400">Skugga längs kanten</p>
                     </div>
                     <button onclick="doTreePlanting(200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">200 p</button>
                 </div>
@@ -269,7 +269,7 @@
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Plantera Buske</h4>
-                        <p class="text-[9px] text-stone-400">Vegetation vid strandkanten</p>
+                        <p class="text-[9px] text-stone-400">Vegetation vid kanten</p>
                     </div>
                     <button onclick="doBushPlanting(150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">150 p</button>
                 </div>
@@ -277,7 +277,7 @@
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center border-amber-500/40">
                     <div>
                         <h4 class="font-bold text-rose-400 text-xs">Ta bort närmaste biotop</h4>
-                        <p class="text-[9px] text-stone-400">Ångra felplacerad insats</p>
+                        <p class="text-[9px] text-stone-400">Ångra insats på sträckan</p>
                     </div>
                     <button onclick="removeNearestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-2.5 py-1.5 rounded text-[11px]">Ångra</button>
                 </div>
@@ -285,7 +285,7 @@
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center border-emerald-500/40">
                     <div>
                         <h4 class="font-bold text-amber-300 text-xs">Riv Vandringshinder</h4>
-                        <p class="text-[9px] text-stone-400">Enorm effekt på hela ån</p>
+                        <p class="text-[9px] text-stone-400">Gemensam åtgärd i hela ån</p>
                     </div>
                     <button onclick="doRemoveDam(2000)" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1.5 rounded text-[11px]">2000 p</button>
                 </div>
@@ -445,6 +445,50 @@
             return null;
         };
 
+        // OPEN WORLD: Ladda gemensam zondata från Firebase
+        window.loadSharedZone = async function(zoneKey) {
+            try {
+                const docRef = doc(db, "world_zones", zoneKey);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    return docSnap.data();
+                } else {
+                    const defaultZone = {
+                        population: 210,
+                        maxPop: 380,
+                        gravels: [],
+                        boulders: [],
+                        nurseries: [],
+                        trees: 2,
+                        bushes: 2
+                    };
+                    await setDoc(docRef, defaultZone);
+                    return defaultZone;
+                }
+            } catch (e) {
+                console.error("Fel vid laddning av gemensam zon:", e);
+                return null;
+            }
+        };
+
+        // OPEN WORLD: Spara gemensam zondata till Firebase
+        window.saveSharedZone = async function(zoneKey, zoneData) {
+            try {
+                const docRef = doc(db, "world_zones", zoneKey);
+                await setDoc(docRef, {
+                    gravels: zoneData.gravels || [],
+                    boulders: zoneData.boulders || [],
+                    nurseries: zoneData.nurseries || [],
+                    population: zoneData.population,
+                    maxPop: zoneData.maxPop,
+                    trees: zoneData.trees,
+                    bushes: zoneData.bushes
+                }, { merge: true });
+            } catch (e) {
+                console.error("Fel vid sparande av gemensam zon:", e);
+            }
+        };
+
         window.logBiotopeToFirebase = async function(anglerName, actionText, zoneName) {
             try {
                 await addDoc(collection(db, "biotope_logs"), {
@@ -491,6 +535,7 @@
         let lockedAnglerName = localStorage.getItem('savean_angler_name');
         let todayStr = new Date().toISOString().split('T')[0];
 
+        // Spelarens personliga data (poäng och kast sparas per spelare)
         let gameWorld = {
             points: 700,
             laddersFixed: false,
@@ -570,20 +615,24 @@
             let cloudState = await window.loadPlayerStateFromFirebase(lockedAnglerName);
             if (cloudState) {
                 if (cloudState.lastPlayedDate === todayStr) {
-                    gameWorld = cloudState;
+                    gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
+                    gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
+                    gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
+                    gameWorld.laddersFixed = !!cloudState.laddersFixed;
                 } else {
-                    gameWorld = cloudState;
+                    gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
                     gameWorld.lastPlayedDate = todayStr;
                     gameWorld.castsRemaining = 5;
-                    gameWorld.dayOfSeason = (gameWorld.dayOfSeason || 1) + 1;
+                    gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
                     if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
                     await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                 }
             } else {
                 await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
             }
-            updateUI();
-            fetchWeather(currentZoneKey);
+            
+            // Ladda första zonen gemensamt
+            await selectZone('dickson', 'Dickson');
         }
 
         async function saveInitialAnglerName() {
@@ -632,7 +681,6 @@
             };
         }
 
-        // Säkerhetsfunktion: Skapar zonen automatiskt om den saknas i sparad fil
         function getActiveZone() {
             if (!gameWorld.zones[currentZoneKey]) {
                 gameWorld.zones[currentZoneKey] = {
@@ -675,15 +723,33 @@
             updateUI();
         }
 
-        function selectZone(key, name) {
+        // Byt sträcka och hämta gemensam öppen-värld-data från Firebase
+        async function selectZone(key, name) {
             currentZoneKey = key;
             ['dickson', 'mannered', 'edbergsrakan', 'kahogsforsen', 'brittamaja', 'lortholjan', 'finngosagrundet'].forEach(z => {
                 const btn = document.getElementById(`zone-${z}`);
-                btn.className = z === key ? 
-                    "p-2 rounded bg-emerald-900/60 border border-emerald-500 text-left transition" : 
-                    "p-2 rounded bg-stone-900 border border-stone-700 text-left transition";
+                if (btn) {
+                    btn.className = z === key ? 
+                        "p-2 rounded bg-emerald-900/60 border border-emerald-500 text-left transition" : 
+                        "p-2 rounded bg-stone-900 border border-stone-700 text-left transition";
+                }
             });
             
+            // Hämta gemensamma biotoper från molnet
+            if (window.loadSharedZone) {
+                let sharedData = await window.loadSharedZone(key);
+                if (sharedData) {
+                    let zone = getActiveZone();
+                    zone.population = sharedData.population !== undefined ? sharedData.population : zone.population;
+                    zone.maxPop = sharedData.maxPop !== undefined ? sharedData.maxPop : zone.maxPop;
+                    zone.gravels = sharedData.gravels || [];
+                    zone.boulders = sharedData.boulders || [];
+                    zone.nurseries = sharedData.nurseries || [];
+                    zone.trees = sharedData.trees !== undefined ? sharedData.trees : zone.trees;
+                    zone.bushes = sharedData.bushes !== undefined ? sharedData.bushes : zone.bushes;
+                }
+            }
+
             wildlifeDisturbance = Math.random() < 0.25;
             const alertBox = document.getElementById('wildlifeAlert');
             if (wildlifeDisturbance) {
@@ -702,7 +768,8 @@
             fetchWeather(key);
             initRises();
             initDriftLog();
-            document.getElementById('castStatus').innerText = `Flyttade till ${name}.`;
+            document.getElementById('castStatus').innerText = `Flyttade till ${name} (Gemensam Open World).`;
+            updateUI();
         }
 
         function updateUI() {
@@ -728,7 +795,13 @@
             renderLog();
             
             if (lockedAnglerName && window.savePlayerStateToFirebase) {
-                window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
+                window.savePlayerStateToFirebase(lockedAnglerName, {
+                    points: gameWorld.points,
+                    castsRemaining: gameWorld.castsRemaining,
+                    dayOfSeason: gameWorld.dayOfSeason,
+                    laddersFixed: gameWorld.laddersFixed,
+                    lastPlayedDate: todayStr
+                });
             }
         }
 
@@ -745,6 +818,8 @@
                 let breedBoost = ((zone.gravels||[]).length * 5) + ((zone.boulders||[]).length * 3) + ((zone.nurseries||[]).length * 6) + (gameWorld.laddersFixed ? 15 : 0);
                 zone.population = Math.min(zone.maxPop, zone.population + breedBoost + 3);
                 gameWorld.points += 50;
+                
+                if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
                 fetchWeather(currentZoneKey);
                 document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast!`;
             } else {
@@ -780,7 +855,7 @@
             placementCost = cost;
             closeBiotopModal();
             const banner = document.getElementById('modeBanner');
-            banner.innerText = `Placeringsläge: Klicka på spelytan!`;
+            banner.innerText = `Placeringsläge: Klicka på spelytan för att bygga gemensamt!`;
             banner.classList.remove('hidden');
         }
 
@@ -791,7 +866,7 @@
             banner.classList.remove('hidden');
         }
 
-        function removeNearestBiotope() {
+        async function removeNearestBiotope() {
             const zone = getActiveZone();
             if ((zone.gravels||[]).length === 0 && (zone.boulders||[]).length === 0 && (zone.nurseries||[]).length === 0) {
                 alert("Inga placerade biotoper på denna sträcka!");
@@ -810,40 +885,48 @@
                 removedName = "Lekgrus";
             }
             gameWorld.points += 150;
-            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort ${removedName}`, saveanZones[currentZoneKey].name);
+            
+            if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
+            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort ${removedName} (Open World)`, saveanZones[currentZoneKey].name);
             updateUI();
             closeBiotopModal();
-            alert(`Tog bort ${removedName}! 150 p återbetalade.`);
+            alert(`Tog bort ${removedName} från den gemensamma ån! 150 p återbetalade.`);
         }
 
-        function doTreePlanting(cost) {
+        async function doTreePlanting(cost) {
             if(gameWorld.points < cost) return alert("Inte tillräckligt med poäng!");
             gameWorld.points -= cost;
             const zone = getActiveZone();
             zone.trees += 1;
             zone.maxPop += 12;
+            
+            if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Kantträd", saveanZones[currentZoneKey].name);
             updateUI();
-            alert("Nytt kantträd planterat!");
+            alert("Nytt kantträd planterat i den gemensamma ån!");
         }
 
-        function doBushPlanting(cost) {
+        async function doBushPlanting(cost) {
             if(gameWorld.points < cost) return alert("Inte tillräckligt med poäng!");
             gameWorld.points -= cost;
             const zone = getActiveZone();
             zone.bushes += 1;
             zone.maxPop += 8;
+            
+            if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Buske", saveanZones[currentZoneKey].name);
             updateUI();
             alert("Ny buske planterad!");
         }
 
-        function doRemoveDam(cost) {
+        async function doRemoveDam(cost) {
             if(gameWorld.laddersFixed) return alert("Vandringshindret är redan åtgärdat!");
             if(gameWorld.points < cost) return alert("Det krävs 2000 p för detta!");
             gameWorld.points -= cost;
             gameWorld.laddersFixed = true;
+            
             Object.values(gameWorld.zones).forEach(z => { z.maxPop += 150; z.population += 30; });
+            if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, getActiveZone());
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Rev Vandringshinder", saveanZones[currentZoneKey].name);
             updateUI();
             alert("Vandringshinder åtgärdat i hela ån!");
@@ -857,8 +940,8 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const zone = getActiveZone();
-            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
+            let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
+            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
 
             // Bakgrund baserat på sträcka
             if (currentZoneKey === 'mannered') {
@@ -922,7 +1005,7 @@
                 ctx.stroke();
             }
 
-            // Lekgrus
+            // Lekgrus (Gemensamt)
             ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
             (zone.gravels || []).forEach(g => {
                 ctx.beginPath();
@@ -930,7 +1013,7 @@
                 ctx.fill();
             });
 
-            // Ståndstenar
+            // Ståndstenar (Gemensamt)
             (zone.boulders || []).forEach(b => {
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
@@ -941,7 +1024,7 @@
                 ctx.stroke();
             });
 
-            // Uppväxtplatser vid kanten
+            // Uppväxtplatser vid kanten (Gemensamt)
             ctx.fillStyle = 'rgba(34, 197, 94, 0.4)';
             (zone.nurseries || []).forEach(n => {
                 ctx.beginPath();
@@ -1068,7 +1151,7 @@
         }, { passive: false });
         window.addEventListener('touchend', () => { isPressingScreen = false; });
 
-        canvas.addEventListener('click', (e) => {
+        canvas.addEventListener('click', async (e) => {
             if(isFighting) return;
 
             if(wildlifeDisturbance) {
@@ -1081,8 +1164,8 @@
             let clickY = e.clientY - rect.top;
 
             const zone = getActiveZone();
-            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
+            let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
+            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
 
             if (castLine && Math.hypot(clickX - rodX, clickY - rodY) < 25) {
                 pullLine();
@@ -1096,10 +1179,12 @@
                 } else {
                     gameWorld.points -= placementCost;
                     let actionText = "";
-                    if(placementMode === 'gravel') { zone.gravels = zone.gravels || []; zone.gravels.push({ x: clickX, y: clickY }); actionText = "Lade Lekgrus"; }
-                    if(placementMode === 'boulder') { zone.boulders = zone.boulders || []; zone.boulders.push({ x: clickX, y: clickY }); zone.maxPop += 15; actionText = "Lade Ståndsten"; }
-                    if(placementMode === 'nursery') { zone.nurseries = zone.nurseries || []; zone.nurseries.push({ x: clickX, y: clickY }); actionText = "Skapade Uppväxtplats"; }
+                    if(placementMode === 'gravel') { zone.gravels = zone.gravels || []; zone.gravels.push({ x: clickX, y: clickY, author: lockedAnglerName }); actionText = "Lade Lekgrus"; }
+                    if(placementMode === 'boulder') { zone.boulders = zone.boulders || []; zone.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName }); zone.maxPop += 15; actionText = "Lade Ståndsten"; }
+                    if(placementMode === 'nursery') { zone.nurseries = zone.nurseries || []; zone.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName }); actionText = "Skapade Uppväxtplats"; }
                     
+                    // Spara direkt till den gemensamma zonen i molnet
+                    if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
                     if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, actionText, saveanZones[currentZoneKey].name);
                     fetchWeather(currentZoneKey);
                 }
@@ -1110,7 +1195,7 @@
             }
 
             if(gameWorld.castsRemaining <= 0) {
-                alert("Slut på kast för idag! Dagens 5 kast är förbrukade i molnet.");
+                alert("Slut på kast för idag! Dagens 5 kast är förbrukade.");
                 return;
             }
             
@@ -1133,8 +1218,8 @@
         function pullLine() {
             if(!castLine || isFighting) return;
             let zone = getActiveZone();
-            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
+            let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
+            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
             
             let currentDist = Math.hypot(castLine.x - rodX, castLine.y - rodY);
             if (currentDist <= 20) {
@@ -1300,6 +1385,7 @@
                 alert("Fisken klarade inte hanteringen.");
             }
 
+            zone.log = zone.log || [];
             zone.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - C&R (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
@@ -1320,6 +1406,7 @@
 
             if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
 
+            zone.log = zone.log || [];
             zone.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - Hemtagen (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
