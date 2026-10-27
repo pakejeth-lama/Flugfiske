@@ -42,9 +42,9 @@
 
             <div id="adminToolsView" class="hidden flex flex-col gap-3 text-xs">
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex flex-col gap-1.5">
-                    <span class="font-bold text-emerald-400">Nollställ spelares kast:</span>
+                    <span class="font-bold text-emerald-400">Nollställ hela fiskeveckan:</span>
                     <input type="text" id="targetPlayerInput" placeholder="Spelarens namn..." class="w-full bg-stone-950 border border-stone-700 rounded px-2 py-1.5 text-xs text-stone-200">
-                    <button onclick="adminResetPlayerCasts()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded font-semibold">Återställ kast till 5</button>
+                    <button onclick="adminResetPlayerWeek()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded font-semibold">Återställ vecka (Dag 1 & 5 kast)</button>
                 </div>
 
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex flex-col gap-1.5">
@@ -156,7 +156,6 @@
                     Aktivt läge: Klicka i vattnet!
                 </div>
 
-                <!-- Klicka på stora gröna gubben (eller håll inne för pendling) -->
                 <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg z-20">
                     Klicka för kast. <strong>Klicka på gröna gubben för att veva</strong> (<strong>Håll inne</strong> för att pendla lina!).
                 </div>
@@ -666,7 +665,6 @@
         let totalFightDuration = 5.0;
         let fightInterval = null;
 
-        // Pendling & Hemtagning
         let isSwinging = false;
         let isReeling = false;
 
@@ -701,14 +699,21 @@
             }
         }
 
-        async function adminResetPlayerCasts() {
+        async function adminResetPlayerWeek() {
             let targetPlayer = document.getElementById('targetPlayerInput').value.trim();
             if(!targetPlayer) return alert("Ange spelarnamn!");
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
                 cloudState.castsRemaining = 5;
+                cloudState.dayOfSeason = 1;
+                cloudState.lastPlayedDate = todayStr;
                 await window.savePlayerStateToFirebase(targetPlayer, cloudState);
-                alert(`Kast nollställda till 5 för ${targetPlayer}!`);
+                alert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`);
+                if (targetPlayer === lockedAnglerName) {
+                    gameWorld.castsRemaining = 5;
+                    gameWorld.dayOfSeason = 1;
+                    updateUI();
+                }
             } else {
                 alert("Hittade inte spelaren i molnet.");
             }
@@ -769,7 +774,7 @@
                     await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                 }
             } else {
-                await window.savePlayerStateToFirebase(lockedAnglerName, worldDefault = gameWorld);
+                await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
             }
             await selectZone('dickson', 'Dickson');
         }
@@ -1293,7 +1298,6 @@
             ctx.lineWidth = 3.5;
             ctx.stroke();
 
-            // Interaktiv symbol för gubben när man hovrar / pekar
             ctx.fillStyle = '#ffffff';
             ctx.font = '10px Inter';
             ctx.fillText("VEVA/PENDLA", rodX - 32, rodY + 28);
@@ -1314,7 +1318,6 @@
 
                 if(!isFighting) {
                     if (isReeling) {
-                        // Hemtagning
                         let angle = Math.atan2(rodY - castLine.y, rodX - castLine.x);
                         castLine.x += Math.cos(angle) * 4.5;
                         castLine.y += Math.sin(angle) * 4.5;
@@ -1325,12 +1328,10 @@
                             document.getElementById('castStatus').innerText = "Flugan vevad in!";
                         }
                     } else if (isSwinging) {
-                        // Pendling: Flugan rör sig i en båge i strömmen
                         castLine.x += 1.2;
                         castLine.y += Math.sin(Date.now() * 0.005) * 0.8;
                         if(castLine.x > canvas.width) castLine = null;
                     } else {
-                        // Normal drift
                         let baseDriftSpeed = 0.4 + (currentFlow * 0.04);
                         let driftSpeed = currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed;
                         castLine.x += driftSpeed;
@@ -1366,7 +1367,7 @@
 
         let pressTimer = null;
 
-        window.addEventListener('mousedown', (e) => {
+        window.addEventListener('mousedown', () => {
             if(isFighting) isPressingScreen = true;
         });
         window.addEventListener('mouseup', () => {
@@ -1395,7 +1396,6 @@
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
 
-            // Om man klickar direkt på stora gröna gubben (veva hem / starta pendling om man håller inne)
             if (Math.hypot(clickX - rodX, clickY - rodY) < 25) {
                 if (castLine) {
                     isReeling = true;
@@ -1404,7 +1404,6 @@
                 return;
             }
 
-            // Kolla om man håller ner klick/tryck på gubben för att pendla
             pressTimer = setTimeout(() => {
                 if(castLine) {
                     isSwinging = true;
@@ -1435,7 +1434,6 @@
                 return;
             }
 
-            // KRAV: Flugan måste ha åkt ur bilden (eller vara borta) för att få göra ett nytt kast
             if (castLine !== null && castLine.x < canvas.width) {
                 alert("Du kan inte göra ett nytt kast förrän flugan har åkt ur bilden eller vevats in!");
                 return;
@@ -1466,11 +1464,9 @@
             let gravelBonus = (zone.gravels||[]).length;
             let boulderBonus = (zone.boulders||[]).length;
 
-            // Kolla om vi fiskar över en uppväxtplats (smolt / missat hugg mekanik)
             let overNursery = (zone.nurseries || []).some(n => castLine && Math.hypot(castLine.x - n.x, castLine.y - n.y) < 40);
 
             if (overNursery && Math.random() < 0.6) {
-                // Smolt eller tappat hugg -> Kastet räknas INTE bort!
                 gameWorld.castsRemaining++;
                 updateUI();
                 
@@ -1624,7 +1620,6 @@
                 let pts = currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 50 : 40);
                 gameWorld.points += pts;
 
-                // REGLER FÖR UNDERMÅLIG ÖRING (< 45 cm): Man får tillbaka ett kast!
                 if (currentFish.species === "Öring" && currentFish.size < 45) {
                     gameWorld.castsRemaining++;
                     alert(`Fisken var under minimimåttet (45 cm) och släpptes tillbaka varsamt. (+${pts} p) och du får tillbaka ett kast!`);
