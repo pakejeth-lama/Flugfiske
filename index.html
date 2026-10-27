@@ -20,11 +20,11 @@
             animation: fishSwimRush 1.8s infinite ease-in-out;
         }
 
-        /* Perfekt höjdjustering i liggande läge för mobiler/surfplattor så man slipper scrolla */
+        /* Anpassad höjd i liggande läge: Dubbelt så hög plus lite till */
         @media (orientation: landscape) and (max-width: 1024px) {
             #gameContainer {
-                height: 46vh !important;
-                max-height: 290px;
+                height: 62vh !important;
+                max-height: 400px;
             }
         }
     </style>
@@ -1397,7 +1397,6 @@
             if(placementMode) {
                 if(placementMode === 'rod') {
                     zone.playerPos = { x: clickX, y: clickY };
-                    // Ingen alert/popup här längre enligt önskemål!
                 } else {
                     gameWorld.points -= placementCost;
                     let actionText = "";
@@ -1681,7 +1680,7 @@
             const zone = getActiveZone();
             const logContainer = document.getElementById('catchLog');
             if(!zone.log || zone.log.length === 0) {
-                logContainer.innerHTML = `<p class="text-stone-550 italic">Inga fångster än.</p>`;
+                logContainer.innerHTML = `<p class="text-stone-500 italic">Inga fångster än.</p>`;
                 return;
             }
             logContainer.innerHTML = zone.log.map(item => `
