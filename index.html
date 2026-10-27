@@ -19,6 +19,14 @@
         .animate-fish-rush {
             animation: fishSwimRush 1.8s infinite ease-in-out;
         }
+
+        /* Perfekt höjdjustering i liggande läge för mobiler/surfplattor så man slipper scrolla */
+        @media (orientation: landscape) and (max-width: 1024px) {
+            #gameContainer {
+                height: 46vh !important;
+                max-height: 290px;
+            }
+        }
     </style>
 </head>
 <body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col select-none">
@@ -128,7 +136,7 @@
                 </div>
             </div>
 
-            <!-- Canvas Spelyta (Halverad höjd i liggande: md:aspect-[32/9]) -->
+            <!-- Canvas Spelyta -->
             <div id="gameContainer" class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[4/5] md:aspect-[32/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
@@ -158,7 +166,7 @@
                     Aktivt läge: Klicka i vattnet!
                 </div>
 
-                <!-- Overlay för Tafsstress (Simulerar fisk som simmar runt i poolen) -->
+                <!-- Overlay för Tafsstress -->
                 <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
                     <div id="fightCard" class="bg-stone-900/95 border-2 border-amber-500/80 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl animate-fish-rush transition-all duration-75">
                         <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">Drillning – Håll inne fingret!</span>
@@ -177,7 +185,7 @@
                 </div>
             </div>
 
-            <!-- Kontroller (Highscore och Biotopvård ligger bredvid varandra) -->
+            <!-- Kontroller -->
             <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-col gap-2">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <button onclick="changeFlyModal()" class="h-9 bg-stone-700 hover:bg-stone-600 text-white rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-stone-600">
@@ -1389,7 +1397,7 @@
             if(placementMode) {
                 if(placementMode === 'rod') {
                     zone.playerPos = { x: clickX, y: clickY };
-                    alert("Ståplats flyttad!");
+                    // Ingen alert/popup här längre enligt önskemål!
                 } else {
                     gameWorld.points -= placementCost;
                     let actionText = "";
@@ -1673,7 +1681,7 @@
             const zone = getActiveZone();
             const logContainer = document.getElementById('catchLog');
             if(!zone.log || zone.log.length === 0) {
-                logContainer.innerHTML = `<p class="text-stone-500 italic">Inga fångster än.</p>`;
+                logContainer.innerHTML = `<p class="text-stone-550 italic">Inga fångster än.</p>`;
                 return;
             }
             logContainer.innerHTML = zone.log.map(item => `
