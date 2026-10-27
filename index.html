@@ -133,8 +133,8 @@
                 </div>
             </div>
 
-            <!-- Canvas Spelyta (Härlig fullhöjd) -->
-            <div class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[16/10] md:aspect-[16/9]">
+            <!-- Canvas Spelyta -->
+            <div class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[16/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
                 <!-- Canvas HUD -->
@@ -144,23 +144,24 @@
                     <span>Kast idag: <strong id="castsLeft" class="text-amber-400">5 / 5</strong></span>
                 </div>
 
-                <!-- Notis / Hugg-status på spelplanen -->
+                <!-- Notis / Hugg-status -->
                 <div id="canvasNotification" class="hidden absolute top-12 left-1/2 -translate-x-1/2 bg-stone-900/95 border border-amber-500/80 px-3.5 py-2 rounded-lg text-xs font-bold text-amber-400 shadow-2xl text-center z-30 max-w-xs animate-pulse"></div>
 
-                <!-- Störningsbanner för bäver/fåglar -->
+                <!-- Störningsbanner -->
                 <div id="wildlifeAlert" class="hidden absolute top-12 left-1/2 -translate-x-1/2 bg-amber-600/90 text-stone-950 px-3 py-1.5 rounded-lg font-bold text-xs shadow-xl animate-pulse text-center border border-amber-400 z-30">
-                    🦫 <span id="wildlifeText">En bäver plaskar vid nacken! Fisken är skrämd. Byt sträcka!</span>
+                    🦫 <span id="wildlifeText">En bäver plaskar vid nacken!</span>
                 </div>
 
                 <div id="modeBanner" class="hidden absolute top-2 right-2 bg-amber-500 text-stone-950 px-2.5 py-0.5 rounded font-bold text-[10px] shadow-lg animate-bounce z-20">
                     Aktivt läge: Klicka i vattnet!
                 </div>
 
+                <!-- Klicka på stora gröna gubben (eller håll inne för pendling) -->
                 <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg z-20">
-                    Klicka i strömmen för att kasta. <strong>Tryck direkt på stora gröna gubben</strong> för att veva hem lina!
+                    Klicka för kast. <strong>Klicka på gröna gubben för att veva</strong> (<strong>Håll inne</strong> för att pendla lina!).
                 </div>
 
-                <!-- Overlay för Tafsstress vid Drillar -->
+                <!-- Overlay för Tafsstress -->
                 <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
                     <div id="fightCard" class="bg-stone-900/90 border border-amber-500/50 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl transition-transform duration-75">
                         <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">DRILLNING – HÅLL INNE FINGRET!</span>
@@ -311,7 +312,7 @@
 
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center border-amber-500/40">
                     <div>
-                        <h4 class="font-bold text-rose-400 text-xs">Ta bort senaste egna åtgärd</h4>
+                        <h4 class="font-bold text-rose-400 text-xs">Ta bort senaste egen åtgärd</h4>
                         <p class="text-[9px] text-stone-400">Endast din egen senaste</p>
                     </div>
                     <button onclick="removeMyLatestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-2.5 py-1.5 rounded text-[11px]">Ångra min</button>
@@ -665,11 +666,14 @@
         let totalFightDuration = 5.0;
         let fightInterval = null;
 
+        // Pendling & Hemtagning
+        let isSwinging = false;
+        let isReeling = false;
+
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         let castLine = null;
 
-        // Hemlig GM Modal-lyssnare (3 klick på rubriken)
         let headerClicks = 0;
         document.getElementById('mainTitleHeader').addEventListener('click', () => {
             headerClicks++;
@@ -765,9 +769,8 @@
                     await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                 }
             } else {
-                await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
+                await window.savePlayerStateToFirebase(lockedAnglerName, worldDefault = gameWorld);
             }
-            
             await selectZone('dickson', 'Dickson');
         }
 
@@ -1094,7 +1097,6 @@
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
 
-            // Bakgrund baserat på sträcka
             if (currentZoneKey === 'mannered') {
                 let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
                 bgGrad.addColorStop(0, '#0369a1');
@@ -1238,7 +1240,6 @@
                 });
             }
 
-            // Strömvågor (dynamisk hastighet efter flöde)
             let currentFlow = parseFloat(weatherData.flow);
             let flowMultiplier = currentFlow > 14 ? 2.5 : 1.0;
             flowOffset += (1.5 + (currentFlow * 0.05)) * flowMultiplier;
@@ -1254,7 +1255,6 @@
                 ctx.stroke();
             }
 
-            // Drivved vid högt flöde (> 14 m³/s)
             if (currentFlow > 14 && singleDriftLog) {
                 singleDriftLog.x += singleDriftLog.speed * 1.8;
                 if (singleDriftLog.x > canvas.width + 50) singleDriftLog.x = -80;
@@ -1266,7 +1266,6 @@
                 ctx.strokeRect(singleDriftLog.x, singleDriftLog.y, singleDriftLog.width, singleDriftLog.height);
             }
 
-            // Vakande fisk
             rises.forEach(r => {
                 r.timer++;
                 if(r.timer > 150) {
@@ -1285,16 +1284,21 @@
                 ctx.stroke();
             });
 
-            // Fiskare
+            // Fiskare (Stora gröna gubben)
             ctx.fillStyle = '#14532d';
             ctx.beginPath();
-            ctx.arc(rodX, rodY, 14, 0, Math.PI*2);
+            ctx.arc(rodX, rodY, 16, 0, Math.PI*2);
             ctx.fill();
             ctx.strokeStyle = '#22c55e';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 3.5;
             ctx.stroke();
 
-            // Kastlina & Fluga med flödesbaserad hastighet
+            // Interaktiv symbol för gubben när man hovrar / pekar
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '10px Inter';
+            ctx.fillText("VEVA/PENDLA", rodX - 32, rodY + 28);
+
+            // Kastlina & Fluga
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -1309,32 +1313,49 @@
                 ctx.fill();
 
                 if(!isFighting) {
-                    // Flugans hastighet ökar markant vid högt flöde (>14 m³/s)
-                    let baseDriftSpeed = 0.4 + (currentFlow * 0.04);
-                    let driftSpeed = currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed;
-                    castLine.x += driftSpeed;
-
-                    if (currentFlow > 14 && singleDriftLog) {
-                        if (castLine && castLine.x >= singleDriftLog.x && castLine.x <= singleDriftLog.x + singleDriftLog.width && Math.abs(castLine.y - singleDriftLog.y) < 15) {
+                    if (isReeling) {
+                        // Hemtagning
+                        let angle = Math.atan2(rodY - castLine.y, rodX - castLine.x);
+                        castLine.x += Math.cos(angle) * 4.5;
+                        castLine.y += Math.sin(angle) * 4.5;
+                        if (Math.hypot(castLine.x - rodX, castLine.y - rodY) < 20) {
                             castLine = null;
-                            alert("💥 Tafsen fastnade i drivved som kom flytande! Linan gick av.");
-                            document.getElementById('castStatus').innerText = "Tafsen avsliten av drivved!";
+                            isReeling = false;
+                            isSwinging = false;
+                            document.getElementById('castStatus').innerText = "Flugan vevad in!";
                         }
-                    }
+                    } else if (isSwinging) {
+                        // Pendling: Flugan rör sig i en båge i strömmen
+                        castLine.x += 1.2;
+                        castLine.y += Math.sin(Date.now() * 0.005) * 0.8;
+                        if(castLine.x > canvas.width) castLine = null;
+                    } else {
+                        // Normal drift
+                        let baseDriftSpeed = 0.4 + (currentFlow * 0.04);
+                        let driftSpeed = currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed;
+                        castLine.x += driftSpeed;
 
-                    if (currentZoneKey === 'dickson' && castLine) {
-                        if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 35) < 40) {
-                            castLine = null;
-                            alert("💥 Flugan kroka fast i Dickson-blocket! Linan gick av.");
+                        if (currentFlow > 14 && singleDriftLog) {
+                            if (castLine && castLine.x >= singleDriftLog.x && castLine.x <= singleDriftLog.x + singleDriftLog.width && Math.abs(castLine.y - singleDriftLog.y) < 15) {
+                                castLine = null;
+                                alert("💥 Tafsen fastnade i drivved! Linan gick av.");
+                                document.getElementById('castStatus').innerText = "Tafsen avsliten!";
+                            }
                         }
-                    }
 
-                    if(castLine && castLine.x > canvas.width) castLine = null;
+                        if (currentZoneKey === 'dickson' && castLine) {
+                            if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 35) < 40) {
+                                castLine = null;
+                                alert("💥 Flugan kroka fast i Dickson-blocket! Linan gick av.");
+                            }
+                        }
 
-                    // Högre huggfrekvens när flugan sveper snabbt och fint över strömmen
-                    let biteChance = currentFlow > 14 ? 0.00014 : 0.00008;
-                    if(castLine && !wildlifeDisturbance && Math.random() < biteChance && !currentFish) {
-                        triggerBite(false);
+                        if(castLine && castLine.x > canvas.width) castLine = null;
+
+                        let biteChance = currentFlow > 14 ? 0.00014 : 0.00008;
+                        if(castLine && !wildlifeDisturbance && Math.random() < biteChance && !currentFish) {
+                            triggerBite(false);
+                        }
                     }
                 }
             }
@@ -1343,20 +1364,28 @@
         }
         requestAnimationFrame(draw);
 
-        window.addEventListener('mousedown', () => { if(isFighting) isPressingScreen = true; });
-        window.addEventListener('mouseup', () => { isPressingScreen = false; });
+        let pressTimer = null;
+
+        window.addEventListener('mousedown', (e) => {
+            if(isFighting) isPressingScreen = true;
+        });
+        window.addEventListener('mouseup', () => {
+            isPressingScreen = false;
+            if(pressTimer) clearTimeout(pressTimer);
+            isReeling = false;
+        });
         window.addEventListener('touchstart', (e) => { 
             if(isFighting) { isPressingScreen = true; e.preventDefault(); }
         }, { passive: false });
-        window.addEventListener('touchend', () => { isPressingScreen = false; });
+        window.addEventListener('touchend', () => {
+            isPressingScreen = false;
+            if(pressTimer) clearTimeout(pressTimer);
+            isReeling = false;
+        });
 
         canvas.addEventListener('click', async (e) => {
             if(isFighting) return;
-
-            if(wildlifeDisturbance) {
-                alert("Det är djur som skrämmer fisken här! Byt sträcka.");
-                return;
-            }
+            if(wildlifeDisturbance) return alert("Djur skrämmer fisken! Byt sträcka.");
 
             const rect = canvas.getBoundingClientRect();
             let clickX = e.clientX - rect.left;
@@ -1366,10 +1395,23 @@
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
 
-            if (castLine && Math.hypot(clickX - rodX, clickY - rodY) < 35) {
-                pullLine();
+            // Om man klickar direkt på stora gröna gubben (veva hem / starta pendling om man håller inne)
+            if (Math.hypot(clickX - rodX, clickY - rodY) < 25) {
+                if (castLine) {
+                    isReeling = true;
+                    document.getElementById('castStatus').innerText = "Vever hem flugan...";
+                }
                 return;
             }
+
+            // Kolla om man håller ner klick/tryck på gubben för att pendla
+            pressTimer = setTimeout(() => {
+                if(castLine) {
+                    isSwinging = true;
+                    isReeling = false;
+                    document.getElementById('castStatus').innerText = "Linan låst – flugan pendlar i strömmen!";
+                }
+            }, 500);
 
             if(placementMode) {
                 if(placementMode === 'rod') {
@@ -1393,12 +1435,20 @@
                 return;
             }
 
+            // KRAV: Flugan måste ha åkt ur bilden (eller vara borta) för att få göra ett nytt kast
+            if (castLine !== null && castLine.x < canvas.width) {
+                alert("Du kan inte göra ett nytt kast förrän flugan har åkt ur bilden eller vevats in!");
+                return;
+            }
+
             if(gameWorld.castsRemaining <= 0) {
                 alert("Slut på kast för idag! Dagens 5 kast är förbrukade.");
                 return;
             }
             
-            castLine = { x: clickX, y: clickY, radius: Math.hypot(clickX - rodX, clickY - rodY) };
+            castLine = { x: clickX, y: clickY };
+            isSwinging = false;
+            isReeling = false;
             gameWorld.castsRemaining--;
             updateUI();
 
@@ -1409,36 +1459,32 @@
 
             let statusText = hitRise ? "Snyggt kast i vaket! Väntar hugg..." : "Flugan driver med strömmen...";
             document.getElementById('castStatus').innerText = statusText;
-            document.getElementById('canvasNotification').innerText = statusText;
-            document.getElementById('canvasNotification').classList.remove('hidden');
-            setTimeout(() => { document.getElementById('canvasNotification').classList.add('hidden'); }, 3000);
         });
-
-        function pullLine() {
-            if(!castLine || isFighting) return;
-            let zone = getActiveZone();
-            let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
-            
-            let currentDist = Math.hypot(castLine.x - rodX, castLine.y - rodY);
-            if (currentDist <= 20) {
-                castLine = null;
-                document.getElementById('castStatus').innerText = "Flugan vevad in!";
-                document.getElementById('canvasNotification').classList.add('hidden');
-                return;
-            }
-            
-            let angle = Math.atan2(castLine.y - rodY, castLine.x - rodX);
-            currentDist -= 30;
-            castLine.x = rodX + currentDist * Math.cos(angle);
-            castLine.y = rodY + currentDist * Math.sin(angle);
-            document.getElementById('castStatus').innerText = `Vevat hem lina...`;
-        }
 
         function triggerBite(isRiseBonus) {
             let zone = getActiveZone();
             let gravelBonus = (zone.gravels||[]).length;
             let boulderBonus = (zone.boulders||[]).length;
+
+            // Kolla om vi fiskar över en uppväxtplats (smolt / missat hugg mekanik)
+            let overNursery = (zone.nurseries || []).some(n => castLine && Math.hypot(castLine.x - n.x, castLine.y - n.y) < 40);
+
+            if (overNursery && Math.random() < 0.6) {
+                // Smolt eller tappat hugg -> Kastet räknas INTE bort!
+                gameWorld.castsRemaining++;
+                updateUI();
+                
+                let smoltHappened = Math.random() < 0.5;
+                if (smoltHappened) {
+                    document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">Hugg över uppväxtområde! En liten smolt fångad och släppt. Kastet räknas ej!</span>`;
+                    alert("🐟 Du fick en liten smolt på uppväxtområdet! Den släpptes varsamt omedelbart, och ditt kast räknades inte bort.");
+                } else {
+                    document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">Snabb plogg / missat hugg över uppväxtområde! Kastet räknas ej.</span>`;
+                    alert("⚡ Ett snabbt hugg över uppväxtområdet som inte fastnade! Inget kast förlorat.");
+                }
+                castLine = null;
+                return;
+            }
 
             let troutSalmonChance = 0.50 + Math.min(0.25, (gravelBonus + boulderBonus) * 0.03);
             if (isRiseBonus) troutSalmonChance += 0.20;
@@ -1577,8 +1623,16 @@
             if(survived) {
                 let pts = currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 50 : 40);
                 gameWorld.points += pts;
+
+                // REGLER FÖR UNDERMÅLIG ÖRING (< 45 cm): Man får tillbaka ett kast!
+                if (currentFish.species === "Öring" && currentFish.size < 45) {
+                    gameWorld.castsRemaining++;
+                    alert(`Fisken var under minimimåttet (45 cm) och släpptes tillbaka varsamt. (+${pts} p) och du får tillbaka ett kast!`);
+                } else {
+                    alert(`Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`);
+                }
+
                 if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
-                alert(`Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`);
             } else {
                 zone.population = Math.max(10, zone.population - 1);
                 alert("Fisken klarade inte hanteringen.");
