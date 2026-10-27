@@ -24,10 +24,45 @@
         </div>
     </div>
 
+    <!-- Modal: Hemlig Game Master Admin -->
+    <div id="adminModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-800 border border-amber-500/50 rounded-xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
+            <div class="flex justify-between items-center border-b border-stone-700 pb-2">
+                <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1">
+                    <span>🔐</span> Game Master Adminpanel
+                </h3>
+                <button onclick="closeAdminModal()" class="text-stone-400 hover:text-stone-100 text-xs font-bold px-2 py-1">✕</button>
+            </div>
+
+            <div id="adminLoginView" class="flex flex-col gap-2 text-xs">
+                <p class="text-stone-300">Ange GM-lösenord för att låsa upp verktygen:</p>
+                <input type="password" id="adminPasswordInput" placeholder="Lösenord..." class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-xs text-amber-400 focus:outline-none focus:border-amber-500 text-center">
+                <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold py-2 rounded text-xs shadow">Logga in</button>
+            </div>
+
+            <div id="adminToolsView" class="hidden flex flex-col gap-3 text-xs">
+                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex flex-col gap-1.5">
+                    <span class="font-bold text-emerald-400">Nollställ spelares kast:</span>
+                    <input type="text" id="targetPlayerInput" placeholder="Spelarens namn..." class="w-full bg-stone-950 border border-stone-700 rounded px-2 py-1.5 text-xs text-stone-200">
+                    <button onclick="adminResetPlayerCasts()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded font-semibold">Återställ kast till 5</button>
+                </div>
+
+                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex flex-col gap-1.5">
+                    <span class="font-bold text-amber-400">GM: Återskapa/Lägg till biotop på sträckan:</span>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <button onclick="adminAddBiotope('gravel')" class="bg-stone-800 hover:bg-stone-700 text-stone-200 py-1.5 rounded text-[10px] font-semibold border border-stone-700">Lekgrus</button>
+                        <button onclick="adminAddBiotope('boulder')" class="bg-stone-800 hover:bg-stone-700 text-stone-200 py-1.5 rounded text-[10px] font-semibold border border-stone-700">Ståndsten</button>
+                        <button onclick="adminAddBiotope('nursery')" class="bg-stone-800 hover:bg-stone-700 text-stone-200 py-1.5 rounded text-[10px] font-semibold border border-stone-700">Uppväxt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Header -->
     <header class="bg-stone-800 border-b border-stone-700 py-3 px-4 shadow-md flex flex-wrap justify-between items-center gap-3">
         <div>
-            <h1 class="text-xl md:text-2xl font-bold text-emerald-400 flex items-center gap-1.5">
+            <h1 id="mainTitleHeader" class="text-xl md:text-2xl font-bold text-emerald-400 flex items-center gap-1.5 cursor-pointer select-none" title="Klicka 3 gånger för Admin">
                 <span>🌍</span> Säveån Open World
             </h1>
             <p id="headerAnglerDisplay" class="text-[11px] text-stone-400">Fiskar som: <strong class="text-emerald-300" id="currentAnglerLabel">-</strong></p>
@@ -276,10 +311,10 @@
 
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center border-amber-500/40">
                     <div>
-                        <h4 class="font-bold text-rose-400 text-xs">Ta bort senaste åtgärd</h4>
-                        <p class="text-[9px] text-stone-400">Ångra insats på sträckan</p>
+                        <h4 class="font-bold text-rose-400 text-xs">Ta bort senaste egen åtgärd</h4>
+                        <p class="text-[9px] text-stone-400">Endast din egen senaste</p>
                     </div>
-                    <button onclick="removeNearestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-2.5 py-1.5 rounded text-[11px]">Ångra</button>
+                    <button onclick="removeMyLatestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-2.5 py-1.5 rounded text-[11px]">Ångra min</button>
                 </div>
 
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center border-emerald-500/40">
@@ -635,8 +670,73 @@
         const ctx = canvas.getContext('2d');
         let castLine = null;
 
-        let insects = [];
-        for(let i=0; i<10; i++) insects.push({ x: Math.random()*800, y: 50 + Math.random()*150, speed: 0.5 + Math.random()*1 });
+        // Hemlig GM Modal-lyssnare (3 klick på rubriken)
+        let headerClicks = 0;
+        document.getElementById('mainTitleHeader').addEventListener('click', () => {
+            headerClicks++;
+            if(headerClicks >= 3) {
+                headerClicks = 0;
+                document.getElementById('adminModal').classList.remove('hidden');
+                document.getElementById('adminModal').classList.add('flex');
+            }
+            setTimeout(() => { headerClicks = 0; }, 1000);
+        });
+
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.add('hidden');
+            document.getElementById('adminModal').classList.remove('flex');
+        }
+
+        function verifyAdminPassword() {
+            let pass = document.getElementById('adminPasswordInput').value.trim();
+            if(pass === "saveanadmin") {
+                document.getElementById('adminLoginView').classList.add('hidden');
+                document.getElementById('adminToolsView').classList.remove('hidden');
+                alert("Game Master-åtkomst beviljad!");
+            } else {
+                alert("Felaktigt lösenord!");
+            }
+        }
+
+        async function adminResetPlayerCasts() {
+            let targetPlayer = document.getElementById('targetPlayerInput').value.trim();
+            if(!targetPlayer) return alert("Ange spelarnamn!");
+            let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
+            if(cloudState) {
+                cloudState.castsRemaining = 5;
+                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
+                alert(`Kast nollställda till 5 för ${targetPlayer}!`);
+            } else {
+                alert("Hittade inte spelaren i molnet.");
+            }
+        }
+
+        async function adminAddBiotope(type) {
+            const zone = getActiveZone();
+            let x = canvas.width / 2 + (Math.random() * 100 - 50);
+            let y = canvas.height / 2 + (Math.random() * 60 - 30);
+            let actionText = "";
+
+            if(type === 'gravel') {
+                zone.gravels = zone.gravels || [];
+                zone.gravels.push({ x, y, author: "Game Master", timestamp: Date.now() });
+                actionText = "GM Återskapade Lekgrus";
+            } else if(type === 'boulder') {
+                zone.boulders = zone.boulders || [];
+                zone.boulders.push({ x, y, author: "Game Master", timestamp: Date.now() });
+                zone.maxPop += 15;
+                actionText = "GM Återskapade Ståndsten";
+            } else if(type === 'nursery') {
+                zone.nurseries = zone.nurseries || [];
+                zone.nurseries.push({ x, y, author: "Game Master", timestamp: Date.now() });
+                actionText = "GM Återskapade Uppväxtplats";
+            }
+
+            if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
+            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("Game Master", actionText, saveanZones[currentZoneKey].name);
+            updateUI();
+            alert(`GM la till ${type} på sträckan!`);
+        }
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (!lockedAnglerName) {
@@ -901,31 +1001,50 @@
             banner.classList.remove('hidden');
         }
 
-        async function removeNearestBiotope() {
+        // Strikt borttagning: Endast användarens egna senaste åtgärd
+        async function removeMyLatestBiotope() {
             const zone = getActiveZone();
-            if ((zone.gravels||[]).length === 0 && (zone.boulders||[]).length === 0 && (zone.nurseries||[]).length === 0) {
-                alert("Inga placerade biotoper på denna sträcka!");
+            let allMyItems = [];
+
+            (zone.gravels || []).forEach((item, index) => {
+                if (item.author === lockedAnglerName) allMyItems.push({ type: 'gravel', index, timestamp: item.timestamp || 0 });
+            });
+            (zone.boulders || []).forEach((item, index) => {
+                if (item.author === lockedAnglerName) allMyItems.push({ type: 'boulder', index, timestamp: item.timestamp || 0 });
+            });
+            (zone.nurseries || []).forEach((item, index) => {
+                if (item.author === lockedAnglerName) allMyItems.push({ type: 'nursery', index, timestamp: item.timestamp || 0 });
+            });
+
+            if (allMyItems.length === 0) {
+                alert("Du har inga egna placerade biotoper på denna sträcka att ta bort!");
                 return;
             }
+
+            // Sortera efter högst tidsstämpling (senaste först)
+            allMyItems.sort((a, b) => b.timestamp - a.timestamp);
+            let latest = allMyItems[0];
             let removedName = "";
-            if ((zone.nurseries||[]).length > 0) {
-                zone.nurseries.pop();
-                removedName = "Uppväxtplats";
-            } else if ((zone.boulders||[]).length > 0) {
-                zone.boulders.pop();
+
+            if (latest.type === 'gravel') {
+                zone.gravels.splice(latest.index, 1);
+                removedName = "Lekgrus";
+            } else if (latest.type === 'boulder') {
+                zone.boulders.splice(latest.index, 1);
                 zone.maxPop -= 15;
                 removedName = "Ståndsten";
-            } else if ((zone.gravels||[]).length > 0) {
-                zone.gravels.pop();
-                removedName = "Lekgrus";
+            } else if (latest.type === 'nursery') {
+                zone.nurseries.splice(latest.index, 1);
+                removedName = "Uppväxtplats";
             }
+
             gameWorld.points += 150;
             
             if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
-            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort ${removedName} (Open World)`, saveanZones[currentZoneKey].name);
+            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort din ${removedName} (Open World)`, saveanZones[currentZoneKey].name);
             updateUI();
             closeBiotopModal();
-            alert(`Tog bort ${removedName} från den gemensamma ån! 150 p återbetalade.`);
+            alert(`Tog bort din senaste ${removedName}! 150 p återbetalade.`);
         }
 
         async function doTreePlanting(cost) {
@@ -1055,10 +1174,8 @@
             for (let i = 0; i < (zone.trees || 2); i++) {
                 let tx = 50 + (i * 130) % (canvas.width - 80);
                 let ty = i % 2 === 0 ? 12 : canvas.height - 12;
-                // Stam
                 ctx.fillStyle = '#78350f';
                 ctx.fillRect(tx - 3, ty - 6, 6, 12);
-                // Trädtopp
                 ctx.fillStyle = '#166534';
                 ctx.beginPath();
                 ctx.arc(tx, ty, 13, 0, Math.PI * 2);
@@ -1106,7 +1223,6 @@
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
 
-                // Gråa små stenfläckar/detaljer inuti
                 ctx.fillStyle = 'rgba(100, 116, 139, 0.8)';
                 ctx.beginPath();
                 ctx.arc(n.x - 10, n.y - 3, 3.5, 0, Math.PI * 2);
@@ -1262,9 +1378,10 @@
                 } else {
                     gameWorld.points -= placementCost;
                     let actionText = "";
-                    if(placementMode === 'gravel') { zone.gravels = zone.gravels || []; zone.gravels.push({ x: clickX, y: clickY, author: lockedAnglerName }); actionText = "Lade Lekgrus"; }
-                    if(placementMode === 'boulder') { zone.boulders = zone.boulders || []; zone.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName }); zone.maxPop += 15; actionText = "Lade Ståndsten"; }
-                    if(placementMode === 'nursery') { zone.nurseries = zone.nurseries || []; zone.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName }); actionText = "Skapade Uppväxtplats"; }
+                    let timeNow = Date.now();
+                    if(placementMode === 'gravel') { zone.gravels = zone.gravels || []; zone.gravels.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Lade Lekgrus"; }
+                    if(placementMode === 'boulder') { zone.boulders = zone.boulders || []; zone.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); zone.maxPop += 15; actionText = "Lade Ståndsten"; }
+                    if(placementMode === 'nursery') { zone.nurseries = zone.nurseries || []; zone.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Skapade Uppväxtplats"; }
                     
                     if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
                     if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, actionText, saveanZones[currentZoneKey].name);
