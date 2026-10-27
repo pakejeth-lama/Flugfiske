@@ -98,7 +98,7 @@
                 </div>
             </div>
 
-            <!-- Canvas Spelyta (Standard fast storlek) -->
+            <!-- Canvas Spelyta -->
             <div class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[16/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
@@ -539,7 +539,7 @@
         let activeFly = flies[0];
         let currentFish = null;
         let rises = [];
-        let singleDriftLog = null; // Bara 1 enstaka stock vid högflöde
+        let singleDriftLog = null;
 
         let isFighting = false;
         let isPressingScreen = false;
@@ -632,7 +632,21 @@
             };
         }
 
+        // Säkerhetsfunktion: Skapar zonen automatiskt om den saknas i sparad fil
         function getActiveZone() {
+            if (!gameWorld.zones[currentZoneKey]) {
+                gameWorld.zones[currentZoneKey] = {
+                    population: 200,
+                    maxPop: 360,
+                    gravels: [],
+                    boulders: [],
+                    nurseries: [],
+                    trees: 2,
+                    bushes: 2,
+                    playerPos: { x: null, y: null },
+                    log: []
+                };
+            }
             return gameWorld.zones[currentZoneKey];
         }
 
@@ -862,7 +876,6 @@
                 ctx.lineTo(canvas.width, 0);
                 ctx.fill();
             } else if (currentZoneKey === 'lortholjan') {
-                // Lorthöljan: Djupare mörkblått vatten
                 let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
                 bgGrad.addColorStop(0, '#011627');
                 bgGrad.addColorStop(0.5, '#032b52');
@@ -963,7 +976,7 @@
                 ctx.stroke();
             }
 
-            // Enstaka drivved vid högt flöde (> 14 m³/s)
+            // Drivved vid högt flöde (> 14 m³/s)
             if (parseFloat(weatherData.flow) > 14 && singleDriftLog) {
                 singleDriftLog.x += singleDriftLog.speed;
                 if (singleDriftLog.x > canvas.width + 50) singleDriftLog.x = -80;
@@ -1021,7 +1034,6 @@
                     let flowSpeed = (0.3 + (parseFloat(weatherData.flow) * 0.04));
                     castLine.x += flowSpeed;
 
-                    // Kollision med drivved
                     if (parseFloat(weatherData.flow) > 14 && singleDriftLog) {
                         if (castLine && castLine.x >= singleDriftLog.x && castLine.x <= singleDriftLog.x + singleDriftLog.width && Math.abs(castLine.y - singleDriftLog.y) < 15) {
                             castLine = null;
@@ -1030,7 +1042,6 @@
                         }
                     }
 
-                    // Kollision med Dickson-block
                     if (currentZoneKey === 'dickson' && castLine) {
                         if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 20) < 40) {
                             castLine = null;
