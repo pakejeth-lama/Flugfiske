@@ -8,6 +8,18 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; touch-action: manipulation; }
+        
+        @keyframes fightShake {
+            0% { transform: translate(0px, 0px) rotate(0deg); }
+            20% { transform: translate(-3px, 2px) rotate(-1deg); }
+            40% { transform: translate(3px, -2px) rotate(1deg); }
+            60% { transform: translate(-2px, -2px) rotate(-0.5deg); }
+            80% { transform: translate(2px, 3px) rotate(0.5deg); }
+            100% { transform: translate(0px, 0px) rotate(0deg); }
+        }
+        .animate-fight-shake {
+            animation: fightShake 0.15s infinite ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col select-none">
@@ -162,7 +174,7 @@
 
                 <!-- Overlay för Tafsstress -->
                 <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
-                    <div id="fightCard" class="bg-stone-900/90 border border-amber-500/50 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl transition-transform duration-75">
+                    <div id="fightCard" class="bg-stone-900/95 border-2 border-amber-500/80 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl animate-fight-shake transition-all duration-75">
                         <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">DRILLNING – HÅLL INNE FINGRET!</span>
                         <div class="flex justify-between text-[11px] text-stone-300 font-semibold">
                             <span>Tafsstress:</span>
@@ -179,24 +191,24 @@
                 </div>
             </div>
 
-            <!-- Kontroller -->
-            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-wrap items-center justify-between gap-2">
-                <div class="flex items-center gap-1.5">
-                    <button onclick="changeFlyModal()" class="bg-stone-700 hover:bg-stone-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition">
-                        🪰 Byt Fluga
+            <!-- Kontroller (Enhetliga knappar) -->
+            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-col gap-2">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    <button onclick="changeFlyModal()" class="h-9 bg-stone-700 hover:bg-stone-600 text-white rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-stone-600">
+                        <span>🪰</span> Byt Fluga
                     </button>
-                    <button onclick="openBiotopModal()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1">
+                    <button onclick="openBiotopModal()" class="h-9 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-emerald-600">
                         <span>🌱</span> Biotopvård
                     </button>
-                    <button onclick="openHighscoreModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition flex items-center gap-1">
+                    <button onclick="openHighscoreModal()" class="h-9 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-amber-500">
                         <span>🏆</span> Highscore
                     </button>
-                    <button onclick="startMoveRod()" class="bg-stone-700 hover:bg-stone-600 text-stone-300 px-3 py-1.5 rounded text-xs font-semibold transition">
-                        📍 Flytta Ståplats
+                    <button onclick="startMoveRod()" class="h-9 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-stone-600">
+                        <span>📍</span> Flytta Ståplats
                     </button>
                 </div>
 
-                <div id="castStatus" class="text-[11px] font-medium text-stone-300">
+                <div id="castStatus" class="text-[11px] font-medium text-stone-300 text-center bg-stone-900/60 py-1 rounded border border-stone-700/50">
                     Redo för kast. Klicka på spelytan!
                 </div>
             </div>
@@ -1367,7 +1379,7 @@
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
 
-            // Klick direkt på gröna gubben = Klassisk ryckvis hemtagning (ett litet ryck i taget)
+            // Klick direkt på gröna gubben = Ryckvis hemtagning
             if (Math.hypot(clickX - rodX, clickY - rodY) < 25) {
                 if (castLine) {
                     let angle = Math.atan2(rodY - castLine.y, rodX - castLine.x);
@@ -1376,7 +1388,6 @@
                     
                     document.getElementById('castStatus').innerText = "Gör ett ryck i lina / hemtagning...";
 
-                    // Chans att trigga hugg direkt vid ett aktivt hemtagningsryck!
                     let hitRise = rises.some(r => Math.hypot(r.x - castLine.x, r.y - castLine.y) < 35);
                     if (hitRise && Math.random() < 0.35 && !currentFish) {
                         triggerBite(true);
@@ -1484,12 +1495,14 @@
             currentFish = { species, size, gender };
             let feelDescription = size > 85 ? "HUGG! En riktig jätte till lax rusar lina!" : (size > 65 ? "HUGG! Tunga knixar i spöt!" : "HUGG! Pigg fisk som kämpar!");
 
-            if ("vibrate" in navigator) navigator.vibrate(size > 90 ? [300, 150, 500] : [150, 100, 150]);
+            // HUGGVIBRATION + SKÄRMSKAK
+            if ("vibrate" in navigator) {
+                navigator.vibrate(size > 85 ? [400, 100, 400, 100, 600] : [200, 80, 200]);
+            }
             
             const gameContainer = document.getElementById('gameContainer');
-            let shakeIntensity = size > 85 ? 'animate-bounce' : 'animate-pulse';
-            gameContainer.classList.add(shakeIntensity);
-            setTimeout(() => { gameContainer.classList.remove('animate-bounce', 'animate-pulse'); }, 1200);
+            gameContainer.classList.add('animate-bounce');
+            setTimeout(() => { gameContainer.classList.remove('animate-bounce'); }, 800);
 
             document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">${feelDescription} Håll fingret nedtryckt!</span>`;
             
@@ -1516,12 +1529,17 @@
             fightInterval = setInterval(() => {
                 if(!isFighting) return;
 
-                let weightFactor = currentFish.size > 80 ? 5.5 : 3.0;
+                let weightFactor = currentFish.size > 80 ? 6.5 : 3.5;
                 let pullForce = (Math.random() - 0.38) * weightFactor;
 
                 if(isPressingScreen) {
-                    tippetStress += (currentFish.size > 80 ? 7.5 : 5.8) + pullForce;
+                    tippetStress += (currentFish.size > 80 ? 8.0 : 6.0) + pullForce;
                     fightTimeRemaining -= 0.1;
+                    
+                    // Pulserande vibrationer i mobilen medan du drillar
+                    if ("vibrate" in navigator && Math.random() < 0.4) {
+                        navigator.vibrate(currentFish.size > 80 ? [80, 40, 80] : 40);
+                    }
                 } else {
                     tippetStress -= 5.0;
                 }
@@ -1554,11 +1572,11 @@
             bar.style.width = tippetStress + "%";
             bar.className = tippetStress < 55 ? "bg-emerald-500 h-full rounded-full transition-all duration-75" : (tippetStress < 80 ? "bg-amber-500 h-full rounded-full transition-all duration-75" : "bg-rose-600 h-full rounded-full transition-all duration-75 animate-pulse");
 
-            if (currentFish.size > 80 && Math.random() < 0.3) {
-                fightCard.style.transform = `scale(${1 + (Math.random()*0.04 - 0.02)})`;
-            } else {
-                fightCard.style.transform = 'scale(1)';
-            }
+            // Levande drillningskort som rör sig kontinuerligt under drillningen!
+            let shakeX = (Math.random() - 0.5) * (currentFish.size > 80 ? 12 : 6);
+            let shakeY = (Math.random() - 0.5) * (currentFish.size > 80 ? 12 : 6);
+            let rot = (Math.random() - 0.5) * (currentFish.size > 80 ? 4 : 2);
+            fightCard.style.transform = `translate(${shakeX}px, ${shakeY}px) rotate(${rot}deg)`;
         }
 
         function finishFight(success) {
@@ -1568,9 +1586,10 @@
             
             document.getElementById('fightOverlay').classList.add('hidden');
             document.getElementById('canvasNotification').classList.add('hidden');
+            document.getElementById('fightCard').style.transform = 'none';
 
             if(success) {
-                if ("vibrate" in navigator) navigator.vibrate([100, 100, 300]);
+                if ("vibrate" in navigator) navigator.vibrate([150, 100, 350]);
                 let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
                 document.getElementById('caughtFishDetails').innerText = `Du landade en ${currentFish.species}${genderStr} på ${currentFish.size} cm i ${saveanZones[currentZoneKey].name}.`;
                 document.getElementById('welfareModal').classList.remove('hidden');
@@ -1587,6 +1606,7 @@
             isPressingScreen = false;
             document.getElementById('fightOverlay').classList.add('hidden');
             document.getElementById('canvasNotification').classList.add('hidden');
+            document.getElementById('fightCard').style.transform = 'none';
 
             castLine = null;
             currentFish = null;
@@ -1608,12 +1628,17 @@
 
             if(survived) {
                 let pts = currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 50 : 40);
-                gameWorld.points += pts;
 
-                if (currentFish.species === "Öring" && currentFish.size < 45) {
+                // Om man släpper tillbaka skadlig smårovfisk (Gädda <80cm / Abborre <38cm)
+                if((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
+                    gameWorld.points = Math.max(0, gameWorld.points - 30);
+                    alert(`Du släppte tillbaka en skadlig smårovfisk som äter smolt! (-30 naturvårdspoäng).`);
+                } else if (currentFish.species === "Öring" && currentFish.size < 45) {
                     gameWorld.castsRemaining++;
+                    gameWorld.points += pts;
                     alert(`Fisken var under minimimåttet (45 cm) och släpptes tillbaka varsamt. (+${pts} p) och du får tillbaka ett kast!`);
                 } else {
+                    gameWorld.points += pts;
                     alert(`Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`);
                 }
 
