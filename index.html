@@ -9,16 +9,15 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; touch-action: manipulation; }
         
-        @keyframes fightRush {
+        @keyframes fishSwimRush {
             0% { transform: translate(0px, 0px) rotate(0deg); }
-            20% { transform: translate(-15px, 8px) rotate(-2deg); }
-            40% { transform: translate(18px, -12px) rotate(2.5deg); }
-            60% { transform: translate(-8px, -15px) rotate(-1deg); }
-            80% { transform: translate(12px, 10px) rotate(1.5deg); }
+            25% { transform: translate(-35px, 20px) rotate(-4deg); }
+            50% { transform: translate(40px, -25px) rotate(5deg); }
+            75% { transform: translate(-20px, -30px) rotate(-2deg); }
             100% { transform: translate(0px, 0px) rotate(0deg); }
         }
-        .animate-fight-rush {
-            animation: fightRush 0.25s infinite ease-in-out;
+        .animate-fish-rush {
+            animation: fishSwimRush 1.8s infinite ease-in-out;
         }
     </style>
 </head>
@@ -129,11 +128,11 @@
                 </div>
             </div>
 
-            <!-- Canvas Spelyta (Tillbakaställd till 16/9 i liggande, dubbel höjd i stående) -->
-            <div id="gameContainer" class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[4/5] md:aspect-[16/9]">
+            <!-- Canvas Spelyta (Halverad höjd i liggande: md:aspect-[32/9]) -->
+            <div id="gameContainer" class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[4/5] md:aspect-[32/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
-                <!-- Canvas HUD (Innehåller nu även väder och vattenföring) -->
+                <!-- Canvas HUD -->
                 <div class="absolute top-2 left-2 right-2 bg-stone-900/85 backdrop-blur px-2.5 py-1.5 rounded border border-stone-700 text-[10px] md:text-[11px] flex flex-wrap justify-between items-center gap-2 z-20">
                     <div class="flex items-center gap-2.5">
                         <span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Fireball</strong></span>
@@ -159,9 +158,9 @@
                     Aktivt läge: Klicka i vattnet!
                 </div>
 
-                <!-- Overlay för Tafsstress -->
+                <!-- Overlay för Tafsstress (Simulerar fisk som simmar runt i poolen) -->
                 <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
-                    <div id="fightCard" class="bg-stone-900/95 border-2 border-amber-500/80 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl animate-fight-rush transition-all duration-75">
+                    <div id="fightCard" class="bg-stone-900/95 border-2 border-amber-500/80 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl animate-fish-rush transition-all duration-75">
                         <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">Drillning – Håll inne fingret!</span>
                         <div class="flex justify-between text-[11px] text-stone-300 font-semibold">
                             <span>Tafsstress:</span>
@@ -178,7 +177,7 @@
                 </div>
             </div>
 
-            <!-- Kontroller -->
+            <!-- Kontroller (Highscore och Biotopvård ligger bredvid varandra) -->
             <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-col gap-2">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <button onclick="changeFlyModal()" class="h-9 bg-stone-700 hover:bg-stone-600 text-white rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-stone-600">
@@ -1159,7 +1158,7 @@
                 ctx.stroke();
             }
 
-            // === STRANDKANT (Flyttad längre ned så att HUD/text inte överlappar) ===
+            // === STRANDKANT ===
             ctx.fillStyle = '#1c1917';
             ctx.fillRect(0, 0, canvas.width, 36);
             ctx.fillRect(0, canvas.height - 24, canvas.width, 24);
@@ -1555,11 +1554,6 @@
             timeText.innerText = fightTimeRemaining.toFixed(1) + "s";
             bar.style.width = tippetStress + "%";
             bar.className = tippetStress < 55 ? "bg-emerald-500 h-full rounded-full transition-all duration-75" : (tippetStress < 80 ? "bg-amber-500 h-full rounded-full transition-all duration-75" : "bg-rose-600 h-full rounded-full transition-all duration-75 animate-pulse");
-
-            let rushX = (Math.sin(Date.now() * 0.015) * (currentFish.size > 80 ? 45 : 25)) + ((Math.random() - 0.5) * 15);
-            let rushY = (Math.cos(Date.now() * 0.012) * (currentFish.size > 80 ? 30 : 15)) + ((Math.random() - 0.5) * 15);
-            let rot = (Math.sin(Date.now() * 0.01) * (currentFish.size > 80 ? 6 : 3));
-            fightCard.style.transform = `translate(${rushX}px, ${rushY}px) rotate(${rot}deg)`;
         }
 
         function finishFight(success) {
