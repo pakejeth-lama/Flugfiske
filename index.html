@@ -73,7 +73,7 @@
                     </span>
                     <span class="text-[9px] text-stone-400">Klicka för att byta zon</span>
                 </div>
-                <div id="riverMap" class="grid grid-cols-2 md:grid-cols-6 gap-1.5 text-xs">
+                <div id="riverMap" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-1.5 text-xs">
                     <button onclick="selectZone('dickson', 'Dickson')" id="zone-dickson" class="p-2 rounded bg-emerald-900/60 border border-emerald-500 text-left transition">
                         <span class="block font-bold text-emerald-300">Dickson</span>
                     </button>
@@ -86,6 +86,9 @@
                     <button onclick="selectZone('kahogsforsen', 'Kåhögsforsen')" id="zone-kahogsforsen" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
                         <span class="block font-bold text-stone-200">Kåhögsforsen</span>
                     </button>
+                    <button onclick="selectZone('brittamaja', 'Britta-Maja')" id="zone-brittamaja" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
+                        <span class="block font-bold text-stone-200">Britta-Maja</span>
+                    </button>
                     <button onclick="selectZone('lortholjan', 'Lorthöljan')" id="zone-lortholjan" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
                         <span class="block font-bold text-stone-200">Lorthöljan</span>
                     </button>
@@ -95,7 +98,7 @@
                 </div>
             </div>
 
-            <!-- Canvas Spelyta med horisontell scrolling -->
+            <!-- Canvas Spelyta (Standard fast storlek) -->
             <div class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[16/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
@@ -119,7 +122,7 @@
                 </div>
 
                 <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg z-20">
-                    Klicka i strömmen för att kasta. <strong>Tryck direkt på gröna gubben</strong> för att veva hem lina! Se upp för drivved och stenar!
+                    Klicka i strömmen för att kasta. <strong>Tryck direkt på gröna gubben</strong> för att veva hem lina!
                 </div>
 
                 <!-- Overlay för Tafsstress vid Drillar -->
@@ -220,12 +223,12 @@
         </div>
     </main>
 
-    <!-- Modal: Biotopvård Meny (Dubblade priser & Uppväxtplats) -->
+    <!-- Modal: Biotopvård Meny -->
     <div id="biotopModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-sm w-full p-4 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-700 pb-2">
                 <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1">
-                    <span>🌱</span> Biotopvård (Justerade Priser)
+                    <span>🌱</span> Biotopvård (Dubbla priser)
                 </h3>
                 <button onclick="closeBiotopModal()" class="text-stone-400 hover:text-stone-100 text-xs font-bold px-2 py-1">✕</button>
             </div>
@@ -442,7 +445,6 @@
             return null;
         };
 
-        // Firebase Biotop-Loggbok (Sparar vem som gör vad i molnet)
         window.logBiotopeToFirebase = async function(anglerName, actionText, zoneName) {
             try {
                 await addDoc(collection(db, "biotope_logs"), {
@@ -489,8 +491,6 @@
         let lockedAnglerName = localStorage.getItem('savean_angler_name');
         let todayStr = new Date().toISOString().split('T')[0];
 
-        const WORLD_WIDTH = 1600;
-
         let gameWorld = {
             points: 700,
             laddersFixed: false,
@@ -502,6 +502,7 @@
                 mannered: { population: 190, maxPop: 350, gravels: [], boulders: [], nurseries: [], trees: 1, bushes: 2, playerPos: { x: null, y: null }, log: [] },
                 edbergsrakan: { population: 200, maxPop: 360, gravels: [], boulders: [], nurseries: [], trees: 2, bushes: 3, playerPos: { x: null, y: null }, log: [] },
                 kahogsforsen: { population: 240, maxPop: 420, gravels: [], boulders: [], nurseries: [], trees: 1, bushes: 1, playerPos: { x: null, y: null }, log: [] },
+                brittamaja: { population: 215, maxPop: 390, gravels: [], boulders: [], nurseries: [], trees: 2, bushes: 2, playerPos: { x: null, y: null }, log: [] },
                 lortholjan: { population: 230, maxPop: 400, gravels: [], boulders: [], nurseries: [], trees: 3, bushes: 3, playerPos: { x: null, y: null }, log: [] },
                 finngosagrundet: { population: 220, maxPop: 390, gravels: [], boulders: [], nurseries: [], trees: 4, bushes: 4, playerPos: { x: null, y: null }, log: [] }
             }
@@ -519,6 +520,7 @@
             mannered: { name: "Säveån – Mannered", lat: 57.738, lon: 12.180, baseTemp: 11 },
             edbergsrakan: { name: "Säveån – Edbergsrakan", lat: 57.739, lon: 12.184, baseTemp: 11 },
             kahogsforsen: { name: "Säveån – Kåhögsforsen", lat: 57.740, lon: 12.188, baseTemp: 11 },
+            brittamaja: { name: "Säveån – Britta-Maja", lat: 57.736, lon: 12.175, baseTemp: 11 },
             lortholjan: { name: "Säveån – Lorthöljan", lat: 57.734, lon: 12.165, baseTemp: 11 },
             finngosagrundet: { name: "Säveån – Finngösagrundet", lat: 57.730, lon: 12.155, baseTemp: 11 }
         };
@@ -537,7 +539,7 @@
         let activeFly = flies[0];
         let currentFish = null;
         let rises = [];
-        let driftLogs = []; // Drivved
+        let singleDriftLog = null; // Bara 1 enstaka stock vid högflöde
 
         let isFighting = false;
         let isPressingScreen = false;
@@ -548,11 +550,10 @@
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
         let castLine = null;
 
         let insects = [];
-        for(let i=0; i<15; i++) insects.push({ x: Math.random()*WORLD_WIDTH, y: 50 + Math.random()*150, speed: 0.5 + Math.random()*1 });
+        for(let i=0; i<10; i++) insects.push({ x: Math.random()*800, y: 50 + Math.random()*150, speed: 0.5 + Math.random()*1 });
 
         window.addEventListener('DOMContentLoaded', async () => {
             if (!lockedAnglerName) {
@@ -603,16 +604,16 @@
             canvas.width = canvas.parentElement.clientWidth;
             canvas.height = canvas.parentElement.clientHeight;
             initRises();
-            initDriftLogs();
+            initDriftLog();
         }
         window.addEventListener('resize', resizeCanvas);
 
         function initRises() {
             rises = [];
-            for(let i=0; i<6; i++) {
+            for(let i=0; i<5; i++) {
                 rises.push({
-                    x: 100 + Math.random() * (WORLD_WIDTH - 200),
-                    y: 80 + Math.random() * (canvas.height - 120),
+                    x: 60 + Math.random() * (canvas.width - 120),
+                    y: 60 + Math.random() * (canvas.height - 100),
                     radius: 2,
                     maxRadius: 20 + Math.random() * 10,
                     alpha: 1.0,
@@ -621,18 +622,14 @@
             }
         }
 
-        function initDriftLogs() {
-            driftLogs = [];
-            // Skapa 2-4 drivveds-stockar som rör sig i strömmen
-            for(let i=0; i<3; i++) {
-                driftLogs.push({
-                    x: Math.random() * WORLD_WIDTH,
-                    y: 60 + Math.random() * (canvas.height - 120),
-                    width: 70 + Math.random() * 40,
-                    height: 12,
-                    speed: 1.2 + Math.random() * 1.5
-                });
-            }
+        function initDriftLog() {
+            singleDriftLog = {
+                x: -80,
+                y: canvas.height * 0.4 + Math.random() * 60,
+                width: 60,
+                height: 10,
+                speed: 0.8
+            };
         }
 
         function getActiveZone() {
@@ -666,7 +663,7 @@
 
         function selectZone(key, name) {
             currentZoneKey = key;
-            ['dickson', 'mannered', 'edbergsrakan', 'kahogsforsen', 'lortholjan', 'finngosagrundet'].forEach(z => {
+            ['dickson', 'mannered', 'edbergsrakan', 'kahogsforsen', 'brittamaja', 'lortholjan', 'finngosagrundet'].forEach(z => {
                 const btn = document.getElementById(`zone-${z}`);
                 btn.className = z === key ? 
                     "p-2 rounded bg-emerald-900/60 border border-emerald-500 text-left transition" : 
@@ -690,7 +687,7 @@
             resetAfterCatch();
             fetchWeather(key);
             initRises();
-            initDriftLogs();
+            initDriftLog();
             document.getElementById('castStatus').innerText = `Flyttade till ${name}.`;
         }
 
@@ -840,34 +837,75 @@
 
         let flowOffset = 0;
         function draw() {
+            if (!canvas.width || !canvas.height) {
+                resizeCanvas();
+            }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const zone = getActiveZone();
-            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : WORLD_WIDTH / 2;
+            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
 
-            let focusX = castLine ? castLine.x : rodX;
-            let cameraX = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, focusX - canvas.width / 2));
+            // Bakgrund baserat på sträcka
+            if (currentZoneKey === 'mannered') {
+                let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                bgGrad.addColorStop(0, '#0369a1');
+                bgGrad.addColorStop(0.5, '#0284c7');
+                bgGrad.addColorStop(1, '#075985');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.save();
-            ctx.translate(-cameraX, 0);
+                ctx.fillStyle = '#1c1917';
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.bezierCurveTo(canvas.width * 0.4, canvas.height * 0.7, canvas.width * 0.6, canvas.height * 0.3, canvas.width, 0);
+                ctx.lineTo(canvas.width, 0);
+                ctx.fill();
+            } else if (currentZoneKey === 'lortholjan') {
+                // Lorthöljan: Djupare mörkblått vatten
+                let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                bgGrad.addColorStop(0, '#011627');
+                bgGrad.addColorStop(0.5, '#032b52');
+                bgGrad.addColorStop(1, '#011627');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } else {
+                let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                bgGrad.addColorStop(0, '#0284c7');
+                bgGrad.addColorStop(1, '#0369a1');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
 
-            // Bakgrund för sträckor
-            let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            bgGrad.addColorStop(0, '#0284c7');
-            bgGrad.addColorStop(1, '#0369a1');
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, WORLD_WIDTH, canvas.height);
+            // Edbergsrakan: Mörkblå djupränna överst
+            if (currentZoneKey === 'edbergsrakan') {
+                ctx.fillStyle = '#032845';
+                ctx.fillRect(0, 15, canvas.width, 35);
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(0, 15, canvas.width, 35);
+            }
+
+            // Britta-Maja: Sandbank som en halvmåne nere till vänster
+            if (currentZoneKey === 'brittamaja') {
+                ctx.fillStyle = '#d4b17e';
+                ctx.beginPath();
+                ctx.arc(30, canvas.height - 10, 75, Math.PI * 1.2, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#b89765';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
 
             // Dickson Klämt Block vid 1/3 av spelytan
-            let dicksonBlockX = WORLD_WIDTH / 3;
+            let dicksonBlockX = canvas.width / 3;
             if (currentZoneKey === 'dickson') {
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
-                ctx.ellipse(dicksonBlockX, 20, 90, 45, 0, 0, Math.PI * 2);
+                ctx.ellipse(dicksonBlockX, 20, 60, 30, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2;
                 ctx.stroke();
             }
 
@@ -875,7 +913,7 @@
             ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
             (zone.gravels || []).forEach(g => {
                 ctx.beginPath();
-                ctx.arc(g.x, g.y, 25, 0, Math.PI*2);
+                ctx.arc(g.x, g.y, 22, 0, Math.PI*2);
                 ctx.fill();
             });
 
@@ -883,7 +921,7 @@
             (zone.boulders || []).forEach(b => {
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
-                ctx.ellipse(b.x, b.y, 28, 15, 0.1, 0, Math.PI*2);
+                ctx.ellipse(b.x, b.y, 25, 13, 0.1, 0, Math.PI*2);
                 ctx.fill();
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
                 ctx.lineWidth = 2;
@@ -894,17 +932,17 @@
             ctx.fillStyle = 'rgba(34, 197, 94, 0.4)';
             (zone.nurseries || []).forEach(n => {
                 ctx.beginPath();
-                ctx.ellipse(n.x, canvas.height - 15, 35, 12, 0, 0, Math.PI * 2);
+                ctx.ellipse(n.x, canvas.height - 12, 30, 10, 0, 0, Math.PI * 2);
                 ctx.fill();
             });
 
             // Forsblock i Kåhögsforsen
             if (currentZoneKey === 'kahogsforsen') {
-                let rocks = [{x: 400, y: 120}, {x: 900, y: 140}, {x: 1300, y: 100}];
+                let rocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
                 ctx.fillStyle = '#0f172a';
                 rocks.forEach(r => {
                     ctx.beginPath();
-                    ctx.ellipse(r.x, r.y, 45, 22, 0, 0, Math.PI * 2);
+                    ctx.ellipse(r.x, r.y, 35, 18, 0, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.strokeStyle = '#e2e8f0';
                     ctx.lineWidth = 2;
@@ -919,32 +957,22 @@
             ctx.lineWidth = 1;
             for(let y = 30; y < canvas.height; y += 35) {
                 ctx.beginPath();
-                for(let x = -40; x < WORLD_WIDTH + 40; x += 35) {
+                for(let x = -40; x < canvas.width + 40; x += 35) {
                     ctx.lineTo(x + flowOffset, y + Math.sin((x + flowOffset) * 0.05) * 4);
                 }
                 ctx.stroke();
             }
 
-            // Drivved (Flyter vid högt flöde > 14 m³/s)
-            if (parseFloat(weatherData.flow) > 14) {
+            // Enstaka drivved vid högt flöde (> 14 m³/s)
+            if (parseFloat(weatherData.flow) > 14 && singleDriftLog) {
+                singleDriftLog.x += singleDriftLog.speed;
+                if (singleDriftLog.x > canvas.width + 50) singleDriftLog.x = -80;
+
                 ctx.fillStyle = '#78350f';
-                driftLogs.forEach(l => {
-                    l.x += l.speed + (parseFloat(weatherData.flow) * 0.04);
-                    if (l.x > WORLD_WIDTH) l.x = -100;
-
-                    ctx.beginPath();
-                    ctx.roundRect(l.x, l.y, l.width, l.height, 4);
-                    ctx.fill();
-                    ctx.strokeStyle = '#451a03';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-
-                    // Kringflytande skum
-                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-                    ctx.beginPath();
-                    ctx.arc(l.x - 5, l.y + 6, 4, 0, Math.PI*2);
-                    ctx.fill();
-                });
+                ctx.fillRect(singleDriftLog.x, singleDriftLog.y, singleDriftLog.width, singleDriftLog.height);
+                ctx.strokeStyle = '#451a03';
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(singleDriftLog.x, singleDriftLog.y, singleDriftLog.width, singleDriftLog.height);
             }
 
             // Vakande fisk
@@ -955,8 +983,8 @@
                     r.alpha = Math.max(0, 1 - (r.radius / r.maxRadius));
                     if(r.radius > r.maxRadius) {
                         r.radius = 2; r.alpha = 1.0; r.timer = 0;
-                        r.x = 100 + Math.random() * (WORLD_WIDTH - 200);
-                        r.y = 70 + Math.random() * (canvas.height - 110);
+                        r.x = 60 + Math.random() * (canvas.width - 120);
+                        r.y = 50 + Math.random() * (canvas.height - 90);
                     }
                 }
                 ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.6})`;
@@ -975,7 +1003,7 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Kastlina & Fluga med Riskanalys
+            // Kastlina & Fluga med riskanalys
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -990,29 +1018,27 @@
                 ctx.fill();
 
                 if(!isFighting) {
-                    let flowSpeed = (0.5 + (parseFloat(weatherData.flow) * 0.05));
+                    let flowSpeed = (0.3 + (parseFloat(weatherData.flow) * 0.04));
                     castLine.x += flowSpeed;
 
-                    // KOLLISION 1: Drivved skär av lina
-                    if (parseFloat(weatherData.flow) > 14) {
-                        driftLogs.forEach(l => {
-                            if (castLine && castLine.x >= l.x && castLine.x <= l.x + l.width && Math.abs(castLine.y - l.y) < 15) {
-                                castLine = null;
-                                alert("💥 Tafsen fastnade i drivved som kom flytande! Linan gick av.");
-                                document.getElementById('castStatus').innerText = "Tafsen avsliten av drivved!";
-                            }
-                        });
+                    // Kollision med drivved
+                    if (parseFloat(weatherData.flow) > 14 && singleDriftLog) {
+                        if (castLine && castLine.x >= singleDriftLog.x && castLine.x <= singleDriftLog.x + singleDriftLog.width && Math.abs(castLine.y - singleDriftLog.y) < 15) {
+                            castLine = null;
+                            alert("💥 Tafsen fastnade i drivved som kom flytande! Linan gick av.");
+                            document.getElementById('castStatus').innerText = "Tafsen avsliten av drivved!";
+                        }
                     }
 
-                    // KOLLISION 2: Linbrott mot Dickson-blocket
+                    // Kollision med Dickson-block
                     if (currentZoneKey === 'dickson' && castLine) {
-                        if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 20) < 50) {
+                        if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 20) < 40) {
                             castLine = null;
                             alert("💥 Flugan kroka fast i Dickson-blocket! Linan gick av.");
                         }
                     }
 
-                    if(castLine && castLine.x > WORLD_WIDTH) castLine = null;
+                    if(castLine && castLine.x > canvas.width) castLine = null;
 
                     if(castLine && !wildlifeDisturbance && Math.random() < 0.00008 && !currentFish) {
                         triggerBite(false);
@@ -1020,7 +1046,6 @@
                 }
             }
 
-            ctx.restore();
             requestAnimationFrame(draw);
         }
         requestAnimationFrame(draw);
@@ -1041,18 +1066,14 @@
             }
 
             const rect = canvas.getBoundingClientRect();
-            const clickScreenX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
+            let clickX = e.clientX - rect.left;
+            let clickY = e.clientY - rect.top;
 
             const zone = getActiveZone();
-            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : WORLD_WIDTH / 2;
+            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
 
-            let focusX = castLine ? castLine.x : rodX;
-            let cameraX = Math.max(0, Math.min(WORLD_WIDTH - canvas.width, focusX - canvas.width / 2));
-            let clickX = clickScreenX + cameraX;
-
-            if (castLine && Math.hypot(clickScreenX - (rodX - cameraX), clickY - rodY) < 25) {
+            if (castLine && Math.hypot(clickX - rodX, clickY - rodY) < 25) {
                 pullLine();
                 return;
             }
@@ -1086,7 +1107,7 @@
             gameWorld.castsRemaining--;
             updateUI();
 
-            let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < 40);
+            let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < 35);
             if (hitRise && !wildlifeDisturbance && Math.random() < 0.45) {
                 setTimeout(() => { if (castLine && !currentFish) triggerBite(true); }, 1200);
             }
@@ -1101,7 +1122,7 @@
         function pullLine() {
             if(!castLine || isFighting) return;
             let zone = getActiveZone();
-            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : WORLD_WIDTH / 2;
+            let rodX = zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
             
             let currentDist = Math.hypot(castLine.x - rodX, castLine.y - rodY);
