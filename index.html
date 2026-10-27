@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flugfiske– Säveån Open World</title>
+    <title>Flugfiskarens Ekosystem – Säveån Open World</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -157,7 +157,7 @@
                 </div>
 
                 <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg z-20">
-                    Klicka i strömmen för kast. <strong>Klicka direkt på gröna gubben</strong> för att veva hem!
+                    Klicka för kast. <strong>Klicka på gröna gubben för att göra ett ryck/hemtagning!</strong>
                 </div>
 
                 <!-- Overlay för Tafsstress -->
@@ -664,8 +664,6 @@
         let fightTimeRemaining = 5.0;
         let totalFightDuration = 5.0;
         let fightInterval = null;
-
-        let isReeling = false;
 
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -1299,9 +1297,9 @@
 
             ctx.fillStyle = '#ffffff';
             ctx.font = '10px Inter';
-            ctx.fillText("VEVA HEM", rodX - 25, rodY + 28);
+            ctx.fillText("HEMTAGNING", rodX - 32, rodY + 28);
 
-            // Kastlina & Fluga med vackert guppande/gunga-mönster i strömmen
+            // Kastlina & Fluga med guppande/gunga-mönster i strömmen
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -1310,7 +1308,6 @@
                 ctx.lineTo(castLine.x, castLine.y);
                 ctx.stroke();
 
-                // Gungande effekt på flugan i vattnet (använder tidsbaserad sinuskurva)
                 let bobbing = Math.sin(Date.now() * 0.015) * 3;
 
                 ctx.fillStyle = '#c2410c';
@@ -1319,41 +1316,30 @@
                 ctx.fill();
 
                 if(!isFighting) {
-                    if (isReeling) {
-                        let angle = Math.atan2(rodY - castLine.y, rodX - castLine.x);
-                        castLine.x += Math.cos(angle) * 5.5;
-                        castLine.y += Math.sin(angle) * 5.5;
-                        if (Math.hypot(castLine.x - rodX, castLine.y - rodY) < 20) {
+                    let baseDriftSpeed = 0.4 + (currentFlow * 0.04);
+                    let driftSpeed = currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed;
+                    castLine.x += driftSpeed;
+
+                    if (currentFlow > 14 && singleDriftLog) {
+                        if (castLine && castLine.x >= singleDriftLog.x && castLine.x <= singleDriftLog.x + singleDriftLog.width && Math.abs(castLine.y - singleDriftLog.y) < 15) {
                             castLine = null;
-                            isReeling = false;
-                            document.getElementById('castStatus').innerText = "Flugan vevad in!";
+                            alert("💥 Tafsen fastnade i drivved! Linan gick av.");
+                            document.getElementById('castStatus').innerText = "Tafsen avsliten!";
                         }
-                    } else {
-                        let baseDriftSpeed = 0.4 + (currentFlow * 0.04);
-                        let driftSpeed = currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed;
-                        castLine.x += driftSpeed;
+                    }
 
-                        if (currentFlow > 14 && singleDriftLog) {
-                            if (castLine && castLine.x >= singleDriftLog.x && castLine.x <= singleDriftLog.x + singleDriftLog.width && Math.abs(castLine.y - singleDriftLog.y) < 15) {
-                                castLine = null;
-                                alert("💥 Tafsen fastnade i drivved! Linan gick av.");
-                                document.getElementById('castStatus').innerText = "Tafsen avsliten!";
-                            }
+                    if (currentZoneKey === 'dickson' && castLine) {
+                        if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 35) < 40) {
+                            castLine = null;
+                            alert("💥 Flugan kroka fast i Dickson-blocket! Linan gick av.");
                         }
+                    }
 
-                        if (currentZoneKey === 'dickson' && castLine) {
-                            if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 35) < 40) {
-                                castLine = null;
-                                alert("💥 Flugan kroka fast i Dickson-blocket! Linan gick av.");
-                            }
-                        }
+                    if(castLine && castLine.x > canvas.width) castLine = null;
 
-                        if(castLine && castLine.x > canvas.width) castLine = null;
-
-                        let biteChance = currentFlow > 14 ? 0.00014 : 0.00008;
-                        if(castLine && !wildlifeDisturbance && Math.random() < biteChance && !currentFish) {
-                            triggerBite(false);
-                        }
+                    let biteChance = currentFlow > 14 ? 0.00014 : 0.00008;
+                    if(castLine && !wildlifeDisturbance && Math.random() < biteChance && !currentFish) {
+                        triggerBite(false);
                     }
                 }
             }
@@ -1381,11 +1367,25 @@
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
 
-            // Klick direkt på gröna gubben = Veva hem lina
+            // Klick direkt på gröna gubben = Klassisk ryckvis hemtagning (ett litet ryck i taget)
             if (Math.hypot(clickX - rodX, clickY - rodY) < 25) {
                 if (castLine) {
-                    isReeling = true;
-                    document.getElementById('castStatus').innerText = "Vever hem flugan...";
+                    let angle = Math.atan2(rodY - castLine.y, rodX - castLine.x);
+                    castLine.x += Math.cos(angle) * 18;
+                    castLine.y += Math.sin(angle) * 18;
+                    
+                    document.getElementById('castStatus').innerText = "Gör ett ryck i lina / hemtagning...";
+
+                    // Chans att trigga hugg direkt vid ett aktivt hemtagningsryck!
+                    let hitRise = rises.some(r => Math.hypot(r.x - castLine.x, r.y - castLine.y) < 35);
+                    if (hitRise && Math.random() < 0.35 && !currentFish) {
+                        triggerBite(true);
+                    }
+
+                    if (Math.hypot(castLine.x - rodX, castLine.y - rodY) < 25) {
+                        castLine = null;
+                        document.getElementById('castStatus').innerText = "Flugan hemtagen till land!";
+                    }
                 }
                 return;
             }
@@ -1413,7 +1413,7 @@
             }
 
             if (castLine !== null && castLine.x < canvas.width) {
-                alert("Du kan inte göra ett nytt kast förrän flugan har åkt ur bilden eller vevats in!");
+                alert("Du kan inte göra ett nytt kast förrän flugan har åkt ur bilden eller hemtagits!");
                 return;
             }
 
@@ -1423,7 +1423,6 @@
             }
             
             castLine = { x: clickX, y: clickY };
-            isReeling = false;
             gameWorld.castsRemaining--;
             updateUI();
 
@@ -1485,7 +1484,6 @@
             currentFish = { species, size, gender };
             let feelDescription = size > 85 ? "HUGG! En riktig jätte till lax rusar lina!" : (size > 65 ? "HUGG! Tunga knixar i spöt!" : "HUGG! Pigg fisk som kämpar!");
 
-            // SKÄRMDISPLAY & VIBRATION (Fisken hugger och skakar)
             if ("vibrate" in navigator) navigator.vibrate(size > 90 ? [300, 150, 500] : [150, 100, 150]);
             
             const gameContainer = document.getElementById('gameContainer');
@@ -1518,7 +1516,6 @@
             fightInterval = setInterval(() => {
                 if(!isFighting) return;
 
-                // Mindre fisk = spralligare/snabbare drag, Större fisk = tunga, kraftiga nerdragningar
                 let weightFactor = currentFish.size > 80 ? 5.5 : 3.0;
                 let pullForce = (Math.random() - 0.38) * weightFactor;
 
@@ -1557,7 +1554,6 @@
             bar.style.width = tippetStress + "%";
             bar.className = tippetStress < 55 ? "bg-emerald-500 h-full rounded-full transition-all duration-75" : (tippetStress < 80 ? "bg-amber-500 h-full rounded-full transition-all duration-75" : "bg-rose-600 h-full rounded-full transition-all duration-75 animate-pulse");
 
-            // Visuell tyngd på skärmen beroende på fiskens storlek under drillning
             if (currentFish.size > 80 && Math.random() < 0.3) {
                 fightCard.style.transform = `scale(${1 + (Math.random()*0.04 - 0.02)})`;
             } else {
