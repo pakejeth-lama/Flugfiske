@@ -122,7 +122,7 @@
                 </div>
 
                 <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg z-20">
-                    Klicka i strömmen för att kasta. <strong>Tryck direkt på gröna gubben</strong> för att veva hem lina!
+                    Klicka i strömmen för att kasta. <strong>Tryck direkt på stora gröna gubben</strong> för att veva hem lina!
                 </div>
 
                 <!-- Overlay för Tafsstress vid Drillar -->
@@ -445,7 +445,6 @@
             return null;
         };
 
-        // OPEN WORLD: Ladda gemensam zondata från Firebase
         window.loadSharedZone = async function(zoneKey) {
             try {
                 const docRef = doc(db, "world_zones", zoneKey);
@@ -471,7 +470,6 @@
             }
         };
 
-        // OPEN WORLD: Spara gemensam zondata till Firebase
         window.saveSharedZone = async function(zoneKey, zoneData) {
             try {
                 const docRef = doc(db, "world_zones", zoneKey);
@@ -535,7 +533,6 @@
         let lockedAnglerName = localStorage.getItem('savean_angler_name');
         let todayStr = new Date().toISOString().split('T')[0];
 
-        // Spelarens personliga data (poäng och kast sparas per spelare)
         let gameWorld = {
             points: 700,
             laddersFixed: false,
@@ -620,7 +617,7 @@
                     gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
                     gameWorld.laddersFixed = !!cloudState.laddersFixed;
                 } else {
-                    gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
+                    gameWorld.points = (cloudState.points !== undefined ? cloudState.points : 700) + 100; // +100 p vid ny dag
                     gameWorld.lastPlayedDate = todayStr;
                     gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
@@ -631,7 +628,6 @@
                 await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
             }
             
-            // Ladda första zonen gemensamt
             await selectZone('dickson', 'Dickson');
         }
 
@@ -723,7 +719,6 @@
             updateUI();
         }
 
-        // Byt sträcka och hämta gemensam öppen-värld-data från Firebase
         async function selectZone(key, name) {
             currentZoneKey = key;
             ['dickson', 'mannered', 'edbergsrakan', 'kahogsforsen', 'brittamaja', 'lortholjan', 'finngosagrundet'].forEach(z => {
@@ -735,7 +730,6 @@
                 }
             });
             
-            // Hämta gemensamma biotoper från molnet
             if (window.loadSharedZone) {
                 let sharedData = await window.loadSharedZone(key);
                 if (sharedData) {
@@ -817,11 +811,11 @@
                 const zone = getActiveZone();
                 let breedBoost = ((zone.gravels||[]).length * 5) + ((zone.boulders||[]).length * 3) + ((zone.nurseries||[]).length * 6) + (gameWorld.laddersFixed ? 15 : 0);
                 zone.population = Math.min(zone.maxPop, zone.population + breedBoost + 3);
-                gameWorld.points += 50;
+                gameWorld.points += 100; // Ökat till 100 extra poäng per dag
                 
                 if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
                 fetchWeather(currentZoneKey);
-                document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast!`;
+                document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
             } else {
                 alert("Alla 7 dagar (35 kast) avklarade för idag! Kom tillbaka imorgon.");
             }
@@ -941,7 +935,7 @@
 
             const zone = getActiveZone();
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
+            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
 
             // Bakgrund baserat på sträcka
             if (currentZoneKey === 'mannered') {
@@ -973,20 +967,20 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // Edbergsrakan: Mörkblå djupränna överst
+            // Edbergsrakan: 4x så stor mörkblå djupränna överst
             if (currentZoneKey === 'edbergsrakan') {
                 ctx.fillStyle = '#032845';
-                ctx.fillRect(0, 15, canvas.width, 35);
+                ctx.fillRect(0, 10, canvas.width, 140);
                 ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(0, 15, canvas.width, 35);
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(0, 10, canvas.width, 140);
             }
 
-            // Britta-Maja: Sandbank som en halvmåne nere till vänster
+            // Britta-Maja: Stor sandbank (täckande 1/3 av botten från vänster hörn)
             if (currentZoneKey === 'brittamaja') {
                 ctx.fillStyle = '#d4b17e';
                 ctx.beginPath();
-                ctx.arc(30, canvas.height - 10, 75, Math.PI * 1.2, Math.PI * 2);
+                ctx.ellipse(0, canvas.height, canvas.width * 0.45, canvas.height * 0.4, 0, Math.PI * 1.5, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = '#b89765';
                 ctx.lineWidth = 2;
@@ -1005,7 +999,7 @@
                 ctx.stroke();
             }
 
-            // Lekgrus (Gemensamt)
+            // Lekgrus
             ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
             (zone.gravels || []).forEach(g => {
                 ctx.beginPath();
@@ -1013,7 +1007,7 @@
                 ctx.fill();
             });
 
-            // Ståndstenar (Gemensamt)
+            // Ståndstenar
             (zone.boulders || []).forEach(b => {
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
@@ -1024,7 +1018,7 @@
                 ctx.stroke();
             });
 
-            // Uppväxtplatser vid kanten (Gemensamt)
+            // Uppväxtplatser vid kanten
             ctx.fillStyle = 'rgba(34, 197, 94, 0.4)';
             (zone.nurseries || []).forEach(n => {
                 ctx.beginPath();
@@ -1090,13 +1084,13 @@
                 ctx.stroke();
             });
 
-            // Spöposition / Grön prick
+            // Större fiskare / grön prick (ökat till radie 14 för säker klickbarhet vid hemtagning)
             ctx.fillStyle = '#14532d';
             ctx.beginPath();
-            ctx.arc(rodX, rodY, 9, 0, Math.PI*2);
+            ctx.arc(rodX, rodY, 14, 0, Math.PI*2);
             ctx.fill();
             ctx.strokeStyle = '#22c55e';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.stroke();
 
             // Kastlina & Fluga med riskanalys
@@ -1165,9 +1159,10 @@
 
             const zone = getActiveZone();
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
+            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
 
-            if (castLine && Math.hypot(clickX - rodX, clickY - rodY) < 25) {
+            // Utökad träffyta (35 pixlar) för att dra in lina utan att kasta av misstag
+            if (castLine && Math.hypot(clickX - rodX, clickY - rodY) < 35) {
                 pullLine();
                 return;
             }
@@ -1183,7 +1178,6 @@
                     if(placementMode === 'boulder') { zone.boulders = zone.boulders || []; zone.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName }); zone.maxPop += 15; actionText = "Lade Ståndsten"; }
                     if(placementMode === 'nursery') { zone.nurseries = zone.nurseries || []; zone.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName }); actionText = "Skapade Uppväxtplats"; }
                     
-                    // Spara direkt till den gemensamma zonen i molnet
                     if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
                     if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, actionText, saveanZones[currentZoneKey].name);
                     fetchWeather(currentZoneKey);
@@ -1219,7 +1213,7 @@
             if(!castLine || isFighting) return;
             let zone = getActiveZone();
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 15;
+            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
             
             let currentDist = Math.hypot(castLine.x - rodX, castLine.y - rodY);
             if (currentDist <= 20) {
