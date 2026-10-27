@@ -276,7 +276,7 @@
 
                 <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center border-amber-500/40">
                     <div>
-                        <h4 class="font-bold text-rose-400 text-xs">Ta bort närmaste biotop</h4>
+                        <h4 class="font-bold text-rose-400 text-xs">Ta bort senaste åtgärd</h4>
                         <p class="text-[9px] text-stone-400">Ångra insats på sträckan</p>
                     </div>
                     <button onclick="removeNearestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-2.5 py-1.5 rounded text-[11px]">Ångra</button>
@@ -295,17 +295,24 @@
         </div>
     </div>
 
-    <!-- Modal: Highscore Topplista -->
+    <!-- Modal: Highscore Topplista & Hall of Fame -->
     <div id="highscoreModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-700 pb-2">
                 <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1">
-                    <span>🏆</span> Säveåns Highscore (Största Fångster)
+                    <span>🏆</span> Veckans Highscore & Hall of Fame
                 </h3>
                 <button onclick="closeHighscoreModal()" class="text-stone-400 hover:text-stone-100 text-xs font-bold px-2 py-1">✕</button>
             </div>
 
-            <div id="highscoreList" class="flex flex-col gap-1.5 max-h-64 overflow-y-auto text-xs">
+            <!-- Hall of Fame förra veckan -->
+            <div id="hallOfFameSection" class="bg-stone-900 p-2.5 rounded border border-amber-500/40 text-xs flex flex-col gap-1">
+                <span class="font-bold text-amber-300 flex items-center gap-1">⭐ Förra Veckans Mästare (Hall of Fame)</span>
+                <div id="hallOfFameContent" class="text-stone-300 text-[11px]">Laddar mästare...</div>
+            </div>
+
+            <div class="text-[10px] text-stone-400 font-semibold uppercase tracking-wider mt-1">Aktuell Veckotavla (Nollställs varje måndag)</div>
+            <div id="highscoreList" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto text-xs">
                 <p class="text-stone-400 italic text-center py-4">Laddar fångster från Firebase...</p>
             </div>
 
@@ -359,7 +366,7 @@
     <!-- Firebase SDK Modules -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, getDoc, setDoc, increment, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCu_wYB1IljSf3PB1aAqC4hPlmTREslSA0",
@@ -373,14 +380,27 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Beräkna nuvarande vecka i formatet "2026-W44"
+        function getCurrentWeekKey() {
+            const now = new Date();
+            const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+            return `${d.getUTCFullYear()}-W${weekNo}`;
+        }
+
         window.saveCatchToFirebase = async function(anglerName, species, size, fly, zoneName) {
             try {
+                const currentWeek = getCurrentWeekKey();
                 await addDoc(collection(db, "highscores"), {
                     angler: anglerName || "Anonym Fiskare",
                     species: species,
                     size: size,
                     fly: fly,
                     zone: zoneName,
+                    week: currentWeek,
                     timestamp: new Date().toISOString()
                 });
             } catch (e) {
@@ -390,37 +410,70 @@
 
         window.fetchHighscores = async function() {
             const listEl = document.getElementById('highscoreList');
-            listEl.innerHTML = `<p class="text-stone-400 italic text-center py-4">Laddar fångster...</p>`;
+            const hofEl = document.getElementById('hallOfFameContent');
+            listEl.innerHTML = `<p class="text-stone-400 italic text-center py-4">Laddar veckans fångster...</p>`;
+            hofEl.innerHTML = `Laddar förra veckans mästare...`;
 
             try {
-                const q = query(collection(db, "highscores"), orderBy("size", "desc"), limit(10));
-                const querySnapshot = await getDocs(q);
-
-                if (querySnapshot.empty) {
-                    listEl.innerHTML = `<p class="text-stone-500 italic text-center py-4">Inga highscores registrerade än.</p>`;
-                    return;
-                }
+                const currentWeek = getCurrentWeekKey();
+                
+                // 1. Hämta aktuell veckas lista
+                const qCurrent = query(collection(db, "highscores"), orderBy("size", "desc"), limit(10));
+                const querySnapshot = await getDocs(qCurrent);
 
                 let html = "";
                 let rank = 1;
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
-                    html += `
-                        <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-amber-400 text-sm w-6">${medal}</span>
-                                <div>
-                                    <span class="font-bold text-stone-200 block">${data.angler}</span>
-                                    <span class="text-[10px] text-stone-400 block">${data.species} • Fluga: ${data.fly} • ${data.zone}</span>
+                let hasCurrentWeek = false;
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    if (data.week === currentWeek) {
+                        hasCurrentWeek = true;
+                        let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
+                        html += `
+                            <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-amber-400 text-sm w-6">${medal}</span>
+                                    <div>
+                                        <span class="font-bold text-stone-200 block">${data.angler}</span>
+                                        <span class="text-[10px] text-stone-400 block">${data.species} • Fluga: ${data.fly} • ${data.zone}</span>
+                                    </div>
                                 </div>
+                                <span class="font-bold text-emerald-400 text-sm">${data.size} cm</span>
                             </div>
-                            <span class="font-bold text-emerald-400 text-sm">${data.size} cm</span>
-                        </div>
-                    `;
-                    rank++;
+                        `;
+                        rank++;
+                    }
                 });
-                listEl.innerHTML = html;
+
+                if (!hasCurrentWeek) {
+                    listEl.innerHTML = `<p class="text-stone-500 italic text-center py-4">Inga fångster registrerade denna vecka än. Bli först!</p>`;
+                } else {
+                    listEl.innerHTML = html;
+                }
+
+                // 2. Hämta förra veckans vinnare (Hall of Fame)
+                const allSnap = await getDocs(collection(db, "highscores"));
+                let allCatches = [];
+                allSnap.forEach(d => allCatches.push(d.data()));
+
+                let pastWeeks = [...new Set(allCatches.map(c => c.week))].filter(w => w !== currentWeek).sort().reverse();
+                
+                if (pastWeeks.length > 0) {
+                    let lastWeekKey = pastWeeks[0];
+                    let lastWeekCatches = allCatches.filter(c => c.week === lastWeekKey);
+                    
+                    let bestSalmon = lastWeekCatches.filter(c => c.species.includes("Lax")).sort((a,b) => b.size - a.size)[0];
+                    let bestTrout = lastWeekCatches.filter(c => c.species.includes("Öring")).sort((a,b) => b.size - a.size)[0];
+
+                    let hofHtml = "";
+                    hofHtml += bestSalmon ? `<div>🐟 <strong>Största Lax:</strong> ${bestSalmon.angler} (${bestSalmon.size} cm)</div>` : `<div>🐟 <strong>Största Lax:</strong> Ingen registrerad</div>`;
+                    hofHtml += bestTrout ? `<div>🐠 <strong>Största Öring:</strong> ${bestTrout.angler} (${bestTrout.size} cm)</div>` : `<div>🐠 <strong>Största Öring:</strong> Ingen registrerad</div>`;
+                    hofEl.innerHTML = hofHtml;
+                } else {
+                    hofEl.innerHTML = `Ingen tidigare vecka arkiverad än.`;
+                }
+
             } catch (e) {
                 console.error("Fel vid hämtning av highscores:", e);
                 listEl.innerHTML = `<p class="text-rose-400 italic text-center py-4">Kunde inte ladda highscores.</p>`;
@@ -617,7 +670,7 @@
                     gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
                     gameWorld.laddersFixed = !!cloudState.laddersFixed;
                 } else {
-                    gameWorld.points = (cloudState.points !== undefined ? cloudState.points : 700) + 100; // +100 p vid ny dag
+                    gameWorld.points = (cloudState.points !== undefined ? cloudState.points : 700) + 100;
                     gameWorld.lastPlayedDate = todayStr;
                     gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
@@ -811,7 +864,7 @@
                 const zone = getActiveZone();
                 let breedBoost = ((zone.gravels||[]).length * 5) + ((zone.boulders||[]).length * 3) + ((zone.nurseries||[]).length * 6) + (gameWorld.laddersFixed ? 15 : 0);
                 zone.population = Math.min(zone.maxPop, zone.population + breedBoost + 3);
-                gameWorld.points += 100; // Ökat till 100 extra poäng per dag
+                gameWorld.points += 100;
                 
                 if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
                 fetchWeather(currentZoneKey);
@@ -976,11 +1029,14 @@
                 ctx.strokeRect(0, 10, canvas.width, 140);
             }
 
-            // Britta-Maja: Stor sandbank (täckande 1/3 av botten från vänster hörn)
+            // Britta-Maja: Fylld solid sandbank i hela vänstra hörnet
             if (currentZoneKey === 'brittamaja') {
                 ctx.fillStyle = '#d4b17e';
                 ctx.beginPath();
-                ctx.ellipse(0, canvas.height, canvas.width * 0.45, canvas.height * 0.4, 0, Math.PI * 1.5, Math.PI * 2);
+                ctx.moveTo(0, canvas.height);
+                ctx.lineTo(0, canvas.height * 0.5);
+                ctx.quadraticCurveTo(canvas.width * 0.35, canvas.height * 0.6, canvas.width * 0.5, canvas.height);
+                ctx.closePath();
                 ctx.fill();
                 ctx.strokeStyle = '#b89765';
                 ctx.lineWidth = 2;
@@ -1084,7 +1140,7 @@
                 ctx.stroke();
             });
 
-            // Större fiskare / grön prick (ökat till radie 14 för säker klickbarhet vid hemtagning)
+            // Större fiskare / grön prick
             ctx.fillStyle = '#14532d';
             ctx.beginPath();
             ctx.arc(rodX, rodY, 14, 0, Math.PI*2);
@@ -1161,7 +1217,6 @@
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
 
-            // Utökad träffyta (35 pixlar) för att dra in lina utan att kasta av misstag
             if (castLine && Math.hypot(clickX - rodX, clickY - rodY) < 35) {
                 pullLine();
                 return;
