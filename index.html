@@ -366,7 +366,7 @@
     <!-- Firebase SDK Modules -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, getDoc, setDoc, increment, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCu_wYB1IljSf3PB1aAqC4hPlmTREslSA0",
@@ -416,19 +416,19 @@
 
             try {
                 const currentWeek = getCurrentWeekKey();
-                
-                // 1. Hämta aktuell veckas lista
-                const qCurrent = query(collection(db, "highscores"), orderBy("size", "desc"), limit(10));
-                const querySnapshot = await getDocs(qCurrent);
+                const allSnap = await getDocs(collection(db, "highscores"));
+                let allCatches = [];
+                allSnap.forEach(d => allCatches.push(d.data()));
+
+                // 1. Filtrera ut aktuell vecka och sortera efter storlek (störst först)
+                let currentWeekCatches = allCatches.filter(c => c.week === currentWeek).sort((a, b) => b.size - a.size);
 
                 let html = "";
                 let rank = 1;
-                let hasCurrentWeek = false;
-
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    if (data.week === currentWeek) {
-                        hasCurrentWeek = true;
+                if (currentWeekCatches.length === 0) {
+                    listEl.innerHTML = `<p class="text-stone-500 italic text-center py-4">Inga fångster registrerade denna vecka än. Bli först!</p>`;
+                } else {
+                    currentWeekCatches.slice(0, 10).forEach((data) => {
                         let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
                         html += `
                             <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
@@ -443,28 +443,19 @@
                             </div>
                         `;
                         rank++;
-                    }
-                });
-
-                if (!hasCurrentWeek) {
-                    listEl.innerHTML = `<p class="text-stone-500 italic text-center py-4">Inga fångster registrerade denna vecka än. Bli först!</p>`;
-                } else {
+                    });
                     listEl.innerHTML = html;
                 }
 
-                // 2. Hämta förra veckans vinnare (Hall of Fame)
-                const allSnap = await getDocs(collection(db, "highscores"));
-                let allCatches = [];
-                allSnap.forEach(d => allCatches.push(d.data()));
-
-                let pastWeeks = [...new Set(allCatches.map(c => c.week))].filter(w => w !== currentWeek).sort().reverse();
+                // 2. Hall of Fame förra veckan
+                let pastWeeks = [...new Set(allCatches.map(c => c.week))].filter(w => w && w !== currentWeek).sort().reverse();
                 
                 if (pastWeeks.length > 0) {
                     let lastWeekKey = pastWeeks[0];
                     let lastWeekCatches = allCatches.filter(c => c.week === lastWeekKey);
                     
-                    let bestSalmon = lastWeekCatches.filter(c => c.species.includes("Lax")).sort((a,b) => b.size - a.size)[0];
-                    let bestTrout = lastWeekCatches.filter(c => c.species.includes("Öring")).sort((a,b) => b.size - a.size)[0];
+                    let bestSalmon = lastWeekCatches.filter(c => c.species && c.species.includes("Lax")).sort((a,b) => b.size - a.size)[0];
+                    let bestTrout = lastWeekCatches.filter(c => c.species && c.species.includes("Öring")).sort((a,b) => b.size - a.size)[0];
 
                     let hofHtml = "";
                     hofHtml += bestSalmon ? `<div>🐟 <strong>Största Lax:</strong> ${bestSalmon.angler} (${bestSalmon.size} cm)</div>` : `<div>🐟 <strong>Största Lax:</strong> Ingen registrerad</div>`;
