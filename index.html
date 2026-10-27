@@ -9,16 +9,16 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; touch-action: manipulation; }
         
-        @keyframes fightShake {
+        @keyframes fightRush {
             0% { transform: translate(0px, 0px) rotate(0deg); }
-            20% { transform: translate(-3px, 2px) rotate(-1deg); }
-            40% { transform: translate(3px, -2px) rotate(1deg); }
-            60% { transform: translate(-2px, -2px) rotate(-0.5deg); }
-            80% { transform: translate(2px, 3px) rotate(0.5deg); }
+            20% { transform: translate(-15px, 8px) rotate(-2deg); }
+            40% { transform: translate(18px, -12px) rotate(2.5deg); }
+            60% { transform: translate(-8px, -15px) rotate(-1deg); }
+            80% { transform: translate(12px, 10px) rotate(1.5deg); }
             100% { transform: translate(0px, 0px) rotate(0deg); }
         }
-        .animate-fight-shake {
-            animation: fightShake 0.15s infinite ease-in-out;
+        .animate-fight-rush {
+            animation: fightRush 0.25s infinite ease-in-out;
         }
     </style>
 </head>
@@ -145,8 +145,8 @@
                 </div>
             </div>
 
-            <!-- Canvas Spelyta -->
-            <div id="gameContainer" class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[16/9]">
+            <!-- Canvas Spelyta (Dubbelt så hög i stående / standard i liggande) -->
+            <div id="gameContainer" class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[4/5] md:aspect-[16/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
                 <!-- Canvas HUD -->
@@ -168,14 +168,15 @@
                     Aktivt läge: Klicka i vattnet!
                 </div>
 
+                <!-- Mjukare text -->
                 <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg z-20">
-                    Klicka för kast. <strong>Klicka på gröna gubben för att göra ett ryck/hemtagning!</strong>
+                    Klicka för kast. Klicka på gröna gubben för Hemtagning.
                 </div>
 
-                <!-- Overlay för Tafsstress -->
+                <!-- Overlay för Tafsstress (Rör sig fritt över skärmen som en rusande fisk) -->
                 <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
-                    <div id="fightCard" class="bg-stone-900/95 border-2 border-amber-500/80 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl animate-fight-shake transition-all duration-75">
-                        <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">DRILLNING – HÅLL INNE FINGRET!</span>
+                    <div id="fightCard" class="bg-stone-900/95 border-2 border-amber-500/80 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl animate-fight-rush transition-all duration-75">
+                        <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">Drillning – Håll inne fingret!</span>
                         <div class="flex justify-between text-[11px] text-stone-300 font-semibold">
                             <span>Tafsstress:</span>
                             <span id="stressValueText">0%</span>
@@ -191,7 +192,7 @@
                 </div>
             </div>
 
-            <!-- Kontroller (Enhetliga knappar) -->
+            <!-- Kontroller -->
             <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-col gap-2">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <button onclick="changeFlyModal()" class="h-9 bg-stone-700 hover:bg-stone-600 text-white rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-stone-600">
@@ -1108,8 +1109,9 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const zone = getActiveZone();
-            let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
+            // Startpunkt nere till vänster (om inte spelaren har flyttat den själv)
+            let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : 40;
+            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 40;
 
             if (currentZoneKey === 'mannered') {
                 let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -1298,7 +1300,7 @@
                 ctx.stroke();
             });
 
-            // Fiskare (Stora gröna gubben)
+            // Fiskare (Stora gröna gubben nere till vänster)
             ctx.fillStyle = '#14532d';
             ctx.beginPath();
             ctx.arc(rodX, rodY, 16, 0, Math.PI*2);
@@ -1309,7 +1311,7 @@
 
             ctx.fillStyle = '#ffffff';
             ctx.font = '10px Inter';
-            ctx.fillText("HEMTAGNING", rodX - 32, rodY + 28);
+            ctx.fillText("Hemtagning", rodX - 28, rodY + 28);
 
             // Kastlina & Fluga med guppande/gunga-mönster i strömmen
             if(castLine) {
@@ -1376,8 +1378,8 @@
             let clickY = e.clientY - rect.top;
 
             const zone = getActiveZone();
-            let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
-            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
+            let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : 40;
+            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 40;
 
             // Klick direkt på gröna gubben = Ryckvis hemtagning
             if (Math.hypot(clickX - rodX, clickY - rodY) < 25) {
@@ -1536,7 +1538,6 @@
                     tippetStress += (currentFish.size > 80 ? 8.0 : 6.0) + pullForce;
                     fightTimeRemaining -= 0.1;
                     
-                    // Pulserande vibrationer i mobilen medan du drillar
                     if ("vibrate" in navigator && Math.random() < 0.4) {
                         navigator.vibrate(currentFish.size > 80 ? [80, 40, 80] : 40);
                     }
@@ -1572,11 +1573,11 @@
             bar.style.width = tippetStress + "%";
             bar.className = tippetStress < 55 ? "bg-emerald-500 h-full rounded-full transition-all duration-75" : (tippetStress < 80 ? "bg-amber-500 h-full rounded-full transition-all duration-75" : "bg-rose-600 h-full rounded-full transition-all duration-75 animate-pulse");
 
-            // Levande drillningskort som rör sig kontinuerligt under drillningen!
-            let shakeX = (Math.random() - 0.5) * (currentFish.size > 80 ? 12 : 6);
-            let shakeY = (Math.random() - 0.5) * (currentFish.size > 80 ? 12 : 6);
-            let rot = (Math.random() - 0.5) * (currentFish.size > 80 ? 4 : 2);
-            fightCard.style.transform = `translate(${shakeX}px, ${shakeY}px) rotate(${rot}deg)`;
+            // Drillningsfönstret rör sig nu fram och tillbaka över skärmen och simulerar en rusande fisk!
+            let rushX = (Math.sin(Date.now() * 0.015) * (currentFish.size > 80 ? 45 : 25)) + ((Math.random() - 0.5) * 15);
+            let rushY = (Math.cos(Date.now() * 0.012) * (currentFish.size > 80 ? 30 : 15)) + ((Math.random() - 0.5) * 15);
+            let rot = (Math.sin(Date.now() * 0.01) * (currentFish.size > 80 ? 6 : 3));
+            fightCard.style.transform = `translate(${rushX}px, ${rushY}px) rotate(${rot}deg)`;
         }
 
         function finishFight(success) {
@@ -1629,7 +1630,6 @@
             if(survived) {
                 let pts = currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 50 : 40);
 
-                // Om man släpper tillbaka skadlig smårovfisk (Gädda <80cm / Abborre <38cm)
                 if((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
                     gameWorld.points = Math.max(0, gameWorld.points - 30);
                     alert(`Du släppte tillbaka en skadlig smårovfisk som äter smolt! (-30 naturvårdspoäng).`);
