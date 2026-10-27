@@ -134,7 +134,7 @@
             </div>
 
             <!-- Canvas Spelyta -->
-            <div class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[16/9]">
+            <div id="gameContainer" class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[16/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
                 <!-- Canvas HUD -->
@@ -157,7 +157,7 @@
                 </div>
 
                 <div id="instructionOverlay" class="absolute bottom-2 bg-stone-900/90 border border-emerald-600/50 px-3 py-1 rounded text-[10px] text-center shadow-lg z-20">
-                    Klicka för kast. <strong>Klicka på gröna gubben för att veva</strong> (<strong>Håll inne</strong> för att pendla lina!).
+                    Klicka i strömmen för kast. <strong>Klicka direkt på gröna gubben</strong> för att veva hem!
                 </div>
 
                 <!-- Overlay för Tafsstress -->
@@ -665,7 +665,6 @@
         let totalFightDuration = 5.0;
         let fightInterval = null;
 
-        let isSwinging = false;
         let isReeling = false;
 
         const canvas = document.getElementById('gameCanvas');
@@ -1300,9 +1299,9 @@
 
             ctx.fillStyle = '#ffffff';
             ctx.font = '10px Inter';
-            ctx.fillText("VEVA/PENDLA", rodX - 32, rodY + 28);
+            ctx.fillText("VEVA HEM", rodX - 25, rodY + 28);
 
-            // Kastlina & Fluga
+            // Kastlina & Fluga med vackert guppande/gunga-mönster i strömmen
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -1311,26 +1310,24 @@
                 ctx.lineTo(castLine.x, castLine.y);
                 ctx.stroke();
 
+                // Gungande effekt på flugan i vattnet (använder tidsbaserad sinuskurva)
+                let bobbing = Math.sin(Date.now() * 0.015) * 3;
+
                 ctx.fillStyle = '#c2410c';
                 ctx.beginPath();
-                ctx.arc(castLine.x, castLine.y, 3.5, 0, Math.PI * 2);
+                ctx.arc(castLine.x, castLine.y + bobbing, 3.5, 0, Math.PI * 2);
                 ctx.fill();
 
                 if(!isFighting) {
                     if (isReeling) {
                         let angle = Math.atan2(rodY - castLine.y, rodX - castLine.x);
-                        castLine.x += Math.cos(angle) * 4.5;
-                        castLine.y += Math.sin(angle) * 4.5;
+                        castLine.x += Math.cos(angle) * 5.5;
+                        castLine.y += Math.sin(angle) * 5.5;
                         if (Math.hypot(castLine.x - rodX, castLine.y - rodY) < 20) {
                             castLine = null;
                             isReeling = false;
-                            isSwinging = false;
                             document.getElementById('castStatus').innerText = "Flugan vevad in!";
                         }
-                    } else if (isSwinging) {
-                        castLine.x += 1.2;
-                        castLine.y += Math.sin(Date.now() * 0.005) * 0.8;
-                        if(castLine.x > canvas.width) castLine = null;
                     } else {
                         let baseDriftSpeed = 0.4 + (currentFlow * 0.04);
                         let driftSpeed = currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed;
@@ -1365,24 +1362,12 @@
         }
         requestAnimationFrame(draw);
 
-        let pressTimer = null;
-
-        window.addEventListener('mousedown', () => {
-            if(isFighting) isPressingScreen = true;
-        });
-        window.addEventListener('mouseup', () => {
-            isPressingScreen = false;
-            if(pressTimer) clearTimeout(pressTimer);
-            isReeling = false;
-        });
+        window.addEventListener('mousedown', () => { if(isFighting) isPressingScreen = true; });
+        window.addEventListener('mouseup', () => { isPressingScreen = false; });
         window.addEventListener('touchstart', (e) => { 
             if(isFighting) { isPressingScreen = true; e.preventDefault(); }
         }, { passive: false });
-        window.addEventListener('touchend', () => {
-            isPressingScreen = false;
-            if(pressTimer) clearTimeout(pressTimer);
-            isReeling = false;
-        });
+        window.addEventListener('touchend', () => { isPressingScreen = false; });
 
         canvas.addEventListener('click', async (e) => {
             if(isFighting) return;
@@ -1396,6 +1381,7 @@
             let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : canvas.width / 2;
             let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 20;
 
+            // Klick direkt på gröna gubben = Veva hem lina
             if (Math.hypot(clickX - rodX, clickY - rodY) < 25) {
                 if (castLine) {
                     isReeling = true;
@@ -1403,14 +1389,6 @@
                 }
                 return;
             }
-
-            pressTimer = setTimeout(() => {
-                if(castLine) {
-                    isSwinging = true;
-                    isReeling = false;
-                    document.getElementById('castStatus').innerText = "Linan låst – flugan pendlar i strömmen!";
-                }
-            }, 500);
 
             if(placementMode) {
                 if(placementMode === 'rod') {
@@ -1445,7 +1423,6 @@
             }
             
             castLine = { x: clickX, y: clickY };
-            isSwinging = false;
             isReeling = false;
             gameWorld.castsRemaining--;
             updateUI();
@@ -1508,7 +1485,13 @@
             currentFish = { species, size, gender };
             let feelDescription = size > 85 ? "HUGG! En riktig jätte till lax rusar lina!" : (size > 65 ? "HUGG! Tunga knixar i spöt!" : "HUGG! Pigg fisk som kämpar!");
 
-            if ("vibrate" in navigator) navigator.vibrate(size > 90 ? [200, 100, 400] : 100);
+            // SKÄRMDISPLAY & VIBRATION (Fisken hugger och skakar)
+            if ("vibrate" in navigator) navigator.vibrate(size > 90 ? [300, 150, 500] : [150, 100, 150]);
+            
+            const gameContainer = document.getElementById('gameContainer');
+            let shakeIntensity = size > 85 ? 'animate-bounce' : 'animate-pulse';
+            gameContainer.classList.add(shakeIntensity);
+            setTimeout(() => { gameContainer.classList.remove('animate-bounce', 'animate-pulse'); }, 1200);
 
             document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">${feelDescription} Håll fingret nedtryckt!</span>`;
             
@@ -1535,9 +1518,12 @@
             fightInterval = setInterval(() => {
                 if(!isFighting) return;
 
-                let pullForce = (Math.random() - 0.35) * 4;
+                // Mindre fisk = spralligare/snabbare drag, Större fisk = tunga, kraftiga nerdragningar
+                let weightFactor = currentFish.size > 80 ? 5.5 : 3.0;
+                let pullForce = (Math.random() - 0.38) * weightFactor;
+
                 if(isPressingScreen) {
-                    tippetStress += 6.5 + pullForce;
+                    tippetStress += (currentFish.size > 80 ? 7.5 : 5.8) + pullForce;
                     fightTimeRemaining -= 0.1;
                 } else {
                     tippetStress -= 5.0;
@@ -1564,11 +1550,19 @@
             const bar = document.getElementById('stressBar');
             const stressText = document.getElementById('stressValueText');
             const timeText = document.getElementById('fightTimeText');
+            const fightCard = document.getElementById('fightCard');
 
             stressText.innerText = Math.round(tippetStress) + "%";
             timeText.innerText = fightTimeRemaining.toFixed(1) + "s";
             bar.style.width = tippetStress + "%";
             bar.className = tippetStress < 55 ? "bg-emerald-500 h-full rounded-full transition-all duration-75" : (tippetStress < 80 ? "bg-amber-500 h-full rounded-full transition-all duration-75" : "bg-rose-600 h-full rounded-full transition-all duration-75 animate-pulse");
+
+            // Visuell tyngd på skärmen beroende på fiskens storlek under drillning
+            if (currentFish.size > 80 && Math.random() < 0.3) {
+                fightCard.style.transform = `scale(${1 + (Math.random()*0.04 - 0.02)})`;
+            } else {
+                fightCard.style.transform = 'scale(1)';
+            }
         }
 
         function finishFight(success) {
