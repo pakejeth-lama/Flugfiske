@@ -380,7 +380,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Beräkna nuvarande vecka i formatet "2026-W44"
         function getCurrentWeekKey() {
             const now = new Date();
             const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
@@ -420,7 +419,6 @@
                 let allCatches = [];
                 allSnap.forEach(d => allCatches.push(d.data()));
 
-                // 1. Filtrera ut aktuell vecka och sortera efter storlek (störst först)
                 let currentWeekCatches = allCatches.filter(c => c.week === currentWeek).sort((a, b) => b.size - a.size);
 
                 let html = "";
@@ -447,7 +445,6 @@
                     listEl.innerHTML = html;
                 }
 
-                // 2. Hall of Fame förra veckan
                 let pastWeeks = [...new Set(allCatches.map(c => c.week))].filter(w => w && w !== currentWeek).sort().reverse();
                 
                 if (pastWeeks.length > 0) {
@@ -702,7 +699,7 @@
             for(let i=0; i<5; i++) {
                 rises.push({
                     x: 60 + Math.random() * (canvas.width - 120),
-                    y: 60 + Math.random() * (canvas.height - 100),
+                    y: 70 + Math.random() * (canvas.height - 140),
                     radius: 2,
                     maxRadius: 20 + Math.random() * 10,
                     alpha: 1.0,
@@ -1014,10 +1011,10 @@
             // Edbergsrakan: 4x så stor mörkblå djupränna överst
             if (currentZoneKey === 'edbergsrakan') {
                 ctx.fillStyle = '#032845';
-                ctx.fillRect(0, 10, canvas.width, 140);
+                ctx.fillRect(0, 24, canvas.width, 130);
                 ctx.strokeStyle = '#38bdf8';
                 ctx.lineWidth = 1.5;
-                ctx.strokeRect(0, 10, canvas.width, 140);
+                ctx.strokeRect(0, 24, canvas.width, 130);
             }
 
             // Britta-Maja: Fylld solid sandbank i hela vänstra hörnet
@@ -1039,11 +1036,45 @@
             if (currentZoneKey === 'dickson') {
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
-                ctx.ellipse(dicksonBlockX, 20, 60, 30, 0, 0, Math.PI * 2);
+                ctx.ellipse(dicksonBlockX, 35, 60, 25, 0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = '#38bdf8';
                 ctx.lineWidth = 2;
                 ctx.stroke();
+            }
+
+            // === STRANDKANT (Övre och undre) ===
+            ctx.fillStyle = '#1c1917'; // Jordkant
+            ctx.fillRect(0, 0, canvas.width, 24);
+            ctx.fillRect(0, canvas.height - 24, canvas.width, 24);
+            ctx.fillStyle = '#14532d'; // Gräskant
+            ctx.fillRect(0, 0, canvas.width, 10);
+            ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
+
+            // === TRÄD OCH BUSKAR LÄNGS KANTEN ===
+            for (let i = 0; i < (zone.trees || 2); i++) {
+                let tx = 50 + (i * 130) % (canvas.width - 80);
+                let ty = i % 2 === 0 ? 12 : canvas.height - 12;
+                // Stam
+                ctx.fillStyle = '#78350f';
+                ctx.fillRect(tx - 3, ty - 6, 6, 12);
+                // Trädtopp
+                ctx.fillStyle = '#166534';
+                ctx.beginPath();
+                ctx.arc(tx, ty, 13, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#14532d';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            for (let i = 0; i < (zone.bushes || 2); i++) {
+                let bx = 90 + (i * 150) % (canvas.width - 100);
+                let by = i % 2 === 0 ? 16 : canvas.height - 16;
+                ctx.fillStyle = '#15803d';
+                ctx.beginPath();
+                ctx.ellipse(bx, by, 14, 7, 0, 0, Math.PI * 2);
+                ctx.fill();
             }
 
             // Lekgrus
@@ -1065,11 +1096,22 @@
                 ctx.stroke();
             });
 
-            // Uppväxtplatser vid kanten
-            ctx.fillStyle = 'rgba(34, 197, 94, 0.4)';
+            // === UPPVÄXTPLATSER (Grön yta med gråa fläckar) ===
             (zone.nurseries || []).forEach(n => {
+                ctx.fillStyle = 'rgba(21, 128, 61, 0.5)';
                 ctx.beginPath();
-                ctx.ellipse(n.x, canvas.height - 12, 30, 10, 0, 0, Math.PI * 2);
+                ctx.ellipse(n.x, n.y, 36, 18, 0.1, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(74, 222, 128, 0.7)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Gråa små stenfläckar/detaljer inuti
+                ctx.fillStyle = 'rgba(100, 116, 139, 0.8)';
+                ctx.beginPath();
+                ctx.arc(n.x - 10, n.y - 3, 3.5, 0, Math.PI * 2);
+                ctx.arc(n.x + 10, n.y + 3, 4, 0, Math.PI * 2);
+                ctx.arc(n.x + 3, n.y - 5, 3, 0, Math.PI * 2);
                 ctx.fill();
             });
 
@@ -1092,7 +1134,7 @@
             if(flowOffset > 40) flowOffset = 0;
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
             ctx.lineWidth = 1;
-            for(let y = 30; y < canvas.height; y += 35) {
+            for(let y = 35; y < canvas.height - 25; y += 35) {
                 ctx.beginPath();
                 for(let x = -40; x < canvas.width + 40; x += 35) {
                     ctx.lineTo(x + flowOffset, y + Math.sin((x + flowOffset) * 0.05) * 4);
@@ -1121,7 +1163,7 @@
                     if(r.radius > r.maxRadius) {
                         r.radius = 2; r.alpha = 1.0; r.timer = 0;
                         r.x = 60 + Math.random() * (canvas.width - 120);
-                        r.y = 50 + Math.random() * (canvas.height - 90);
+                        r.y = 70 + Math.random() * (canvas.height - 140);
                     }
                 }
                 ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.6})`;
@@ -1167,7 +1209,7 @@
                     }
 
                     if (currentZoneKey === 'dickson' && castLine) {
-                        if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 20) < 40) {
+                        if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 35) < 40) {
                             castLine = null;
                             alert("💥 Flugan kroka fast i Dickson-blocket! Linan gick av.");
                         }
