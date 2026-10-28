@@ -42,6 +42,17 @@
         </div>
     </div>
 
+    <!-- Modal: Universal Meddelanderuta (Ersätter gamla alerts) -->
+    <div id="customAlertModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3.5 text-center">
+            <h3 id="customAlertTitle" class="text-sm font-bold text-emerald-400 flex items-center justify-center gap-1.5">
+                <span>💬</span> Meddelande
+            </h3>
+            <p id="customAlertText" class="text-xs text-stone-300 leading-relaxed"></p>
+            <button onclick="closeCustomAlert()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl text-xs font-semibold transition">OK</button>
+        </div>
+    </div>
+
     <!-- Modal: Infotavla för Beståndet -->
     <div id="populationModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-900 border border-amber-600/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
@@ -69,7 +80,7 @@
 
     <!-- Modal: Hemlig Game Master Admin -->
     <div id="adminModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
+        <div class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1">
                     <span>🔐</span> Game Master Adminpanel
@@ -84,10 +95,25 @@
             </div>
 
             <div id="adminToolsView" class="hidden flex flex-col gap-3 text-xs">
+                <!-- Nollställ vecka -->
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
                     <span class="font-bold text-emerald-400">Nollställ hela fiskeveckan:</span>
                     <input type="text" id="targetPlayerInput" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
                     <button onclick="adminResetPlayerWeek()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl font-semibold">Återställ vecka (Dag 1 & 5 kast)</button>
+                </div>
+
+                <!-- Dela ut poäng -->
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
+                    <span class="font-bold text-amber-400">Dela ut / Justera naturvårdspoäng:</span>
+                    <input type="text" id="adminPointsPlayer" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
+                    <input type="number" id="adminPointsAmount" placeholder="Antal poäng (t.ex. 300 eller -100)..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
+                    <button onclick="adminGrantPoints()" class="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold py-2 rounded-xl">Uppdatera poäng</button>
+                </div>
+
+                <!-- Nollställ biotop på sträcka -->
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
+                    <span class="font-bold text-rose-400">Nollställ biotop på aktiv sträcka:</span>
+                    <button onclick="adminClearCurrentZoneBiotope()" class="w-full bg-rose-700 hover:bg-rose-600 text-white py-2 rounded-xl font-semibold">Rensa allt lekgrus/stenar här</button>
                 </div>
             </div>
         </div>
@@ -124,7 +150,6 @@
                     <span class="font-bold text-emerald-400 flex items-center gap-1">
                         <span>🗺️</span> Välj Fiskeplats (Sträcka):
                     </span>
-                    <span class="text-[9px] text-stone-400">Samma å, individuella sträckor</span>
                 </div>
                 <div id="riverMap" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-1.5 text-xs">
                     <button onclick="selectZone('dickson', 'Dickson')" id="zone-dickson" class="p-2 rounded-xl bg-emerald-950 border border-emerald-600 text-left transition">
@@ -665,7 +690,7 @@
             dickson: { name: "Säveån – Dickson", lat: 57.742, lon: 12.195, baseTemp: 11 },
             mannered: { name: "Säveån – Mannered", lat: 57.738, lon: 12.180, baseTemp: 11 },
             edbergsrakan: { name: "Säveån – Edbergsrakan", lat: 57.739, lon: 12.184, baseTemp: 11 },
-            kahogsforsen: { name: "Såveån – Kåhögsforsen", lat: 57.740, lon: 12.188, baseTemp: 11 },
+            kahogsforsen: { name: "Säveån – Kåhögsforsen", lat: 57.740, lon: 12.188, baseTemp: 11 },
             brittamaja: { name: "Säveån – Britta-Maja", lat: 57.736, lon: 12.175, baseTemp: 11 },
             lortholjan: { name: "Säveån – Lorthöljan", lat: 57.734, lon: 12.165, baseTemp: 11 },
             finngosagrundet: { name: "Säveån – Finngösagrundet", lat: 57.730, lon: 12.155, baseTemp: 11 }
@@ -698,6 +723,20 @@
         const ctx = canvas.getContext('2d');
         let castLine = null;
 
+        function showCustomAlert(text, title = "Meddelande") {
+            document.getElementById('customAlertTitle').innerHTML = `<span>💬</span> ${title}`;
+            document.getElementById('customAlertText').innerText = text;
+            const modal = document.getElementById('customAlertModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCustomAlert() {
+            const modal = document.getElementById('customAlertModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
         let headerClicks = 0;
         document.getElementById('mainTitleHeader').addEventListener('click', () => {
             headerClicks++;
@@ -719,30 +758,59 @@
             if(pass === "saveanadmin") {
                 document.getElementById('adminLoginView').classList.add('hidden');
                 document.getElementById('adminToolsView').classList.remove('hidden');
-                alert("Game Master-åtkomst beviljad!");
+                showCustomAlert("Game Master-åtkomst beviljad!", "Admin");
             } else {
-                alert("Felaktigt lösenord!");
+                showCustomAlert("Felaktigt lösenord!", "Fel");
             }
         }
 
         async function adminResetPlayerWeek() {
             let targetPlayer = document.getElementById('targetPlayerInput').value.trim();
-            if(!targetPlayer) return alert("Ange spelarnamn!");
+            if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
                 cloudState.castsRemaining = 5;
                 cloudState.dayOfSeason = 1;
                 cloudState.lastPlayedDate = todayStr;
                 await window.savePlayerStateToFirebase(targetPlayer, cloudState);
-                alert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`);
+                showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`, "GM Admin");
                 if (targetPlayer === lockedAnglerName) {
                     gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = 1;
                     updateUI();
                 }
             } else {
-                alert("Hittade inte spelaren i molnet.");
+                showCustomAlert("Hittade inte spelaren i molnet.", "Fel");
             }
+        }
+
+        async function adminGrantPoints() {
+            let targetPlayer = document.getElementById('adminPointsPlayer').value.trim();
+            let amount = parseInt(document.getElementById('adminPointsAmount').value);
+            if(!targetPlayer || isNaN(amount)) return showCustomAlert("Ange giltigt spelarnamn och poängantal!", "Fel");
+
+            let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
+            if(cloudState) {
+                cloudState.points = (cloudState.points || 0) + amount;
+                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
+                showCustomAlert(`Gav ${amount} poäng till ${targetPlayer}. Ny summa: ${cloudState.points} p.`, "GM Admin");
+                if (targetPlayer === lockedAnglerName) {
+                    gameWorld.points = cloudState.points;
+                    updateUI();
+                }
+            } else {
+                showCustomAlert("Hittade inte spelaren i molnet.", "Fel");
+            }
+        }
+
+        async function adminClearCurrentZoneBiotope() {
+            const zState = gameWorld.zones[currentZoneKey];
+            zState.gravels = [];
+            zState.boulders = [];
+            zState.nurseries = [];
+            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "GM Rensa Biotop", saveanZones[currentZoneKey].name);
+            updateUI();
+            showCustomAlert(`All biotopvård på ${saveanZones[currentZoneKey].name} har rensats!`, "GM Admin");
         }
 
         function openPopulationModal() {
@@ -803,7 +871,7 @@
         async function saveInitialAnglerName() {
             let nameInput = document.getElementById('initialAnglerName').value.trim();
             if (!nameInput) {
-                alert("Du måste ange ett fiskarnamn för att spela!");
+                showCustomAlert("Du måste ange ett fiskarnamn för att spela!", "Namn saknas");
                 return;
             }
             localStorage.setItem('savean_angler_name', nameInput);
@@ -948,7 +1016,7 @@
 
         async function nextDay() {
             if(gameWorld.castsRemaining > 0) {
-                alert(`Du har fortfarande ${gameWorld.castsRemaining} kast kvar på Dag ${gameWorld.dayOfSeason}!`);
+                showCustomAlert(`Du har fortfarande ${gameWorld.castsRemaining} kast kvar på Dag ${gameWorld.dayOfSeason}!`, "Kast kvar");
                 return;
             }
 
@@ -970,7 +1038,7 @@
                 fetchWeather(currentZoneKey);
                 document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
             } else {
-                alert("Alla 7 dagar (35 kast) avklarade för idag! Kom tillbaka imorgon.");
+                showCustomAlert("Alla 7 dagar (35 kast) avklarade för idag! Kom tillbaka imorgon.", "Veckan slut");
             }
             updateUI();
         }
@@ -997,7 +1065,7 @@
         }
 
         function startPlacement(type, cost) {
-            if(gameWorld.points < cost) return alert("Inte tillräckligt med poäng!");
+            if(gameWorld.points < cost) return showCustomAlert("Inte tillräckligt med poäng!", "Poäng saknas");
             placementMode = type;
             placementCost = cost;
             closeBiotopModal();
@@ -1028,7 +1096,7 @@
             });
 
             if (allMyItems.length === 0) {
-                alert("Du har inga egna placerade biotoper på den här sträckan att ta bort!");
+                showCustomAlert("Du har inga egna placerade biotoper på den här sträckan att ta bort!", "Inga åtgärder");
                 return;
             }
 
@@ -1054,11 +1122,11 @@
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort ${removedName}`, saveanZones[currentZoneKey].name);
             updateUI();
             closeBiotopModal();
-            alert(`Tog bort din senaste ${removedName}! 150 p återbetalade.`);
+            showCustomAlert(`Tog bort din senaste ${removedName}! 150 p återbetalade.`, "Åtgärd borttagen");
         }
 
         async function doTreePlanting(cost) {
-            if(gameWorld.points < cost) return alert("Inte tillräckligt med poäng!");
+            if(gameWorld.points < cost) return showCustomAlert("Inte tillräckligt med poäng!", "Poäng saknas");
             gameWorld.points -= cost;
             const s = gameWorld.shared;
             s.trees += 1;
@@ -1067,11 +1135,11 @@
             if (window.saveSharedWorld) await window.saveSharedWorld(s);
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Kantträd", saveanZones[currentZoneKey].name);
             updateUI();
-            alert("Nytt kantträd planterat längs ån!");
+            showCustomAlert("Nytt kantträd planterat längs ån!", "Biotopvård");
         }
 
         async function doBushPlanting(cost) {
-            if(gameWorld.points < cost) return alert("Inte tillräckligt med poäng!");
+            if(gameWorld.points < cost) return showCustomAlert("Inte tillräckligt med poäng!", "Poäng saknas");
             gameWorld.points -= cost;
             const s = gameWorld.shared;
             s.bushes += 1;
@@ -1080,12 +1148,12 @@
             if (window.saveSharedWorld) await window.saveSharedWorld(s);
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Buske", saveanZones[currentZoneKey].name);
             updateUI();
-            alert("Ny buske planterad!");
+            showCustomAlert("Ny buske planterad!", "Biotopvård");
         }
 
         async function doRemoveDam(cost) {
-            if(gameWorld.laddersFixed) return alert("Vandringshindret är redan åtgärdat!");
-            if(gameWorld.points < cost) return alert("Det krävs 2000 p för detta!");
+            if(gameWorld.laddersFixed) return showCustomAlert("Vandringshindret är redan åtgärdat!", "Redan klart");
+            if(gameWorld.points < cost) return showCustomAlert("Det krävs 2000 p för detta!", "Poäng saknas");
             gameWorld.points -= cost;
             gameWorld.laddersFixed = true;
             
@@ -1094,7 +1162,7 @@
             if (window.saveSharedWorld) await window.saveSharedWorld(gameWorld.shared);
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Rev Vandringshinder", saveanZones[currentZoneKey].name);
             updateUI();
-            alert("Vandringshinder åtgärdat i hela ån!");
+            showCustomAlert("Vandringshinder åtgärdat i hela ån!", "Stora insatsen");
         }
 
         let flowOffset = 0;
@@ -1333,7 +1401,7 @@
                     if (currentFlow > 14 && singleDriftLog) {
                         if (castLine && castLine.x >= singleDriftLog.x && castLine.x <= singleDriftLog.x + singleDriftLog.width && Math.abs(castLine.y - singleDriftLog.y) < 15) {
                             castLine = null;
-                            alert("💥 Tafsen fastnade i drivved! Linan gick av.");
+                            showCustomAlert("💥 Tafsen fastnade i drivved! Linan gick av.", "Trassel");
                             document.getElementById('castStatus').innerText = "Tafsen avsliten!";
                         }
                     }
@@ -1341,7 +1409,7 @@
                     if (currentZoneKey === 'dickson' && castLine) {
                         if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 35) < 40) {
                             castLine = null;
-                            alert("💥 Flugan kroka fast i Dickson-blocket! Linan gick av.");
+                            showCustomAlert("💥 Flugan kroka fast i Dickson-blocket! Linan gick av.", "Bottennapp");
                         }
                     }
 
@@ -1367,7 +1435,7 @@
 
         canvas.addEventListener('click', async (e) => {
             if(isFighting) return;
-            if(wildlifeDisturbance) return alert("Djur skrämmer fisken! Byt sträcka.");
+            if(wildlifeDisturbance) return showCustomAlert("Djur skrämmer fisken! Byt sträcka.", "Störning");
 
             const rect = canvas.getBoundingClientRect();
             let clickX = e.clientX - rect.left;
@@ -1420,12 +1488,12 @@
             }
 
             if (castLine !== null && castLine.x < canvas.width) {
-                alert("Du kan inte göra ett nytt kast förrän flugan har åkt ur bilden eller hemtagits!");
+                showCustomAlert("Du kan inte göra ett nytt kast förrän flugan har åkt ur bilden eller hemtagits!", "Vänta");
                 return;
             }
 
             if(gameWorld.castsRemaining <= 0) {
-                alert("Slut på kast för idag! Dagens 5 kast är förbrukade.");
+                showCustomAlert("Slut på kast för idag! Dagens 5 kast är förbrukade.", "Slut på kast");
                 return;
             }
             
@@ -1456,10 +1524,10 @@
                 let smoltHappened = Math.random() < 0.5;
                 if (smoltHappened) {
                     document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">Hugg över uppväxtområde! En liten smolt fångad och släppt. Kastet räknas ej!</span>`;
-                    alert("🐟 Du fick en liten smolt på uppväxtområdet! Den släpptes varsamt omedelbart, och ditt kast räknades inte bort.");
+                    showCustomAlert("🐟 Du fick en liten smolt på uppväxtområdet! Den släpptes varsamt omedelbart, och ditt kast räknades inte bort.", "Uppväxtområde");
                 } else {
                     document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">Snabb plogg / missat hugg över uppväxtområde! Kastet räknas ej.</span>`;
-                    alert("⚡ Ett snabbt hugg över uppväxtområdet som inte fastnade! Inget kast förlorat.");
+                    showCustomAlert("⚡ Ett snabbt hugg över uppväxtområdet som inte fastnade! Inget kast förlorat.", "Uppväxtområde");
                 }
                 castLine = null;
                 return;
@@ -1592,7 +1660,7 @@
                 document.getElementById('welfareModal').classList.remove('hidden');
                 document.getElementById('welfareModal').classList.add('flex');
             } else {
-                alert("Tafsen brast! Fisken slet sig.");
+                showCustomAlert("Tafsen brast! Fisken slet sig.", "Tafsen av");
                 resetAfterCatch();
             }
         }
@@ -1621,13 +1689,14 @@
             let survived = score > 40;
             const s = gameWorld.shared;
             let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+            let alertMsg = "";
 
             if (air >= 25) {
                 gameWorld.points = Math.max(0, gameWorld.points - 50);
-                alert("Bristande hantering. Fotograferade du fångsten? (-50 poäng).");
+                alertMsg += "Bristande hantering. Fotograferade du fångsten? (-50 poäng).\n";
             } else if (air >= 20) {
                 gameWorld.points = Math.max(0, gameWorld.points - 20);
-                alert("Lång tid ovan vatten påverkade C&R-poängen negativt (-20 poäng).");
+                alertMsg += "Lång tid ovan vatten påverkade C&R-poängen negativt (-20 poäng).\n";
             }
 
             if(survived) {
@@ -1635,20 +1704,20 @@
 
                 if((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
                     gameWorld.points = Math.max(0, gameWorld.points - 30);
-                    alert(`Du släppte tillbaka en skadlig smårovfisk som äter smolt! (-30 naturvårdspoäng).`);
+                    alertMsg += `Du släppte tillbaka en skadlig smårovfisk som äter smolt! (-30 naturvårdspoäng).`;
                 } else if (currentFish.species === "Öring" && currentFish.size < 45) {
                     gameWorld.castsRemaining++;
                     gameWorld.points += pts;
-                    alert(`Fisken var under minimimåttet (45 cm) och släpptes tillbaka varsamt. (+${pts} p) och du får tillbaka ett kast!`);
+                    alertMsg += `Fisken var under minimimåttet (45 cm) och släpptes tillbaka varsamt. (+${pts} p) och du får tillbaka ett kast!`;
                 } else {
                     gameWorld.points += pts;
-                    alert(`Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`);
+                    alertMsg += `Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`;
                 }
 
                 if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
             } else {
                 s.population = Math.max(10, s.population - 1);
-                alert("Fisken klarade inte hanteringen.");
+                alertMsg += "Fisken klarade inte hanteringen.";
             }
 
             let zStateLog = gameWorld.zones[currentZoneKey];
@@ -1656,19 +1725,21 @@
             zStateLog.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - C&R (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
+            showCustomAlert(alertMsg, "C&R Resultat");
         }
 
         function keepFish() {
             let anglerName = lockedAnglerName || "Anonym Fiskare";
             const s = gameWorld.shared;
             let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+            let alertMsg = "";
 
             if((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
                 gameWorld.points += 40;
-                alert("Du tog bort en skadlig smårovfisk! (+40 naturvårdspoäng).");
+                alertMsg = "Du tog bort en skadlig smårovfisk! (+40 naturvårdspoäng).";
             } else {
                 s.population = Math.max(10, s.population - 1);
-                alert("Fisk hemtagen.");
+                alertMsg = "Fisk hemtagen.";
             }
 
             if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
@@ -1678,6 +1749,7 @@
             zStateLog.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - Hemtagen (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
+            showCustomAlert(alertMsg, "Fångstrapport");
         }
 
         function closeWelfareModal() {
