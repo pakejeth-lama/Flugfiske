@@ -20,11 +20,11 @@
             animation: fishSwimRush 1.8s infinite ease-in-out;
         }
 
-        /* Dubblat höjden ytterligare i liggande läge */
+        /* Perfekt anpassad höjd i liggande läge */
         @media (orientation: landscape) and (max-width: 1024px) {
             #gameContainer {
-                height: 120vh !important;
-                max-height: 800px;
+                height: 52vh !important;
+                max-height: 350px;
             }
         }
     </style>
@@ -33,20 +33,45 @@
 
     <!-- Modal: Start / Låst Namnregistrering -->
     <div id="nameModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-800 border border-emerald-500/50 rounded-xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3 text-center">
-            <h3 class="text-base font-bold text-emerald-400">🎣 Välkommen till Säveån Open World!</h3>
+        <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
+            <h3 class="text-base font-bold text-emerald-400">🎣 Säveån Open World</h3>
             <p class="text-xs text-stone-300 leading-relaxed">
-                Ange ditt fiskarnamn. Din poäng och dina kast är personliga, men biotopvården bygger ni gemensamt på de öppna sträckorna i molnet!
+                Ange ditt fiskarnamn. Din poäng och dina kast är personliga, men ekosystemet och fiskbeståndet delas i molnet!
             </p>
-            <input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
-            <button onclick="saveInitialAnglerName()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-xs font-semibold shadow">Starta Fisket</button>
+            <input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-950 border border-stone-700 rounded-lg px-3 py-2.5 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
+            <button onclick="saveInitialAnglerName()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-lg text-xs font-semibold shadow transition">Starta Fisket</button>
+        </div>
+    </div>
+
+    <!-- Modal: Infotavla för Beståndet -->
+    <div id="populationModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-900 border border-amber-600/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-2">
+                <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+                    <span>🪧</span> Fiskevårdsrådets Info-Tavla
+                </h3>
+                <button onclick="closePopulationModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+            </div>
+            <div class="text-xs text-stone-300 space-y-2 leading-relaxed">
+                <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, predation och fiskepress.</p>
+                <div class="bg-stone-950 p-2.5 rounded-lg border border-stone-800 text-[11px] text-emerald-400">
+                    <strong>Så här ökar du beståndet:</strong>
+                    <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
+                        <li>Bygg <strong>lekgrus</strong> (gynnar reproduktion)</li>
+                        <li>Placera ut <strong>ståndstenar</strong> (ger skydd)</li>
+                        <li>Skapa <strong>uppväxtområden</strong> (skyddar smolt)</li>
+                        <li>Åtgärda <strong>vandringshinder</strong></li>
+                    </ul>
+                </div>
+            </div>
+            <button onclick="closePopulationModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-200 py-2 rounded-lg text-xs font-semibold transition">Stäng tavlan</button>
         </div>
     </div>
 
     <!-- Modal: Hemlig Game Master Admin -->
     <div id="adminModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-800 border border-amber-500/50 rounded-xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
-            <div class="flex justify-between items-center border-b border-stone-700 pb-2">
+        <div class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1">
                     <span>🔐</span> Game Master Adminpanel
                 </h3>
@@ -55,31 +80,22 @@
 
             <div id="adminLoginView" class="flex flex-col gap-2 text-xs">
                 <p class="text-stone-300">Ange GM-lösenord för att låsa upp verktygen:</p>
-                <input type="password" id="adminPasswordInput" placeholder="Lösenord..." class="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-xs text-amber-400 focus:outline-none focus:border-amber-500 text-center">
+                <input type="password" id="adminPasswordInput" placeholder="Lösenord..." class="w-full bg-stone-950 border border-stone-700 rounded px-3 py-2 text-xs text-amber-400 focus:outline-none focus:border-amber-500 text-center">
                 <button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold py-2 rounded text-xs shadow">Logga in</button>
             </div>
 
             <div id="adminToolsView" class="hidden flex flex-col gap-3 text-xs">
-                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex flex-col gap-1.5">
+                <div class="bg-stone-950 p-2.5 rounded border border-stone-800 flex flex-col gap-1.5">
                     <span class="font-bold text-emerald-400">Nollställ hela fiskeveckan:</span>
-                    <input type="text" id="targetPlayerInput" placeholder="Spelarens namn..." class="w-full bg-stone-950 border border-stone-700 rounded px-2 py-1.5 text-xs text-stone-200">
+                    <input type="text" id="targetPlayerInput" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-700 rounded px-2 py-1.5 text-xs text-stone-200">
                     <button onclick="adminResetPlayerWeek()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded font-semibold">Återställ vecka (Dag 1 & 5 kast)</button>
-                </div>
-
-                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex flex-col gap-1.5">
-                    <span class="font-bold text-amber-400">GM: Återskapa/Lägg till biotop på sträckan:</span>
-                    <div class="grid grid-cols-3 gap-1.5">
-                        <button onclick="adminAddBiotope('gravel')" class="bg-stone-800 hover:bg-stone-700 text-stone-200 py-1.5 rounded text-[10px] font-semibold border border-stone-700">Lekgrus</button>
-                        <button onclick="adminAddBiotope('boulder')" class="bg-stone-800 hover:bg-stone-700 text-stone-200 py-1.5 rounded text-[10px] font-semibold border border-stone-700">Ståndsten</button>
-                        <button onclick="adminAddBiotope('nursery')" class="bg-stone-800 hover:bg-stone-700 text-stone-200 py-1.5 rounded text-[10px] font-semibold border border-stone-700">Uppväxt</button>
-                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Header -->
-    <header class="bg-stone-800 border-b border-stone-700 py-3 px-4 shadow-md flex flex-wrap justify-between items-center gap-3">
+    <header class="bg-stone-900 border-b border-stone-800 py-3 px-4 shadow-md flex flex-wrap justify-between items-center gap-3">
         <div>
             <h1 id="mainTitleHeader" class="text-xl md:text-2xl font-bold text-emerald-400 flex items-center gap-1.5 cursor-pointer select-none" title="Klicka 3 gånger för Admin">
                 <span>🌍</span> Säveån Open World
@@ -88,11 +104,11 @@
         </div>
 
         <div class="flex items-center gap-2 text-xs">
-            <div class="bg-stone-900 px-3 py-1.5 rounded-lg border border-stone-700 text-center">
+            <div class="bg-stone-950 px-3 py-1.5 rounded-xl border border-stone-800 text-center">
                 <span class="text-stone-400 text-[9px] block">Naturvårdspoäng</span>
                 <span id="conservationPoints" class="font-bold text-emerald-400 text-sm">700 p</span>
             </div>
-            <button onclick="nextDay()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-2 rounded-lg font-semibold transition shadow flex items-center gap-1">
+            <button onclick="nextDay()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold transition shadow flex items-center gap-1">
                 <span>🔄</span> <span id="dayCounter">Dag 1/7</span>
             </button>
         </div>
@@ -104,50 +120,50 @@
         <div class="lg:col-span-2 flex flex-col gap-2.5">
             
             <!-- Interaktiv Karta -->
-            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-col gap-1.5">
+            <div class="bg-stone-900 p-2.5 rounded-2xl border border-stone-800 flex flex-col gap-1.5">
                 <div class="flex justify-between items-center text-xs">
                     <span class="font-bold text-emerald-400 flex items-center gap-1">
                         <span>🗺️</span> Välj Gemensam Fiskeplats:
                     </span>
-                    <span class="text-[9px] text-stone-400">Hämtar zonen live från molnet</span>
+                    <span class="text-[9px] text-stone-400">Samma å, gemensamt bestånd</span>
                 </div>
                 <div id="riverMap" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-1.5 text-xs">
-                    <button onclick="selectZone('dickson', 'Dickson')" id="zone-dickson" class="p-2 rounded bg-emerald-900/60 border border-emerald-500 text-left transition">
+                    <button onclick="selectZone('dickson', 'Dickson')" id="zone-dickson" class="p-2 rounded-xl bg-emerald-950 border border-emerald-600 text-left transition">
                         <span class="block font-bold text-emerald-300">Dickson</span>
                     </button>
-                    <button onclick="selectZone('mannered', 'Mannered')" id="zone-mannered" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
-                        <span class="block font-bold text-stone-200">Mannered</span>
+                    <button onclick="selectZone('mannered', 'Mannered')" id="zone-mannered" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+                        <span class="block font-bold text-stone-300">Mannered</span>
                     </button>
-                    <button onclick="selectZone('edbergsrakan', 'Edbergsrakan')" id="zone-edbergsrakan" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
-                        <span class="block font-bold text-stone-200">Edbergsrakan</span>
+                    <button onclick="selectZone('edbergsrakan', 'Edbergsrakan')" id="zone-edbergsrakan" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+                        <span class="block font-bold text-stone-300">Edbergsrakan</span>
                     </button>
-                    <button onclick="selectZone('kahogsforsen', 'Kåhögsforsen')" id="zone-kahogsforsen" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
-                        <span class="block font-bold text-stone-200">Kåhögsforsen</span>
+                    <button onclick="selectZone('kahogsforsen', 'Kåhögsforsen')" id="zone-kahogsforsen" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+                        <span class="block font-bold text-stone-300">Kåhögsforsen</span>
                     </button>
-                    <button onclick="selectZone('brittamaja', 'Britta-Maja')" id="zone-brittamaja" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
-                        <span class="block font-bold text-stone-200">Britta-Maja</span>
+                    <button onclick="selectZone('brittamaja', 'Britta-Maja')" id="zone-brittamaja" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+                        <span class="block font-bold text-stone-300">Britta-Maja</span>
                     </button>
-                    <button onclick="selectZone('lortholjan', 'Lorthöljan')" id="zone-lortholjan" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
-                        <span class="block font-bold text-stone-200">Lorthöljan</span>
+                    <button onclick="selectZone('lortholjan', 'Lorthöljan')" id="zone-lortholjan" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+                        <span class="block font-bold text-stone-300">Lorthöljan</span>
                     </button>
-                    <button onclick="selectZone('finngosagrundet', 'Finngösagrundet')" id="zone-finngosagrundet" class="p-2 rounded bg-stone-900 border border-stone-700 text-left transition">
-                        <span class="block font-bold text-stone-200">Finngösagrundet</span>
+                    <button onclick="selectZone('finngosagrundet', 'Finngösagrundet')" id="zone-finngosagrundet" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+                        <span class="block font-bold text-stone-300">Finngösagrundet</span>
                     </button>
                 </div>
             </div>
 
             <!-- Canvas Spelyta -->
-            <div id="gameContainer" class="relative bg-stone-950 rounded-xl overflow-hidden border border-stone-700 shadow-inner flex flex-col items-center justify-center aspect-[4/5] md:aspect-[32/9]">
+            <div id="gameContainer" class="relative bg-stone-950 rounded-2xl overflow-hidden border border-stone-800 shadow-inner flex flex-col items-center justify-center aspect-[4/5] md:aspect-[32/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
                 <!-- Canvas HUD -->
-                <div class="absolute top-2 left-2 right-2 bg-stone-900/85 backdrop-blur px-2.5 py-1.5 rounded border border-stone-700 text-[10px] md:text-[11px] flex flex-wrap justify-between items-center gap-2 z-20">
+                <div class="absolute top-2 left-2 right-2 bg-stone-900/90 backdrop-blur px-3 py-1.5 rounded-xl border border-stone-800 text-[10px] md:text-[11px] flex flex-wrap justify-between items-center gap-2 z-20 shadow-lg">
                     <div class="flex items-center gap-2.5">
                         <span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Fireball</strong></span>
-                        <span>Bestånd: <strong id="hudPopulation" class="text-emerald-400">210</strong> st</span>
+                        <span onclick="openPopulationModal()" class="cursor-pointer hover:text-amber-300 transition" title="Klicka för infotavla">Bestånd: <strong id="hudPopulation" class="text-amber-400 underline">210</strong> st 🪧</span>
                         <span>Kast: <strong id="castsLeft" class="text-amber-400">5 / 5</strong></span>
                     </div>
-                    <div class="flex items-center gap-2.5 border-t md:border-t-0 border-stone-700 pt-1 md:pt-0">
+                    <div class="flex items-center gap-2.5 border-t md:border-t-0 border-stone-800 pt-1 md:pt-0">
                         <span>Väder: <strong id="wCondition" class="text-stone-200">-</strong></span>
                         <span>Temp: <strong class="text-emerald-400"><span id="wTemp">-</span>°C / <span id="wWaterTemp">-</span>°C</strong></span>
                         <span>Vatten: <strong id="wFlow" class="text-blue-400">- m³/s</strong></span>
@@ -155,26 +171,26 @@
                 </div>
 
                 <!-- Notis / Hugg-status -->
-                <div id="canvasNotification" class="hidden absolute top-16 left-1/2 -translate-x-1/2 bg-stone-900/95 border border-amber-500/80 px-3.5 py-2 rounded-lg text-xs font-bold text-amber-400 shadow-2xl text-center z-30 max-w-xs animate-pulse"></div>
+                <div id="canvasNotification" class="hidden absolute top-16 left-1/2 -translate-x-1/2 bg-stone-900/95 border border-amber-500/80 px-4 py-2.5 rounded-xl text-xs font-bold text-amber-400 shadow-2xl text-center z-30 max-w-xs animate-pulse"></div>
 
                 <!-- Störningsbanner -->
-                <div id="wildlifeAlert" class="hidden absolute top-16 left-1/2 -translate-x-1/2 bg-amber-600/90 text-stone-950 px-3 py-1.5 rounded-lg font-bold text-xs shadow-xl animate-pulse text-center border border-amber-400 z-30">
+                <div id="wildlifeAlert" class="hidden absolute top-16 left-1/2 -translate-x-1/2 bg-amber-600/90 text-stone-950 px-3.5 py-2 rounded-xl font-bold text-xs shadow-xl animate-pulse text-center border border-amber-400 z-30">
                     🦫 <span id="wildlifeText">En bäver plaskar vid nacken!</span>
                 </div>
 
-                <div id="modeBanner" class="hidden absolute top-12 right-2 bg-amber-500 text-stone-950 px-2.5 py-0.5 rounded font-bold text-[10px] shadow-lg animate-bounce z-20">
+                <div id="modeBanner" class="hidden absolute top-12 right-2 bg-amber-500 text-stone-950 px-3 py-1 rounded-lg font-bold text-[10px] shadow-lg animate-bounce z-25">
                     Aktivt läge: Klicka i vattnet!
                 </div>
 
                 <!-- Overlay för Tafsstress -->
-                <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/40 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
-                    <div id="fightCard" class="bg-stone-900/95 border-2 border-amber-500/80 p-4 rounded-xl max-w-xs w-full text-center flex flex-col gap-2 shadow-2xl animate-fish-rush transition-all duration-75">
+                <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/60 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
+                    <div id="fightCard" class="bg-stone-900/95 border border-amber-500/60 p-5 rounded-2xl max-w-xs w-full text-center flex flex-col gap-3 shadow-2xl animate-fish-rush transition-all duration-75">
                         <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">Drillning – Håll inne fingret!</span>
                         <div class="flex justify-between text-[11px] text-stone-300 font-semibold">
                             <span>Tafsstress:</span>
                             <span id="stressValueText">0%</span>
                         </div>
-                        <div class="w-full bg-stone-950 h-4 rounded-full overflow-hidden border border-stone-700 p-0.5">
+                        <div class="w-full bg-stone-950 h-3.5 rounded-full overflow-hidden border border-stone-800 p-0.5">
                             <div id="stressBar" class="bg-emerald-500 h-full w-0% rounded-full transition-all duration-75"></div>
                         </div>
                         <div class="flex justify-between text-[10px] text-stone-400">
@@ -186,50 +202,50 @@
             </div>
 
             <!-- Kontroller -->
-            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex flex-col gap-2">
+            <div class="bg-stone-900 p-2.5 rounded-2xl border border-stone-800 flex flex-col gap-2">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <button onclick="changeFlyModal()" class="h-9 bg-stone-700 hover:bg-stone-600 text-white rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-stone-600">
+                    <button onclick="changeFlyModal()" class="h-10 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow border border-stone-700">
                         <span>🪰</span> Byt Fluga
                     </button>
-                    <button onclick="openBiotopModal()" class="h-9 bg-emerald-700 hover:bg-emerald-600 text-white rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-emerald-600">
+                    <button onclick="openBiotopModal()" class="h-10 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow border border-emerald-600">
                         <span>🌱</span> Biotopvård
                     </button>
-                    <button onclick="openHighscoreModal()" class="h-9 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-amber-500">
+                    <button onclick="openHighscoreModal()" class="h-10 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow border border-amber-500">
                         <span>🏆</span> Highscore
                     </button>
-                    <button onclick="startMoveRod()" class="h-9 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded text-xs font-semibold transition flex items-center justify-center gap-1 shadow border border-stone-600">
+                    <button onclick="startMoveRod()" class="h-10 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow border border-stone-700">
                         <span>📍</span> Flytta Ståplats
                     </button>
                 </div>
 
-                <div id="castStatus" class="text-[11px] font-medium text-stone-300 text-center bg-stone-900/60 py-1 rounded border border-stone-700/50">
+                <div id="castStatus" class="text-[11px] font-medium text-stone-300 text-center bg-stone-950 py-1.5 rounded-xl border border-stone-800">
                     Redo för kast. Klicka för kast, klicka på gröna gubben för Hemtagning!
                 </div>
             </div>
 
             <!-- Ekosystemstatus -->
-            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700">
-                <h3 class="text-xs font-bold text-stone-200 mb-1.5 flex items-center gap-1">
+            <div class="bg-stone-900 p-3 rounded-2xl border border-stone-800">
+                <h3 class="text-xs font-bold text-stone-200 mb-2 flex items-center gap-1.5">
                     <span>📊</span> Biotopstatus (Gemensam sträcka)
                 </h3>
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-1.5 text-[10px]">
-                    <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-[10px]">
+                    <div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
                         <span class="text-stone-400 block">Lekgrus</span>
                         <span id="statGravel" class="font-bold text-stone-100">0 st</span>
                     </div>
-                    <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
+                    <div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
                         <span class="text-stone-400 block">Ståndstenar</span>
                         <span id="statBoulders" class="font-bold text-stone-100">0 st</span>
                     </div>
-                    <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
+                    <div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
                         <span class="text-stone-400 block">Uppväxtplatser</span>
                         <span id="statNursery" class="font-bold text-stone-100">0 st</span>
                     </div>
-                    <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
+                    <div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
                         <span class="text-stone-400 block">Kantträd & Buskar</span>
                         <span id="statTrees" class="font-bold text-stone-100">2 st</span>
                     </div> 
-                    <div class="bg-stone-900 p-1.5 rounded border border-stone-700">
+                    <div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
                         <span class="text-stone-400 block">Vandringshinder</span>
                         <span id="statLadders" class="font-bold text-stone-100">Ej åtgärdat</span>
                     </div>
@@ -241,22 +257,22 @@
         <div class="flex flex-col gap-2.5">
             
             <!-- Global räknare & Firebase Biotoploggbok -->
-            <div class="bg-stone-800 p-3 rounded-xl border border-stone-700 flex flex-col gap-2">
+            <div class="bg-stone-900 p-3.5 rounded-2xl border border-stone-800 flex flex-col gap-2">
                 <h3 class="text-xs font-bold text-emerald-400 flex items-center justify-between">
                     <span>🌱 Fiskevårdens Moln-Loggbok</span>
-                    <span id="globalBiotopeDisplay" class="text-[10px] bg-stone-900 px-2 py-0.5 rounded text-amber-400">Laddar...</span>
+                    <span id="globalBiotopeDisplay" class="text-[10px] bg-stone-950 px-2 py-0.5 rounded-lg text-amber-400 border border-stone-800">Laddar...</span>
                 </h3>
-                <div id="biotopeCloudLog" class="bg-stone-900 p-2 rounded border border-stone-700 max-h-36 overflow-y-auto text-[10px] space-y-1 font-mono">
+                <div id="biotopeCloudLog" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 max-h-36 overflow-y-auto text-[10px] space-y-1 font-mono">
                     <p class="text-stone-500 italic">Laddar molnloggbok...</p>
                 </div>
             </div>
 
             <!-- Fångstdagbok -->
-            <div class="bg-stone-800 p-2.5 rounded-xl border border-stone-700 flex-1 flex flex-col">
-                <h3 class="text-xs font-bold text-stone-200 mb-1.5 flex items-center gap-1">
+            <div class="bg-stone-900 p-3.5 rounded-2xl border border-stone-800 flex-1 flex flex-col">
+                <h3 class="text-xs font-bold text-stone-200 mb-2 flex items-center gap-1.5">
                     <span>📖</span> Fångstdagbok
                 </h3>
-                <div id="catchLog" class="flex-1 bg-stone-900 rounded p-2 border border-stone-700 overflow-y-auto max-h-48 text-[11px] space-y-1">
+                <div id="catchLog" class="flex-1 bg-stone-950 rounded-xl p-2.5 border border-stone-800 overflow-y-auto max-h-48 text-[11px] space-y-1.5">
                     <p class="text-stone-500 italic">Inga fångster än. Gör ett kast!</p>
                 </div>
             </div>
@@ -265,88 +281,88 @@
     </main>
 
     <!-- Modal: Biotopvård Meny -->
-    <div id="biotopModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-sm w-full p-4 shadow-2xl flex flex-col gap-3">
-            <div class="flex justify-between items-center border-b border-stone-700 pb-2">
-                <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1">
+    <div id="biotopModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-2">
+                <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
                     <span>🌱</span> Gemensam Biotopvård
                 </h3>
-                <button onclick="closeBiotopModal()" class="text-stone-400 hover:text-stone-100 text-xs font-bold px-2 py-1">✕</button>
+                <button onclick="closeBiotopModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
             </div>
             
             <div class="flex flex-col gap-2 text-xs">
-                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Placera Lekgrus</h4>
                         <p class="text-[9px] text-stone-400">Syns för alla i open world</p>
                     </div>
-                    <button onclick="startPlacement('gravel', 300)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">300 p</button>
+                    <button onclick="startPlacement('gravel', 300)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">300 p</button>
                 </div>
 
-                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Placera Ståndsten</h4>
                         <p class="text-[9px] text-stone-400">Skapar ståndplats för alla</p>
                     </div>
-                    <button onclick="startPlacement('boulder', 400)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">400 p</button>
+                    <button onclick="startPlacement('boulder', 400)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">400 p</button>
                 </div>
 
-                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Skapa Uppväxtplats</h4>
                         <p class="text-[9px] text-stone-400">Skyddar smolt gemensamt</p>
                     </div>
-                    <button onclick="startPlacement('nursery', 250)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">250 p</button>
+                    <button onclick="startPlacement('nursery', 250)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">250 p</button>
                 </div>
 
-                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Plantera Kantträd</h4>
                         <p class="text-[9px] text-stone-400">Skugga längs kanten</p>
                     </div>
-                    <button onclick="doTreePlanting(200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">200 p</button>
+                    <button onclick="doTreePlanting(200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">200 p</button>
                 </div>
 
-                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Plantera Buske</h4>
                         <p class="text-[9px] text-stone-400">Vegetation vid kanten</p>
                     </div>
-                    <button onclick="doBushPlanting(150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded text-[11px]">150 p</button>
+                    <button onclick="doBushPlanting(150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">150 p</button>
                 </div>
 
-                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center border-amber-500/40">
+                <div class="bg-stone-950 p-3 rounded-xl border border-rose-900/40 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-rose-400 text-xs">Ta bort senaste egen åtgärd</h4>
                         <p class="text-[9px] text-stone-400">Endast din egen senaste</p>
                     </div>
-                    <button onclick="removeMyLatestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-2.5 py-1.5 rounded text-[11px]">Ångra min</button>
+                    <button onclick="removeMyLatestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-[11px]">Ångra min</button>
                 </div>
 
-                <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center border-emerald-500/40">
+                <div class="bg-stone-950 p-3 rounded-xl border border-amber-500/30 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-amber-300 text-xs">Riv Vandringshinder</h4>
                         <p class="text-[9px] text-stone-400">Gemensam åtgärd i hela ån</p>
                     </div>
-                    <button onclick="doRemoveDam(2000)" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1.5 rounded text-[11px]">2000 p</button>
+                    <button onclick="doRemoveDam(2000)" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-[11px]">2000 p</button>
                 </div>
             </div>
 
-            <button onclick="closeBiotopModal()" class="w-full bg-stone-700 hover:bg-stone-600 text-stone-200 py-2 rounded text-xs font-semibold mt-1">Stäng meny</button>
+            <button onclick="closeBiotopModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-200 py-2.5 rounded-xl text-xs font-semibold mt-1">Stäng meny</button>
         </div>
     </div>
 
     <!-- Modal: Highscore Topplista & Hall of Fame -->
-    <div id="highscoreModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-3">
-            <div class="flex justify-between items-center border-b border-stone-700 pb-2">
-                <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1">
+    <div id="highscoreModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col gap-3">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-2">
+                <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
                     <span>🏆</span> Veckans Highscore & Hall of Fame
                 </h3>
-                <button onclick="closeHighscoreModal()" class="text-stone-400 hover:text-stone-100 text-xs font-bold px-2 py-1">✕</button>
+                <button onclick="closeHighscoreModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
             </div>
 
-            <div id="hallOfFameSection" class="bg-stone-900 p-2.5 rounded border border-amber-500/40 text-xs flex flex-col gap-1">
+            <div id="hallOfFameSection" class="bg-stone-950 p-3 rounded-xl border border-amber-600/30 text-xs flex flex-col gap-1">
                 <span class="font-bold text-amber-300 flex items-center gap-1">⭐ Förra Veckans Mästare (Hall of Fame)</span>
                 <div id="hallOfFameContent" class="text-stone-300 text-[11px]">Laddar mästare...</div>
             </div>
@@ -356,38 +372,38 @@
                 <p class="text-stone-400 italic text-center py-4">Laddar fångster från Firebase...</p>
             </div>
 
-            <button onclick="closeHighscoreModal()" class="w-full bg-stone-700 hover:bg-stone-600 text-stone-200 py-2 rounded text-xs font-semibold">Stäng</button>
+            <button onclick="closeHighscoreModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-200 py-2.5 rounded-xl text-xs font-semibold">Stäng</button>
         </div>
     </div>
 
     <!-- Modal: C&R Välfärd -->
-    <div id="welfareModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-3">
-            <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1">
+    <div id="welfareModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3.5">
+            <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
                 <span>🏆</span> Fisk Landad!
             </h3>
             <p id="caughtFishDetails" class="text-xs text-stone-300"></p>
 
-            <div class="flex flex-col gap-2 text-xs bg-stone-900 p-2.5 rounded border border-stone-700">
+            <div class="flex flex-col gap-2.5 text-xs bg-stone-950 p-3 rounded-xl border border-stone-800">
                 <label class="flex items-center justify-between cursor-pointer">
                     <span class="text-stone-300">Blötte du händerna?</span>
-                    <input type="checkbox" id="chkWetHands" class="w-4 h-4 accent-emerald-500 rounded">
+                    <input type="checkbox" id="chkWetHands" class="w-4 h-4 accent-emerald-600 rounded">
                 </label>
                 <label class="flex items-center justify-between cursor-pointer">
                     <span class="text-stone-300">Skonsam håv?</span>
-                    <input type="checkbox" id="chkNet" class="w-4 h-4 accent-emerald-500 rounded" checked>
+                    <input type="checkbox" id="chkNet" class="w-4 h-4 accent-emerald-600 rounded" checked>
                 </label>
                 <div class="flex flex-col gap-1">
                     <span class="text-stone-300">Tid ovan vatten: <span id="lblAirTime" class="font-bold text-emerald-400">15</span>s</span>
-                    <input type="range" id="sliderAirTime" min="5" max="60" value="15" class="accent-emerald-500" oninput="document.getElementById('lblAirTime').innerText = this.value">
+                    <input type="range" id="sliderAirTime" min="5" max="45" value="15" class="accent-emerald-600" oninput="document.getElementById('lblAirTime').innerText = this.value">
                 </div>
             </div>
 
             <div class="flex gap-2">
-                <button onclick="releaseFish()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded text-xs font-semibold">
+                <button onclick="releaseFish()" class="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-semibold shadow transition">
                     Varsam C&R
                 </button>
-                <button onclick="keepFish()" class="bg-stone-700 hover:bg-stone-600 text-stone-300 px-3 py-2 rounded text-xs font-semibold">
+                <button onclick="keepFish()" class="bg-stone-800 hover:bg-stone-700 text-stone-300 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition">
                     Behåll / Avliva
                 </button>
             </div>
@@ -395,11 +411,11 @@
     </div>
 
     <!-- Modal: Byt Fluga -->
-    <div id="flyModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-800 border border-stone-700 rounded-xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-3">
+    <div id="flyModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3">
             <h3 class="text-xs font-bold text-stone-200">🪰 Välj Fluga</h3>
             <div id="flyList" class="flex flex-col gap-1.5"></div>
-            <button onclick="document.getElementById('flyModal').classList.add('hidden')" class="bg-stone-700 text-stone-300 py-1.5 rounded text-xs">Stäng</button>
+            <button onclick="document.getElementById('flyModal').classList.add('hidden')" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 py-2 rounded-xl text-xs mt-1">Stäng</button>
         </div>
     </div>
 
@@ -469,7 +485,7 @@
                     currentWeekCatches.slice(0, 10).forEach((data) => {
                         let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
                         html += `
-                            <div class="bg-stone-900 p-2.5 rounded border border-stone-700 flex justify-between items-center">
+                            <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 flex justify-between items-center">
                                 <div class="flex items-center gap-2">
                                     <span class="font-bold text-amber-400 text-sm w-6">${medal}</span>
                                     <div>
@@ -526,14 +542,14 @@
             return null;
         };
 
-        window.loadSharedZone = async function(zoneKey) {
+        window.loadSharedWorld = async function() {
             try {
-                const docRef = doc(db, "world_zones", zoneKey);
+                const docRef = doc(db, "world_zones", "shared_savean");
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     return docSnap.data();
                 } else {
-                    const defaultZone = {
+                    const defaultWorld = {
                         population: 210,
                         maxPop: 380,
                         gravels: [],
@@ -542,29 +558,29 @@
                         trees: 2,
                         bushes: 2
                     };
-                    await setDoc(docRef, defaultZone);
-                    return defaultZone;
+                    await setDoc(docRef, defaultWorld);
+                    return defaultWorld;
                 }
             } catch (e) {
-                console.error("Fel vid laddning av gemensam zon:", e);
+                console.error("Fel vid laddning av gemensam värld:", e);
                 return null;
             }
         };
 
-        window.saveSharedZone = async function(zoneKey, zoneData) {
+        window.saveSharedWorld = async function(worldData) {
             try {
-                const docRef = doc(db, "world_zones", zoneKey);
+                const docRef = doc(db, "world_zones", "shared_savean");
                 await setDoc(docRef, {
-                    gravels: zoneData.gravels || [],
-                    boulders: zoneData.boulders || [],
-                    nurseries: zoneData.nurseries || [],
-                    population: zoneData.population,
-                    maxPop: zoneData.maxPop,
-                    trees: zoneData.trees,
-                    bushes: zoneData.bushes
+                    gravels: worldData.gravels || [],
+                    boulders: worldData.boulders || [],
+                    nurseries: worldData.nurseries || [],
+                    population: worldData.population,
+                    maxPop: worldData.maxPop,
+                    trees: worldData.trees,
+                    bushes: worldData.bushes
                 }, { merge: true });
             } catch (e) {
-                console.error("Fel vid sparande av gemensam zon:", e);
+                console.error("Fel vid sparande av gemensam värld:", e);
             }
         };
 
@@ -595,7 +611,7 @@
                 let html = "";
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
-                    html += `<div class="border-b border-stone-800 pb-0.5"><strong class="text-emerald-400">${data.angler}</strong>: ${data.action} (${data.zone})</div>`;
+                    html += `<div class="border-b border-stone-900 pb-0.5"><strong class="text-emerald-400">${data.angler}</strong>: ${data.action} (${data.zone})</div>`;
                 });
                 logContainer.innerHTML = html;
 
@@ -621,13 +637,22 @@
             dayOfSeason: 1,
             castsRemaining: 5,
             zones: {
-                dickson: { population: 210, maxPop: 380, gravels: [], boulders: [], nurseries: [], trees: 2, bushes: 2, playerPos: { x: null, y: null }, log: [] },
-                mannered: { population: 190, maxPop: 350, gravels: [], boulders: [], nurseries: [], trees: 1, bushes: 2, playerPos: { x: null, y: null }, log: [] },
-                edbergsrakan: { population: 200, maxPop: 360, gravels: [], boulders: [], nurseries: [], trees: 2, bushes: 3, playerPos: { x: null, y: null }, log: [] },
-                kahogsforsen: { population: 240, maxPop: 420, gravels: [], boulders: [], nurseries: [], trees: 1, bushes: 1, playerPos: { x: null, y: null }, log: [] },
-                brittamaja: { population: 215, maxPop: 390, gravels: [], boulders: [], nurseries: [], trees: 2, bushes: 2, playerPos: { x: null, y: null }, log: [] },
-                lortholjan: { population: 230, maxPop: 400, gravels: [], boulders: [], nurseries: [], trees: 3, bushes: 3, playerPos: { x: null, y: null }, log: [] },
-                finngosagrundet: { population: 220, maxPop: 390, gravels: [], boulders: [], nurseries: [], trees: 4, bushes: 4, playerPos: { x: null, y: null }, log: [] }
+                dickson: { playerPos: { x: null, y: null }, log: [] },
+                mannered: { playerPos: { x: null, y: null }, log: [] },
+                edbergsrakan: { playerPos: { x: null, y: null }, log: [] },
+                kahogsforsen: { playerPos: { x: null, y: null }, log: [] },
+                brittamaja: { playerPos: { x: null, y: null }, log: [] },
+                lortholjan: { playerPos: { x: null, y: null }, log: [] },
+                finngosagrundet: { playerPos: { x: null, y: null }, log: [] }
+            },
+            shared: {
+                population: 210,
+                maxPop: 380,
+                gravels: [],
+                boulders: [],
+                nurseries: [],
+                trees: 2,
+                bushes: 2
             }
         };
 
@@ -663,6 +688,7 @@
         let currentFish = null;
         let rises = [];
         let singleDriftLog = null;
+        let bigSalmonShadows = [];
 
         let isFighting = false;
         let isPressingScreen = false;
@@ -722,31 +748,14 @@
             }
         }
 
-        async function adminAddBiotope(type) {
-            const zone = getActiveZone();
-            let x = canvas.width / 2 + (Math.random() * 100 - 50);
-            let y = canvas.height / 2 + (Math.random() * 60 - 30);
-            let actionText = "";
+        function openPopulationModal() {
+            document.getElementById('populationModal').classList.remove('hidden');
+            document.getElementById('populationModal').classList.add('flex');
+        }
 
-            if(type === 'gravel') {
-                zone.gravels = zone.gravels || [];
-                zone.gravels.push({ x, y, author: "Game Master", timestamp: Date.now() });
-                actionText = "GM Återskapade Lekgrus";
-            } else if(type === 'boulder') {
-                zone.boulders = zone.boulders || [];
-                zone.boulders.push({ x, y, author: "Game Master", timestamp: Date.now() });
-                zone.maxPop += 15;
-                actionText = "GM Återskapade Ståndsten";
-            } else if(type === 'nursery') {
-                zone.nurseries = zone.nurseries || [];
-                zone.nurseries.push({ x, y, author: "Game Master", timestamp: Date.now() });
-                actionText = "GM Återskapade Uppväxtplats";
-            }
-
-            if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
-            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("Game Master", actionText, saveanZones[currentZoneKey].name);
-            updateUI();
-            alert(`GM la till ${type} på sträckan!`);
+        function closePopulationModal() {
+            document.getElementById('populationModal').classList.add('hidden');
+            document.getElementById('populationModal').classList.remove('flex');
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -761,6 +770,14 @@
 
         async function initCloudSession() {
             if (!lockedAnglerName) return;
+            
+            if (window.loadSharedWorld) {
+                let sharedWorldData = await window.loadSharedWorld();
+                if (sharedWorldData) {
+                    gameWorld.shared = sharedWorldData;
+                }
+            }
+
             let cloudState = await window.loadPlayerStateFromFirebase(lockedAnglerName);
             if (cloudState) {
                 if (cloudState.lastPlayedDate === todayStr) {
@@ -774,6 +791,11 @@
                     gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
                     if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
+                    
+                    // Naturlig minskning (beståndet sjunker sakta över tid för att kräva underhåll)
+                    gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 8);
+                    if (window.saveSharedWorld) await window.saveSharedWorld(gameWorld.shared);
+
                     await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                 }
             } else {
@@ -801,6 +823,7 @@
             canvas.height = canvas.parentElement.clientHeight;
             initRises();
             initDriftLog();
+            initBigSalmonShadows();
         }
         window.addEventListener('resize', resizeCanvas);
 
@@ -828,21 +851,18 @@
             };
         }
 
-        function getActiveZone() {
-            if (!gameWorld.zones[currentZoneKey]) {
-                gameWorld.zones[currentZoneKey] = {
-                    population: 200,
-                    maxPop: 360,
-                    gravels: [],
-                    boulders: [],
-                    nurseries: [],
-                    trees: 2,
-                    bushes: 2,
-                    playerPos: { x: null, y: null },
-                    log: []
-                };
+        function initBigSalmonShadows() {
+            bigSalmonShadows = [];
+            for (let i = 0; i < 2; i++) {
+                bigSalmonShadows.push({
+                    x: 100 + Math.random() * (canvas.width - 200),
+                    y: 80 + Math.random() * (canvas.height - 160),
+                    length: 75 + Math.random() * 30,
+                    requiredDrift: 60 + Math.random() * 40, // Hur långt flugan måste drifta förbi
+                    currentDriftCount: 0,
+                    hooked: false
+                });
             }
-            return gameWorld.zones[currentZoneKey];
         }
 
         async function fetchWeather(key) {
@@ -853,8 +873,8 @@
                 if(data && data.current) {
                     weatherData.temp = data.current.temperature_2m;
                     weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
-                    let zone = getActiveZone();
-                    let biotopeFlowBonus = (zone.gravels.length * 0.8) + (zone.boulders.length * 1.2);
+                    let s = gameWorld.shared;
+                    let biotopeFlowBonus = (s.gravels.length * 0.8) + (s.boulders.length * 1.2);
                     let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5) + biotopeFlowBonus;
                     weatherData.flow = Math.max(4, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
                     weatherData.condition = data.current.precipitation > 0 ? "Regn / Dis" : "Klart / Växlande";
@@ -862,8 +882,8 @@
             } catch(e) {
                 weatherData.temp = z.baseTemp;
                 weatherData.waterTemp = 10.0;
-                let zone = getActiveZone();
-                let biotopeFlowBonus = (zone.gravels.length * 0.8) + (zone.boulders.length * 1.2);
+                let s = gameWorld.shared;
+                let biotopeFlowBonus = (s.gravels.length * 0.8) + (s.boulders.length * 1.2);
                 weatherData.flow = (16 + Math.sin(gameWorld.dayOfSeason)*6 + biotopeFlowBonus).toFixed(1);
                 weatherData.condition = "Normalt";
             }
@@ -876,22 +896,15 @@
                 const btn = document.getElementById(`zone-${z}`);
                 if (btn) {
                     btn.className = z === key ? 
-                        "p-2 rounded bg-emerald-900/60 border border-emerald-500 text-left transition" : 
-                        "p-2 rounded bg-stone-900 border border-stone-700 text-left transition";
+                        "p-2 rounded-xl bg-emerald-950 border border-emerald-600 text-left transition" : 
+                        "p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition";
                 }
             });
             
-            if (window.loadSharedZone) {
-                let sharedData = await window.loadSharedZone(key);
-                if (sharedData) {
-                    let zone = getActiveZone();
-                    zone.population = sharedData.population !== undefined ? sharedData.population : zone.population;
-                    zone.maxPop = sharedData.maxPop !== undefined ? sharedData.maxPop : zone.maxPop;
-                    zone.gravels = sharedData.gravels || [];
-                    zone.boulders = sharedData.boulders || [];
-                    zone.nurseries = sharedData.nurseries || [];
-                    zone.trees = sharedData.trees !== undefined ? sharedData.trees : zone.trees;
-                    zone.bushes = sharedData.bushes !== undefined ? sharedData.bushes : zone.bushes;
+            if (window.loadSharedWorld) {
+                let sharedWorldData = await window.loadSharedWorld();
+                if (sharedWorldData) {
+                    gameWorld.shared = sharedWorldData;
                 }
             }
 
@@ -913,12 +926,13 @@
             fetchWeather(key);
             initRises();
             initDriftLog();
+            initBigSalmonShadows();
             document.getElementById('castStatus').innerText = `Flyttade till ${name} (Gemensam Open World).`;
             updateUI();
         }
 
         function updateUI() {
-            const zone = getActiveZone();
+            const s = gameWorld.shared;
 
             document.getElementById('wCondition').innerText = weatherData.condition;
             document.getElementById('wTemp').innerText = weatherData.temp;
@@ -926,15 +940,15 @@
             document.getElementById('wFlow').innerText = weatherData.flow + " m³/s";
 
             document.getElementById('conservationPoints').innerText = gameWorld.points + " p";
-            document.getElementById('hudPopulation').innerText = zone.population;
+            document.getElementById('hudPopulation').innerText = s.population;
             document.getElementById('castsLeft').innerText = `${gameWorld.castsRemaining} / 5`;
             document.getElementById('dayCounter').innerText = `Dag ${gameWorld.dayOfSeason}/7`;
             document.getElementById('currentFlyName').innerText = activeFly.name;
 
-            document.getElementById('statGravel').innerText = (zone.gravels || []).length + " st";
-            document.getElementById('statBoulders').innerText = (zone.boulders || []).length + " st";
-            document.getElementById('statNursery').innerText = (zone.nurseries || []).length + " st";
-            document.getElementById('statTrees').innerText = `${zone.trees} träd, ${zone.bushes} buskar`;
+            document.getElementById('statGravel').innerText = (s.gravels || []).length + " st";
+            document.getElementById('statBoulders').innerText = (s.boulders || []).length + " st";
+            document.getElementById('statNursery').innerText = (s.nurseries || []).length + " st";
+            document.getElementById('statTrees').innerText = `${s.trees} träd, ${s.bushes} buskar`;
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
 
             renderLog();
@@ -959,12 +973,12 @@
             if(gameWorld.dayOfSeason < 7) {
                 gameWorld.dayOfSeason++;
                 gameWorld.castsRemaining = 5;
-                const zone = getActiveZone();
-                let breedBoost = ((zone.gravels||[]).length * 5) + ((zone.boulders||[]).length * 3) + ((zone.nurseries||[]).length * 6) + (gameWorld.laddersFixed ? 15 : 0);
-                zone.population = Math.min(zone.maxPop, zone.population + breedBoost + 3);
+                const s = gameWorld.shared;
+                let breedBoost = ((s.gravels||[]).length * 5) + ((s.boulders||[]).length * 3) + ((s.nurseries||[]).length * 6) + (gameWorld.laddersFixed ? 15 : 0);
+                s.population = Math.min(s.maxPop, s.population + breedBoost + 3);
                 gameWorld.points += 100;
                 
-                if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
+                if (window.saveSharedWorld) await window.saveSharedWorld(s);
                 fetchWeather(currentZoneKey);
                 document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
             } else {
@@ -1012,16 +1026,16 @@
         }
 
         async function removeMyLatestBiotope() {
-            const zone = getActiveZone();
+            const s = gameWorld.shared;
             let allMyItems = [];
 
-            (zone.gravels || []).forEach((item, index) => {
+            (s.gravels || []).forEach((item, index) => {
                 if (item.author === lockedAnglerName) allMyItems.push({ type: 'gravel', index, timestamp: item.timestamp || 0 });
             });
-            (zone.boulders || []).forEach((item, index) => {
+            (s.boulders || []).forEach((item, index) => {
                 if (item.author === lockedAnglerName) allMyItems.push({ type: 'boulder', index, timestamp: item.timestamp || 0 });
             });
-            (zone.nurseries || []).forEach((item, index) => {
+            (s.nurseries || []).forEach((item, index) => {
                 if (item.author === lockedAnglerName) allMyItems.push({ type: 'nursery', index, timestamp: item.timestamp || 0 });
             });
 
@@ -1035,20 +1049,20 @@
             let removedName = "";
 
             if (latest.type === 'gravel') {
-                zone.gravels.splice(latest.index, 1);
+                s.gravels.splice(latest.index, 1);
                 removedName = "Lekgrus";
             } else if (latest.type === 'boulder') {
-                zone.boulders.splice(latest.index, 1);
-                zone.maxPop -= 15;
+                s.boulders.splice(latest.index, 1);
+                s.maxPop -= 15;
                 removedName = "Ståndsten";
             } else if (latest.type === 'nursery') {
-                zone.nurseries.splice(latest.index, 1);
+                s.nurseries.splice(latest.index, 1);
                 removedName = "Uppväxtplats";
             }
 
             gameWorld.points += 150;
             
-            if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
+            if (window.saveSharedWorld) await window.saveSharedWorld(s);
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort din ${removedName} (Open World)`, saveanZones[currentZoneKey].name);
             updateUI();
             closeBiotopModal();
@@ -1058,11 +1072,11 @@
         async function doTreePlanting(cost) {
             if(gameWorld.points < cost) return alert("Inte tillräckligt med poäng!");
             gameWorld.points -= cost;
-            const zone = getActiveZone();
-            zone.trees += 1;
-            zone.maxPop += 12;
+            const s = gameWorld.shared;
+            s.trees += 1;
+            s.maxPop += 12;
             
-            if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
+            if (window.saveSharedWorld) await window.saveSharedWorld(s);
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Kantträd", saveanZones[currentZoneKey].name);
             updateUI();
             alert("Nytt kantträd planterat i den gemensamma ån!");
@@ -1071,11 +1085,11 @@
         async function doBushPlanting(cost) {
             if(gameWorld.points < cost) return alert("Inte tillräckligt med poäng!");
             gameWorld.points -= cost;
-            const zone = getActiveZone();
-            zone.bushes += 1;
-            zone.maxPop += 8;
+            const s = gameWorld.shared;
+            s.bushes += 1;
+            s.maxPop += 8;
             
-            if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
+            if (window.saveSharedWorld) await window.saveSharedWorld(s);
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Buske", saveanZones[currentZoneKey].name);
             updateUI();
             alert("Ny buske planterad!");
@@ -1087,8 +1101,9 @@
             gameWorld.points -= cost;
             gameWorld.laddersFixed = true;
             
-            Object.values(gameWorld.zones).forEach(z => { z.maxPop += 150; z.population += 30; });
-            if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, getActiveZone());
+            gameWorld.shared.maxPop += 150;
+            gameWorld.shared.population += 30;
+            if (window.saveSharedWorld) await window.saveSharedWorld(gameWorld.shared);
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Rev Vandringshinder", saveanZones[currentZoneKey].name);
             updateUI();
             alert("Vandringshinder åtgärdat i hela ån!");
@@ -1101,9 +1116,10 @@
             }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            const zone = getActiveZone();
-            let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : 40;
-            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 40;
+            const zState = gameWorld.zones[currentZoneKey];
+            const s = gameWorld.shared;
+            let rodX = zState.playerPos && zState.playerPos.x !== null ? zState.playerPos.x : 40;
+            let rodY = zState.playerPos && zState.playerPos.y !== null ? zState.playerPos.y : canvas.height - 40;
 
             if (currentZoneKey === 'mannered') {
                 let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -1175,7 +1191,7 @@
             ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
 
             // === TRÄD OCH BUSKAR ===
-            for (let i = 0; i < (zone.trees || 2); i++) {
+            for (let i = 0; i < (s.trees || 2); i++) {
                 let tx = 50 + (i * 130) % (canvas.width - 80);
                 let ty = i % 2 === 0 ? 16 : canvas.height - 12;
                 ctx.fillStyle = '#78350f';
@@ -1189,7 +1205,7 @@
                 ctx.stroke();
             }
 
-            for (let i = 0; i < (zone.bushes || 2); i++) {
+            for (let i = 0; i < (s.bushes || 2); i++) {
                 let bx = 90 + (i * 150) % (canvas.width - 100);
                 let by = i % 2 === 0 ? 20 : canvas.height - 16;
                 ctx.fillStyle = '#15803d';
@@ -1200,14 +1216,14 @@
 
             // Lekgrus
             ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
-            (zone.gravels || []).forEach(g => {
+            (s.gravels || []).forEach(g => {
                 ctx.beginPath();
                 ctx.arc(g.x, g.y, 22, 0, Math.PI*2);
                 ctx.fill();
             });
 
             // Ståndstenar
-            (zone.boulders || []).forEach(b => {
+            (s.boulders || []).forEach(b => {
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
                 ctx.ellipse(b.x, b.y, 25, 13, 0.1, 0, Math.PI*2);
@@ -1218,7 +1234,7 @@
             });
 
             // Uppväxtplatser
-            (zone.nurseries || []).forEach(n => {
+            (s.nurseries || []).forEach(n => {
                 ctx.fillStyle = 'rgba(21, 128, 61, 0.5)';
                 ctx.beginPath();
                 ctx.ellipse(n.x, n.y, 36, 18, 0.1, 0, Math.PI * 2);
@@ -1233,6 +1249,17 @@
                 ctx.arc(n.x + 10, n.y + 3, 4, 0, Math.PI * 2);
                 ctx.arc(n.x + 3, n.y - 5, 3, 0, Math.PI * 2);
                 ctx.fill();
+            });
+
+            // Ljus ljusgrå siluett för storlaxar
+            bigSalmonShadows.forEach(shadow => {
+                ctx.fillStyle = 'rgba(226, 232, 240, 0.18)';
+                ctx.beginPath();
+                ctx.ellipse(shadow.x, shadow.y, shadow.length, shadow.length * 0.35, 0.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
             });
 
             if (currentZoneKey === 'kahogsforsen') {
@@ -1292,7 +1319,7 @@
                 ctx.stroke();
             });
 
-            // Fiskare (Stora gröna gubben nere till vänster)
+            // Fiskare
             ctx.fillStyle = '#14532d';
             ctx.beginPath();
             ctx.arc(rodX, rodY, 16, 0, Math.PI*2);
@@ -1305,7 +1332,7 @@
             ctx.font = '10px Inter';
             ctx.fillText("Hemtagning", rodX - 28, rodY + 28);
 
-            // Kastlina & Fluga med guppande/gunga-mönster i strömmen
+            // Kastlina & Fluga
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -1324,7 +1351,21 @@
                 if(!isFighting) {
                     let baseDriftSpeed = 0.4 + (currentFlow * 0.04);
                     let driftSpeed = currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed;
+                    
+                    let prevX = castLine.x;
                     castLine.x += driftSpeed;
+                    let movedDistance = castLine.x - prevX;
+
+                    // Kontrollera om flugan driver förbi någon storlax-siluett
+                    bigSalmonShadows.forEach(shadow => {
+                        let distToShadow = Math.hypot(castLine.x - shadow.x, castLine.y - shadow.y);
+                        if (distToShadow < 45) {
+                            shadow.currentDriftCount += movedDistance;
+                            if (shadow.currentDriftCount >= shadow.requiredDrift && !currentFish && !wildlifeDisturbance) {
+                                triggerBigSalmonBite(shadow);
+                            }
+                        }
+                    });
 
                     if (currentFlow > 14 && singleDriftLog) {
                         if (castLine && castLine.x >= singleDriftLog.x && castLine.x <= singleDriftLog.x + singleDriftLog.width && Math.abs(castLine.y - singleDriftLog.y) < 15) {
@@ -1369,9 +1410,9 @@
             let clickX = e.clientX - rect.left;
             let clickY = e.clientY - rect.top;
 
-            const zone = getActiveZone();
-            let rodX = zone.playerPos && zone.playerPos.x !== null ? zone.playerPos.x : 40;
-            let rodY = zone.playerPos && zone.playerPos.y !== null ? zone.playerPos.y : canvas.height - 40;
+            const zState = gameWorld.zones[currentZoneKey];
+            let rodX = zState.playerPos && zState.playerPos.x !== null ? zState.playerPos.x : 40;
+            let rodY = zState.playerPos && zState.playerPos.y !== null ? zState.playerPos.y : canvas.height - 40;
 
             if (Math.hypot(clickX - rodX, clickY - rodY) < 25) {
                 if (castLine) {
@@ -1396,16 +1437,17 @@
 
             if(placementMode) {
                 if(placementMode === 'rod') {
-                    zone.playerPos = { x: clickX, y: clickY };
+                    zState.playerPos = { x: clickX, y: clickY };
                 } else {
                     gameWorld.points -= placementCost;
                     let actionText = "";
                     let timeNow = Date.now();
-                    if(placementMode === 'gravel') { zone.gravels = zone.gravels || []; zone.gravels.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Lade Lekgrus"; }
-                    if(placementMode === 'boulder') { zone.boulders = zone.boulders || []; zone.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); zone.maxPop += 15; actionText = "Lade Ståndsten"; }
-                    if(placementMode === 'nursery') { zone.nurseries = zone.nurseries || []; zone.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Skapade Uppväxtplats"; }
+                    let s = gameWorld.shared;
+                    if(placementMode === 'gravel') { s.gravels = s.gravels || []; s.gravels.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Lade Lekgrus"; }
+                    if(placementMode === 'boulder') { s.boulders = s.boulders || []; s.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); s.maxPop += 15; actionText = "Lade Ståndsten"; }
+                    if(placementMode === 'nursery') { s.nurseries = s.nurseries || []; s.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Skapade Uppväxtplats"; }
                     
-                    if (window.saveSharedZone) await window.saveSharedZone(currentZoneKey, zone);
+                    if (window.saveSharedWorld) await window.saveSharedWorld(s);
                     if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, actionText, saveanZones[currentZoneKey].name);
                     fetchWeather(currentZoneKey);
                 }
@@ -1429,6 +1471,9 @@
             gameWorld.castsRemaining--;
             updateUI();
 
+            // Nollställ driv-räknare för silhuetter vid nytt kast
+            bigSalmonShadows.forEach(s => s.currentDriftCount = 0);
+
             let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < 35);
             if (hitRise && !wildlifeDisturbance && Math.random() < 0.45) {
                 setTimeout(() => { if (castLine && !currentFish) triggerBite(true); }, 1200);
@@ -1438,12 +1483,34 @@
             document.getElementById('castStatus').innerText = statusText;
         });
 
-        function triggerBite(isRiseBonus) {
-            let zone = getActiveZone();
-            let gravelBonus = (zone.gravels||[]).length;
-            let boulderBonus = (zone.boulders||[]).length;
+        function triggerBigSalmonBite(shadow) {
+            let species = "Lax";
+            let gender = Math.random() < 0.5 ? "Hona" : "Hane";
+            let size = Math.floor(95 + Math.random() * 25); // 95-120 cm jättelax
+            currentFish = { species, size, gender };
 
-            let overNursery = (zone.nurseries || []).some(n => castLine && Math.hypot(castLine.x - n.x, castLine.y - n.y) < 40);
+            let feelDescription = "HUGG! En storlax tog på den perfekta driften över siluetten!";
+            if ("vibrate" in navigator) navigator.vibrate([400, 100, 400, 100, 600]);
+
+            const gameContainer = document.getElementById('gameContainer');
+            gameContainer.classList.add('animate-bounce');
+            setTimeout(() => { gameContainer.classList.remove('animate-bounce'); }, 800);
+
+            document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">${feelDescription} Håll fingret nedtryckt!</span>`;
+            
+            const notif = document.getElementById('canvasNotification');
+            notif.innerHTML = `${feelDescription}<br><span class="text-stone-200 text-[10px]">Håll fingret nedtryckt för drillning!</span>`;
+            notif.classList.remove('hidden');
+
+            startFightMode();
+        }
+
+        function triggerBite(isRiseBonus) {
+            let s = gameWorld.shared;
+            let gravelBonus = (s.gravels||[]).length;
+            let boulderBonus = (s.boulders||[]).length;
+
+            let overNursery = (s.nurseries || []).some(n => castLine && Math.hypot(castLine.x - n.x, castLine.y - n.y) < 40);
 
             if (overNursery && Math.random() < 0.6) {
                 gameWorld.castsRemaining++;
@@ -1478,11 +1545,23 @@
                 gender = Math.random() < 0.5 ? "Hona" : "Hane";
             }
 
-            let baseSize = species === "Lax" ? 85 : (species === "Gädda" ? 70 : (species === "Öring" ? 44 : 30));
-            let biotopeSizeBonus = (gravelBonus * 1.5) + (boulderBonus * 2.0) + (gameWorld.laddersFixed ? 12 : 0) + (gameWorld.dayOfSeason * 1.2);
-            let size = Math.floor(baseSize + (Math.random() * 18 - 4) + biotopeSizeBonus + (isRiseBonus ? 6 : 0));
-            
-            if (species === "Lax" && size > 122) size = 122;
+            let size = 30;
+            if (species === "Abborre") {
+                // Realistiska abborrar: oftast 25-35 cm, sällsynt upp till 45 cm max
+                let abRand = Math.random();
+                if (abRand < 0.75) {
+                    size = Math.floor(25 + Math.random() * 10); // 25-34 cm
+                } else if (abRand < 0.97) {
+                    size = Math.floor(35 + Math.random() * 6);  // 35-40 cm
+                } else {
+                    size = Math.floor(41 + Math.random() * 5);  // 41-45 cm (sällsynt stor)
+                }
+            } else {
+                let baseSize = species === "Lax" ? 82 : (species === "Gädda" ? 70 : (species === "Öring" ? 44 : 30));
+                let biotopeSizeBonus = (gravelBonus * 1.5) + (boulderBonus * 2.0) + (gameWorld.laddersFixed ? 12 : 0) + (gameWorld.dayOfSeason * 1.2);
+                size = Math.floor(baseSize + (Math.random() * 18 - 4) + biotopeSizeBonus + (isRiseBonus ? 6 : 0));
+                if (species === "Lax" && size > 122) size = 122;
+            }
 
             currentFish = { species, size, gender };
             let feelDescription = size > 85 ? "HUGG! En riktig jätte till lax rusar lina!" : (size > 65 ? "HUGG! Tunga knixar i spöt!" : "HUGG! Pigg fisk som kämpar!");
@@ -1555,7 +1634,6 @@
             const bar = document.getElementById('stressBar');
             const stressText = document.getElementById('stressValueText');
             const timeText = document.getElementById('fightTimeText');
-            const fightCard = document.getElementById('fightCard');
 
             stressText.innerText = Math.round(tippetStress) + "%";
             timeText.innerText = fightTimeRemaining.toFixed(1) + "s";
@@ -1570,7 +1648,6 @@
             
             document.getElementById('fightOverlay').classList.add('hidden');
             document.getElementById('canvasNotification').classList.add('hidden');
-            document.getElementById('fightCard').style.transform = 'none';
 
             if(success) {
                 if ("vibrate" in navigator) navigator.vibrate([150, 100, 350]);
@@ -1590,7 +1667,6 @@
             isPressingScreen = false;
             document.getElementById('fightOverlay').classList.add('hidden');
             document.getElementById('canvasNotification').classList.add('hidden');
-            document.getElementById('fightCard').style.transform = 'none';
 
             castLine = null;
             currentFish = null;
@@ -1605,10 +1681,18 @@
             let net = document.getElementById('chkNet').checked;
             let air = parseInt(document.getElementById('sliderAirTime').value);
 
-            let score = 100 - (wet ? 0 : 35) - (net ? 0 : 20) - (air * 1.1);
+            let score = 100 - (wet ? 0 : 35) - (net ? 0 : 20) - (air * 1.5);
             let survived = score > 40;
-            const zone = getActiveZone();
+            const s = gameWorld.shared;
             let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+
+            if (air >= 25) {
+                gameWorld.points = Math.max(0, gameWorld.points - 50);
+                alert("Bristande hantering. Fotograferade du fångsten? (-50 poäng).");
+            } else if (air >= 20) {
+                gameWorld.points = Math.max(0, gameWorld.points - 20);
+                alert("Lång tid ovan vatten påverkade C&R-poängen negativt (-20 poäng).");
+            }
 
             if(survived) {
                 let pts = currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 50 : 40);
@@ -1627,33 +1711,35 @@
 
                 if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
             } else {
-                zone.population = Math.max(10, zone.population - 1);
+                s.population = Math.max(10, s.population - 1);
                 alert("Fisken klarade inte hanteringen.");
             }
 
-            zone.log = zone.log || [];
-            zone.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - C&R (${anglerName})`, date: new Date().toLocaleDateString() });
+            zStateLog = gameWorld.zones[currentZoneKey];
+            zStateLog.log = zStateLog.log || [];
+            zStateLog.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - C&R (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
         }
 
         function keepFish() {
             let anglerName = lockedAnglerName || "Anonym Fiskare";
-            const zone = getActiveZone();
+            const s = gameWorld.shared;
             let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
 
             if((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
                 gameWorld.points += 40;
                 alert("Du tog bort en skadlig smårovfisk! (+40 naturvårdspoäng).");
             } else {
-                zone.population = Math.max(10, zone.population - 1);
+                s.population = Math.max(10, s.population - 1);
                 alert("Fisk hemtagen.");
             }
 
             if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
 
-            zone.log = zone.log || [];
-            zone.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - Hemtagen (${anglerName})`, date: new Date().toLocaleDateString() });
+            let zStateLog = gameWorld.zones[currentZoneKey];
+            zStateLog.log = zStateLog.log || [];
+            zStateLog.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - Hemtagen (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
         }
@@ -1668,23 +1754,24 @@
             if(isFighting) return;
             const list = document.getElementById('flyList');
             list.innerHTML = flies.map(f => `
-                <div onclick="activeFly = flies.find(x => x.name === '${f.name}'); updateUI(); document.getElementById('flyModal').classList.add('hidden');" class="bg-stone-900 p-2 rounded border border-stone-700 hover:border-emerald-500 cursor-pointer flex justify-between text-xs">
+                <div onclick="activeFly = flies.find(x => x.name === '${f.name}'); updateUI(); document.getElementById('flyModal').classList.add('hidden');" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 hover:border-emerald-500 cursor-pointer flex justify-between text-xs transition">
                     <span class="font-bold text-stone-200">${f.name}</span>
                     <span class="text-stone-400 text-[9px]">${f.type}</span>
                 </div>
             `).join('');
             document.getElementById('flyModal').classList.remove('hidden');
+            document.getElementById('flyModal').classList.add('flex');
         }
 
         function renderLog() {
-            const zone = getActiveZone();
+            const zState = gameWorld.zones[currentZoneKey];
             const logContainer = document.getElementById('catchLog');
-            if(!zone.log || zone.log.length === 0) {
+            if(!zState.log || zState.log.length === 0) {
                 logContainer.innerHTML = `<p class="text-stone-500 italic">Inga fångster än.</p>`;
                 return;
             }
-            logContainer.innerHTML = zone.log.map(item => `
-                <div class="border-b border-stone-800 pb-1 flex justify-between">
+            logContainer.innerHTML = zState.log.map(item => `
+                <div class="border-b border-stone-900 pb-1 flex justify-between">
                     <span class="text-stone-300">${item.text}</span>
                     <span class="text-stone-500 text-[9px]">${item.date}</span>
                 </div>
