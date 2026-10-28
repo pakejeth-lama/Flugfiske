@@ -130,14 +130,12 @@
             </div>
 
             <div id="adminToolsView" class="hidden flex flex-col gap-3 text-xs">
-                <!-- Nollställ vecka -->
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
                     <span class="font-bold text-emerald-400">Nollställ hela fiskeveckan:</span>
                     <input type="text" id="targetPlayerInput" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
                     <button onclick="adminResetPlayerWeek()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl font-semibold">Återställ vecka (Dag 1 & 5 kast)</button>
                 </div>
 
-                <!-- Dela ut poäng -->
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
                     <span class="font-bold text-amber-400">Dela ut / Justera naturvårdspoäng:</span>
                     <input type="text" id="adminPointsPlayer" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
@@ -145,7 +143,6 @@
                     <button onclick="adminGrantPoints()" class="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold py-2 rounded-xl">Uppdatera poäng</button>
                 </div>
 
-                <!-- Nollställ biotop på sträcka -->
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
                     <span class="font-bold text-rose-400">Nollställ biotop på aktiv sträcka:</span>
                     <button onclick="adminClearCurrentZoneBiotope()" class="w-full bg-rose-700 hover:bg-rose-600 text-white py-2 rounded-xl font-semibold">Rensa allt lekgrus/stenar här</button>
@@ -569,7 +566,6 @@
                 let salmonCatches = currentWeekCatches.filter(c => c.species && c.species.includes("Lax")).sort((a, b) => b.size - a.size);
                 let troutCatches = currentWeekCatches.filter(c => c.species && c.species.includes("Öring")).sort((a, b) => b.size - a.size);
 
-                // Bygg Lax-lista
                 let salmonHtml = "";
                 let rank = 1;
                 if (salmonCatches.length === 0) {
@@ -594,7 +590,6 @@
                     salmonListEl.innerHTML = salmonHtml;
                 }
 
-                // Bygg Öring-lista
                 let troutHtml = "";
                 rank = 1;
                 if (troutCatches.length === 0) {
@@ -981,7 +976,6 @@
         }
 
         function openPopulationModal() {
-            document.getElementById('populationModal').classList.0;
             document.getElementById('populationModal').classList.remove('hidden');
             document.getElementById('populationModal').classList.add('flex');
         }
@@ -1474,7 +1468,6 @@
                 ctx.stroke();
             }
 
-            // === STRANDKANT ===
             ctx.fillStyle = '#1c1917';
             ctx.fillRect(0, 0, canvas.width, 36);
             ctx.fillRect(0, canvas.height - 24, canvas.width, 24);
@@ -1482,7 +1475,6 @@
             ctx.fillRect(0, 0, canvas.width, 14);
             ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
 
-            // === TRÄD OCH BUSKAR ===
             for (let i = 0; i < (s.trees || 2); i++) {
                 let tx = 50 + (i * 130) % (canvas.width - 80);
                 let ty = i % 2 === 0 ? 16 : canvas.height - 12;
@@ -1506,7 +1498,6 @@
                 ctx.fill();
             }
 
-            // Lekgrus på aktuell sträcka
             ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
             (zState.gravels || []).forEach(g => {
                 ctx.beginPath();
@@ -1514,7 +1505,6 @@
                 ctx.fill();
             });
 
-            // Ståndstenar på aktuell sträcka
             (zState.boulders || []).forEach(b => {
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
@@ -1525,7 +1515,6 @@
                 ctx.stroke();
             });
 
-            // Uppväxtplatser på aktuell sträcka
             (zState.nurseries || []).forEach(n => {
                 ctx.fillStyle = 'rgba(21, 128, 61, 0.5)';
                 ctx.beginPath();
@@ -1600,7 +1589,6 @@
                 ctx.stroke();
             });
 
-            // Fiskare (Grön prick)
             ctx.fillStyle = '#14532d';
             ctx.beginPath();
             ctx.arc(rodX, rodY, 16, 0, Math.PI*2);
@@ -1613,7 +1601,6 @@
             ctx.font = '10px Inter';
             ctx.fillText("Hemtagning", rodX - 28, rodY + 28);
 
-            // Kastlina & Fluga
             if(castLine) {
                 ctx.strokeStyle = '#fef08a';
                 ctx.lineWidth = 1.2;
@@ -1980,7 +1967,6 @@
             }
 
             if(survived) {
-                // 1/4 av tidigare poängvärden
                 let rawPts = currentFish.size === 125 ? 500 : (currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 50 : 40));
                 let pts = Math.round(rawPts / 4);
 
