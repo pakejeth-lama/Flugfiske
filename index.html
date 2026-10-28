@@ -53,6 +53,42 @@
         </div>
     </div>
 
+    <!-- Modal: Utrustningsmeny -->
+    <div id="equipmentModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-2">
+                <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+                    <span>🎣</span> Välj Utrustning
+                </h3>
+                <button onclick="closeEquipmentModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+            </div>
+            <div class="flex flex-col gap-2.5 text-xs">
+                <div>
+                    <label class="text-stone-400 text-[10px] block mb-1">Tillverkare & Modell:</label>
+                    <select id="eqBrand" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-stone-200 text-xs">
+                        <option value="Hardy Zephrus">Hardy Zephrus</option>
+                        <option value="G.Loomis NRX+">G.Loomis NRX+</option>
+                        <option value="Guideline NT8">Guideline NT8</option>
+                        <option value="Daiwa Lochmor">Daiwa Lochmor</option>
+                        <option value="Sage X">Sage X</option>
+                        <option value="Loop Evotec">Loop Evotec</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-stone-400 text-[10px] block mb-1">Spölängd & Klass:</label>
+                    <select id="eqRodSpec" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-stone-200 text-xs">
+                        <option value="9 fot #6 (Enhands)">9 fot #6 (Enhands)</option>
+                        <option value="10 fot #7 (Enhands)">10 fot #7 (Enhands)</option>
+                        <option value="11 fot #8 (Switch)">11 fot #8 (Switch)</option>
+                        <option value="13 fot #9/10 (Tvåhands)">13 fot #9/10 (Tvåhands)</option>
+                        <option value="14 fot #10/11 (Tvåhands)">14 fot #10/11 (Tvåhands)</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="saveEquipment()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-semibold shadow transition mt-1">Spara Utrustning</button>
+        </div>
+    </div>
+
     <!-- Modal: Infotavla för Beståndet -->
     <div id="populationModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-900 border border-amber-600/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
@@ -70,7 +106,7 @@
                         <li>Bygg <strong>lekgrus</strong> på sträckan (gynnar reproduktion)</li>
                         <li>Placera ut <strong>ståndstenar</strong> (ger skydd)</li>
                         <li>Skapa <strong>uppväxtområden</strong> (skyddar smolt)</li>
-                        <li>Åtgärda <strong>vandringshinder</strong></li>
+                        <li>Bidra till det gemensamma <strong>vandringshindret</strong></li>
                     </ul>
                 </div>
             </div>
@@ -102,7 +138,7 @@
                     <button onclick="adminResetPlayerWeek()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl font-semibold">Återställ vecka (Dag 1 & 5 kast)</button>
                 </div>
 
-                <!-- Dela ut poäng -->
+                <!-- Dela ut poäng (FIXAD) -->
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
                     <span class="font-bold text-amber-400">Dela ut / Justera naturvårdspoäng:</span>
                     <input type="text" id="adminPointsPlayer" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
@@ -188,6 +224,9 @@
                         <span>Kast: <strong id="castsLeft" class="text-amber-400">5 / 5</strong></span>
                     </div>
                     <div class="flex items-center gap-2.5 border-t md:border-t-0 border-stone-800 pt-1 md:pt-0">
+                        <button onclick="openEquipmentModal()" class="bg-emerald-800/80 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold transition border border-emerald-600/50 flex items-center gap-1" title="Välj utrustning">
+                            <span>🎣</span> <span id="hudEqLabel">Hardy 9' #6</span>
+                        </button>
                         <span>Väder: <strong id="wCondition" class="text-stone-200">-</strong></span>
                         <span>Temp: <strong class="text-emerald-400"><span id="wTemp">-</span>°C / <span id="wWaterTemp">-</span>°C</strong></span>
                         <span>Vatten: <strong id="wFlow" class="text-blue-400">- m³/s</strong></span>
@@ -363,12 +402,17 @@
                     <button onclick="removeMyLatestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-[11px]">Ångra min</button>
                 </div>
 
-                <div class="bg-stone-950 p-3 rounded-xl border border-amber-500/30 flex justify-between items-center">
-                    <div>
-                        <h4 class="font-bold text-amber-300 text-xs">Riv Vandringshinder</h4>
-                        <p class="text-[9px] text-stone-400">Gemensam åtgärd i hela ån</p>
+                <div class="bg-stone-950 p-3 rounded-xl border border-amber-500/30 flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-amber-300 text-xs">Riv Vandringshinder (Gemensam insats)</h4>
+                            <p class="text-[9px] text-stone-400" id="damProgressText">Insamlad: 0 / 10000 p</p>
+                        </div>
+                        <button onclick="contributeToDam()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-[11px]">Bidra 500 p</button>
                     </div>
-                    <button onclick="doRemoveDam(2000)" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-[11px]">2000 p</button>
+                    <div class="w-full bg-stone-900 h-2 rounded-full overflow-hidden border border-stone-800">
+                        <div id="damProgressBar" class="bg-amber-500 h-full w-0% transition-all"></div>
+                    </div>
                 </div>
             </div>
 
@@ -478,7 +522,7 @@
             return `${d.getUTCFullYear()}-W${weekNo}`;
         }
 
-        window.saveCatchToFirebase = async function(anglerName, species, size, fly, zoneName) {
+        window.saveCatchToFirebase = async function(anglerName, species, size, fly, zoneName, equipment) {
             try {
                 const currentWeek = getCurrentWeekKey();
                 await addDoc(collection(db, "highscores"), {
@@ -486,6 +530,7 @@
                     species: species,
                     size: size,
                     fly: fly,
+                    equipment: equipment || "Standard",
                     zone: zoneName,
                     week: currentWeek,
                     timestamp: new Date().toISOString()
@@ -521,7 +566,7 @@
                                 <div class="flex items-center gap-2">
                                     <span class="font-bold text-amber-400 text-sm w-6">${medal}</span>
                                     <div>
-                                        <span class="font-bold text-stone-200 block">${data.angler}</span>
+                                        <span class="font-bold text-stone-200 block">${data.angler} <span class="text-[9px] text-stone-400">(${data.equipment || ''})</span></span>
                                         <span class="text-[10px] text-stone-400 block">${data.species} • Fluga: ${data.fly} • ${data.zone}</span>
                                     </div>
                                 </div>
@@ -586,6 +631,9 @@
                         maxPop: 380,
                         trees: 2,
                         bushes: 2,
+                        damPoints: 0,
+                        damTarget: 10000,
+                        laddersFixed: false,
                         zones: {}
                     };
                     await setDoc(docRef, defaultWorld);
@@ -605,6 +653,9 @@
                     maxPop: worldData.maxPop,
                     trees: worldData.trees,
                     bushes: worldData.bushes,
+                    damPoints: worldData.damPoints || 0,
+                    damTarget: worldData.damTarget || 10000,
+                    laddersFixed: worldData.laddersFixed || false,
                     zones: worldData.zones || {}
                 }, { merge: true });
             } catch (e) {
@@ -664,6 +715,7 @@
             lastPlayedDate: todayStr,
             dayOfSeason: 1,
             castsRemaining: 5,
+            equipment: { brand: "Hardy", spec: "9' #6" },
             zones: {
                 dickson: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
                 mannered: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
@@ -677,7 +729,9 @@
                 population: 210,
                 maxPop: 380,
                 trees: 2,
-                bushes: 2
+                bushes: 2,
+                damPoints: 0,
+                damTarget: 10000
             }
         };
 
@@ -739,6 +793,28 @@
             modal.classList.remove('flex');
         }
 
+        function openEquipmentModal() {
+            document.getElementById('equipmentModal').classList.remove('hidden');
+            document.getElementById('equipmentModal').classList.add('flex');
+        }
+
+        function closeEquipmentModal() {
+            document.getElementById('equipmentModal').classList.add('hidden');
+            document.getElementById('equipmentModal').classList.remove('flex');
+        }
+
+        async function saveEquipment() {
+            let brand = document.getElementById('eqBrand').value;
+            let spec = document.getElementById('eqRodSpec').value;
+            gameWorld.equipment = { brand, spec };
+            closeEquipmentModal();
+            updateUI();
+            if (lockedAnglerName && window.savePlayerStateToFirebase) {
+                await window.savePlayerStateToFirebase(lockedAnglerName, { equipment: gameWorld.equipment });
+            }
+            showCustomAlert(`Utrustning sparad: ${brand} (${spec})`, "Utrustning");
+        }
+
         let headerClicks = 0;
         document.getElementById('mainTitleHeader').addEventListener('click', () => {
             headerClicks++;
@@ -774,7 +850,7 @@
                 cloudState.castsRemaining = 5;
                 cloudState.dayOfSeason = 1;
                 cloudState.lastPlayedDate = todayStr;
-                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
+                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
                 showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`, "GM Admin");
                 if (targetPlayer === lockedAnglerName) {
                     gameWorld.castsRemaining = 5;
@@ -791,15 +867,21 @@
             let amount = parseInt(document.getElementById('adminPointsAmount').value);
             if(!targetPlayer || isNaN(amount)) return showCustomAlert("Ange giltigt spelarnamn och poängantal!", "Fel");
 
+            if (targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
+                gameWorld.points = Math.max(0, gameWorld.points + amount);
+                updateUI();
+                if (window.savePlayerStateToFirebase) {
+                    await window.savePlayerStateToFirebase(lockedAnglerName, { points: gameWorld.points });
+                }
+                showCustomAlert(`Gav ${amount} poäng till dig (${lockedAnglerName}). Ny summa: ${gameWorld.points} p.`, "GM Admin");
+                return;
+            }
+
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
-                cloudState.points = (cloudState.points || 0) + amount;
-                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
+                cloudState.points = Math.max(0, (cloudState.points || 0) + amount);
+                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
                 showCustomAlert(`Gav ${amount} poäng till ${targetPlayer}. Ny summa: ${cloudState.points} p.`, "GM Admin");
-                if (targetPlayer === lockedAnglerName) {
-                    gameWorld.points = cloudState.points;
-                    updateUI();
-                }
             } else {
                 showCustomAlert("Hittade inte spelaren i molnet.", "Fel");
             }
@@ -852,6 +934,9 @@
                     gameWorld.shared.maxPop = sharedWorldData.maxPop !== undefined ? sharedWorldData.maxPop : gameWorld.shared.maxPop;
                     gameWorld.shared.trees = sharedWorldData.trees !== undefined ? sharedWorldData.trees : gameWorld.shared.trees;
                     gameWorld.shared.bushes = sharedWorldData.bushes !== undefined ? sharedWorldData.bushes : gameWorld.shared.bushes;
+                    gameWorld.shared.damPoints = sharedWorldData.damPoints !== undefined ? sharedWorldData.damPoints : gameWorld.shared.damPoints;
+                    gameWorld.shared.damTarget = sharedWorldData.damTarget !== undefined ? sharedWorldData.damTarget : gameWorld.shared.damTarget;
+                    gameWorld.laddersFixed = sharedWorldData.laddersFixed !== undefined ? sharedWorldData.laddersFixed : gameWorld.laddersFixed;
                     
                     if (sharedWorldData.zones) {
                         for (let zKey in sharedWorldData.zones) {
@@ -867,11 +952,11 @@
 
             let cloudState = await window.loadPlayerStateFromFirebase(lockedAnglerName);
             if (cloudState) {
+                if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
                 if (cloudState.lastPlayedDate === todayStr) {
                     gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
                     gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
                     gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
-                    gameWorld.laddersFixed = !!cloudState.laddersFixed;
                 } else {
                     gameWorld.points = (cloudState.points !== undefined ? cloudState.points : 700) + 100;
                     gameWorld.lastPlayedDate = todayStr;
@@ -1019,12 +1104,17 @@
             document.getElementById('castsLeft').innerText = `${gameWorld.castsRemaining} / 5`;
             document.getElementById('dayCounter').innerText = `Dag ${gameWorld.dayOfSeason}/7`;
             document.getElementById('currentFlyName').innerText = activeFly.name;
+            document.getElementById('hudEqLabel').innerText = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
 
             document.getElementById('statGravel').innerText = (zState.gravels || []).length + " st";
             document.getElementById('statBoulders').innerText = (zState.boulders || []).length + " st";
             document.getElementById('statNursery').innerText = (zState.nurseries || []).length + " st";
             document.getElementById('statTrees').innerText = `${s.trees} träd, ${s.bushes} buskar`;
-            document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
+            document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : `${s.damPoints} / ${s.damTarget} p`;
+
+            let damPercent = Math.min(100, (s.damPoints / s.damTarget) * 100);
+            document.getElementById('damProgressText').innerText = gameWorld.laddersFixed ? "Vandringshinder Åtgärdat!" : `Insamlad: ${s.damPoints} / ${s.damTarget} p`;
+            document.getElementById('damProgressBar').style.width = damPercent + "%";
 
             renderLog();
             
@@ -1033,7 +1123,7 @@
                     points: gameWorld.points,
                     castsRemaining: gameWorld.castsRemaining,
                     dayOfSeason: gameWorld.dayOfSeason,
-                    laddersFixed: gameWorld.laddersFixed,
+                    equipment: gameWorld.equipment,
                     lastPlayedDate: todayStr
                 });
             }
@@ -1199,23 +1289,33 @@
             showCustomAlert("Ny buske planterad!", "Biotopvård");
         }
 
-        async function doRemoveDam(cost) {
-            if(gameWorld.laddersFixed) return showCustomAlert("Vandringshindret är redan åtgärdat!", "Redan klart");
-            if(gameWorld.points < cost) return showCustomAlert("Det krävs 2000 p för detta!", "Poäng saknas");
-            gameWorld.points -= cost;
-            gameWorld.laddersFixed = true;
+        async function contributeToDam() {
+            let contribution = 500;
+            if(gameWorld.laddersFixed) return showCustomAlert("Vandringshindret är redan helt åtgärdat!", "Klart");
+            if(gameWorld.points < contribution) return showCustomAlert(`Du behöver minst ${contribution} p för att bidra!`, "Poäng saknas");
             
-            gameWorld.shared.maxPop += 150;
-            gameWorld.shared.population += 30;
-            
-            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-            sharedWorldData.maxPop = gameWorld.shared.maxPop;
-            sharedWorldData.population = gameWorld.shared.population;
-            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+            gameWorld.points -= contribution;
+            const s = gameWorld.shared;
+            s.damPoints = (s.damPoints || 0) + contribution;
 
-            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Rev Vandringshinder", saveanZones[currentZoneKey].name);
+            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+            sharedWorldData.damPoints = s.damPoints;
+
+            if(s.damPoints >= s.damTarget) {
+                gameWorld.laddersFixed = true;
+                sharedWorldData.laddersFixed = true;
+                sharedWorldData.maxPop += 150;
+                sharedWorldData.population += 30;
+                s.maxPop = sharedWorldData.maxPop;
+                s.population = sharedWorldData.population;
+                showCustomAlert("🎉 Målet nått! Vandringshindret är nu helt åtgärdat i hela ån!", "Stort Genombrott");
+            } else {
+                showCustomAlert(`Tack för ditt bidrag på ${contribution} p! Mål: ${s.damPoints} / ${s.damTarget} p.`, "Fiskevård");
+            }
+
+            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Bidrog med ${contribution}p till vandringshinder`, saveanZones[currentZoneKey].name);
             updateUI();
-            showCustomAlert("Vandringshinder åtgärdat i hela ån!", "Stora insatsen");
         }
 
         let flowOffset = 0;
@@ -1742,6 +1842,7 @@
             let survived = score > 40;
             const s = gameWorld.shared;
             let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+            let eqString = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
             let alertMsg = "";
 
             if (air >= 25) {
@@ -1767,7 +1868,7 @@
                     alertMsg += `Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`;
                 }
 
-                if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
+                if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name, eqString);
             } else {
                 s.population = Math.max(10, s.population - 1);
                 alertMsg += "Fisken klarade inte hanteringen.";
@@ -1785,6 +1886,7 @@
             let anglerName = lockedAnglerName || "Anonym Fiskare";
             const s = gameWorld.shared;
             let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+            let eqString = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
             let alertMsg = "";
 
             if((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
@@ -1795,7 +1897,7 @@
                 alertMsg = "Fisk hemtagen.";
             }
 
-            if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name);
+            if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name, eqString);
 
             let zStateLog = gameWorld.zones[currentZoneKey];
             zStateLog.log = zStateLog.log || [];
