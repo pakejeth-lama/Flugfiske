@@ -42,7 +42,7 @@
         </div>
     </div>
 
-    <!-- Modal: Universal Meddelanderuta (Ersätter gamla alerts) -->
+    <!-- Modal: Universal Meddelanderuta -->
     <div id="customAlertModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3.5 text-center">
             <h3 id="customAlertTitle" class="text-sm font-bold text-emerald-400 flex items-center justify-center gap-1.5">
@@ -585,7 +585,8 @@
                         population: 210,
                         maxPop: 380,
                         trees: 2,
-                        bushes: 2
+                        bushes: 2,
+                        zones: {}
                     };
                     await setDoc(docRef, defaultWorld);
                     return defaultWorld;
@@ -603,7 +604,8 @@
                     population: worldData.population,
                     maxPop: worldData.maxPop,
                     trees: worldData.trees,
-                    bushes: worldData.bushes
+                    bushes: worldData.bushes,
+                    zones: worldData.zones || {}
                 }, { merge: true });
             } catch (e) {
                 console.error("Fel vid sparande av gemensam värld:", e);
@@ -772,7 +774,7 @@
                 cloudState.castsRemaining = 5;
                 cloudState.dayOfSeason = 1;
                 cloudState.lastPlayedDate = todayStr;
-                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
+                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
                 showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`, "GM Admin");
                 if (targetPlayer === lockedAnglerName) {
                     gameWorld.castsRemaining = 5;
@@ -792,7 +794,7 @@
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
                 cloudState.points = (cloudState.points || 0) + amount;
-                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
+                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
                 showCustomAlert(`Gav ${amount} poäng till ${targetPlayer}. Ny summa: ${cloudState.points} p.`, "GM Admin");
                 if (targetPlayer === lockedAnglerName) {
                     gameWorld.points = cloudState.points;
@@ -808,6 +810,13 @@
             zState.gravels = [];
             zState.boulders = [];
             zState.nurseries = [];
+            
+            let sharedWorldData = await window.loadSharedWorld();
+            if (sharedWorldData && sharedWorldData.zones) {
+                sharedWorldData.zones[currentZoneKey] = { gravels: [], boulders: [], nurseries: [] };
+                await window.saveSharedWorld(sharedWorldData);
+            }
+
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "GM Rensa Biotop", saveanZones[currentZoneKey].name);
             updateUI();
             showCustomAlert(`All biotopvård på ${saveanZones[currentZoneKey].name} har rensats!`, "GM Admin");
@@ -839,7 +848,20 @@
             if (window.loadSharedWorld) {
                 let sharedWorldData = await window.loadSharedWorld();
                 if (sharedWorldData) {
-                    gameWorld.shared = sharedWorldData;
+                    gameWorld.shared.population = sharedWorldData.population !== undefined ? sharedWorldData.population : gameWorld.shared.population;
+                    gameWorld.shared.maxPop = sharedWorldData.maxPop !== undefined ? sharedWorldData.maxPop : gameWorld.shared.maxPop;
+                    gameWorld.shared.trees = sharedWorldData.trees !== undefined ? sharedWorldData.trees : gameWorld.shared.trees;
+                    gameWorld.shared.bushes = sharedWorldData.bushes !== undefined ? sharedWorldData.bushes : gameWorld.shared.bushes;
+                    
+                    if (sharedWorldData.zones) {
+                        for (let zKey in sharedWorldData.zones) {
+                            if (gameWorld.zones[zKey]) {
+                                gameWorld.zones[zKey].gravels = sharedWorldData.zones[zKey].gravels || [];
+                                gameWorld.zones[zKey].boulders = sharedWorldData.zones[zKey].boulders || [];
+                                gameWorld.zones[zKey].nurseries = sharedWorldData.zones[zKey].nurseries || [];
+                            }
+                        }
+                    }
                 }
             }
 
@@ -858,12 +880,15 @@
                     if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
                     
                     gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 8);
-                    if (window.saveSharedWorld) await window.saveSharedWorld(gameWorld.shared);
+                    
+                    let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                    sharedWorldData.population = gameWorld.shared.population;
+                    if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
                     await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                 }
             } else {
-                await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
+                await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
             }
             await selectZone('dickson', 'Dickson');
         }
@@ -923,7 +948,6 @@
                 if(data && data.current) {
                     weatherData.temp = data.current.temperature_2m;
                     weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
-                    let s = gameWorld.shared;
                     let biotopeFlowBonus = ((zState.gravels || []).length * 0.8) + ((zState.boulders || []).length * 1.2);
                     let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5) + biotopeFlowBonus;
                     weatherData.flow = Math.max(4, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
@@ -932,7 +956,6 @@
             } catch(e) {
                 weatherData.temp = z.baseTemp;
                 weatherData.waterTemp = 10.0;
-                let s = gameWorld.shared;
                 let biotopeFlowBonus = ((zState.gravels || []).length * 0.8) + ((zState.boulders || []).length * 1.2);
                 weatherData.flow = (16 + Math.sin(gameWorld.dayOfSeason)*6 + biotopeFlowBonus).toFixed(1);
                 weatherData.condition = "Normalt";
@@ -953,8 +976,10 @@
             
             if (window.loadSharedWorld) {
                 let sharedWorldData = await window.loadSharedWorld();
-                if (sharedWorldData) {
-                    gameWorld.shared = sharedWorldData;
+                if (sharedWorldData && sharedWorldData.zones && sharedWorldData.zones[key]) {
+                    gameWorld.zones[key].gravels = sharedWorldData.zones[key].gravels || [];
+                    gameWorld.zones[key].boulders = sharedWorldData.zones[key].boulders || [];
+                    gameWorld.zones[key].nurseries = sharedWorldData.zones[key].nurseries || [];
                 }
             }
 
@@ -1034,7 +1059,11 @@
                 s.population = Math.min(s.maxPop, s.population + breedBoost + 3);
                 gameWorld.points += 100;
                 
-                if (window.saveSharedWorld) await window.saveSharedWorld(s);
+                let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                sharedWorldData.population = s.population;
+                sharedWorldData.maxPop = s.maxPop;
+                if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
                 fetchWeather(currentZoneKey);
                 document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
             } else {
@@ -1081,6 +1110,17 @@
             banner.classList.remove('hidden');
         }
 
+        async function saveCurrentZoneBiotopeToCloud() {
+            let sharedWorldData = await window.loadSharedWorld() || { population: gameWorld.shared.population, maxPop: gameWorld.shared.maxPop, trees: gameWorld.shared.trees, bushes: gameWorld.shared.bushes, zones: {} };
+            sharedWorldData.zones = sharedWorldData.zones || {};
+            sharedWorldData.zones[currentZoneKey] = {
+                gravels: gameWorld.zones[currentZoneKey].gravels || [],
+                boulders: gameWorld.zones[currentZoneKey].boulders || [],
+                nurseries: gameWorld.zones[currentZoneKey].nurseries || []
+            };
+            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+        }
+
         async function removeMyLatestBiotope() {
             const zState = gameWorld.zones[currentZoneKey];
             let allMyItems = [];
@@ -1118,7 +1158,7 @@
 
             gameWorld.points += 150;
             
-            if (window.saveSharedWorld) await window.saveSharedWorld(gameWorld.shared);
+            await saveCurrentZoneBiotopeToCloud();
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort ${removedName}`, saveanZones[currentZoneKey].name);
             updateUI();
             closeBiotopModal();
@@ -1132,7 +1172,11 @@
             s.trees += 1;
             s.maxPop += 12;
             
-            if (window.saveSharedWorld) await window.saveSharedWorld(s);
+            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+            sharedWorldData.trees = s.trees;
+            sharedWorldData.maxPop = s.maxPop;
+            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Kantträd", saveanZones[currentZoneKey].name);
             updateUI();
             showCustomAlert("Nytt kantträd planterat längs ån!", "Biotopvård");
@@ -1145,7 +1189,11 @@
             s.bushes += 1;
             s.maxPop += 8;
             
-            if (window.saveSharedWorld) await window.saveSharedWorld(s);
+            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+            sharedWorldData.bushes = s.bushes;
+            sharedWorldData.maxPop = s.maxPop;
+            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Buske", saveanZones[currentZoneKey].name);
             updateUI();
             showCustomAlert("Ny buske planterad!", "Biotopvård");
@@ -1159,7 +1207,12 @@
             
             gameWorld.shared.maxPop += 150;
             gameWorld.shared.population += 30;
-            if (window.saveSharedWorld) await window.saveSharedWorld(gameWorld.shared);
+            
+            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+            sharedWorldData.maxPop = gameWorld.shared.maxPop;
+            sharedWorldData.population = gameWorld.shared.population;
+            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Rev Vandringshinder", saveanZones[currentZoneKey].name);
             updateUI();
             showCustomAlert("Vandringshinder åtgärdat i hela ån!", "Stora insatsen");
@@ -1477,7 +1530,7 @@
                     if(placementMode === 'boulder') { zState.boulders = zState.boulders || []; zState.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); gameWorld.shared.maxPop += 15; actionText = "Lade Ståndsten"; }
                     if(placementMode === 'nursery') { zState.nurseries = zState.nurseries || []; zState.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Skapade Uppväxtplats"; }
                     
-                    if (window.saveSharedWorld) await window.saveSharedWorld(gameWorld.shared);
+                    await saveCurrentZoneBiotopeToCloud();
                     if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, actionText, saveanZones[currentZoneKey].name);
                     fetchWeather(currentZoneKey);
                 }
