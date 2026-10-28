@@ -20,7 +20,6 @@
             animation: fishSwimRush 1.8s infinite ease-in-out;
         }
 
-        /* Återställd rymligare höjd i liggande läge */
         @media (orientation: landscape) and (max-width: 1024px) {
             #gameContainer {
                 height: 120vh !important;
@@ -57,7 +56,7 @@
                 <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
                     <strong>Så här ökar du beståndet:</strong>
                     <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
-                        <li>Bygg <strong>lekgrus</strong> (gynnar reproduktion)</li>
+                        <li>Bygg <strong>lekgrus</strong> på sträckan (gynnar reproduktion)</li>
                         <li>Placera ut <strong>ståndstenar</strong> (ger skydd)</li>
                         <li>Skapa <strong>uppväxtområden</strong> (skyddar smolt)</li>
                         <li>Åtgärda <strong>vandringshinder</strong></li>
@@ -123,9 +122,9 @@
             <div class="bg-stone-900 p-2.5 rounded-2xl border border-stone-800 flex flex-col gap-1.5">
                 <div class="flex justify-between items-center text-xs">
                     <span class="font-bold text-emerald-400 flex items-center gap-1">
-                        <span>🗺️</span> Välj Gemensam Fiskeplats:
+                        <span>🗺️</span> Välj Fiskeplats (Sträcka):
                     </span>
-                    <span class="text-[9px] text-stone-400">Samma å, gemensamt bestånd</span>
+                    <span class="text-[9px] text-stone-400">Samma å, individuella sträckor</span>
                 </div>
                 <div id="riverMap" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-1.5 text-xs">
                     <button onclick="selectZone('dickson', 'Dickson')" id="zone-dickson" class="p-2 rounded-xl bg-emerald-950 border border-emerald-600 text-left transition">
@@ -226,7 +225,7 @@
             <!-- Ekosystemstatus -->
             <div class="bg-stone-900 p-3 rounded-2xl border border-stone-800">
                 <h3 class="text-xs font-bold text-stone-200 mb-2 flex items-center gap-1.5">
-                    <span>📊</span> Biotopstatus (Gemensam sträcka)
+                    <span>📊</span> Biotopstatus för aktuell sträcka
                 </h3>
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-[10px]">
                     <div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
@@ -285,7 +284,7 @@
         <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
-                    <span>🌱</span> Gemensam Biotopvård
+                    <span>🌱</span> Biotopvård på sträckan
                 </h3>
                 <button onclick="closeBiotopModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
             </div>
@@ -294,7 +293,7 @@
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Placera Lekgrus</h4>
-                        <p class="text-[9px] text-stone-400">Syns för alla i open world</p>
+                        <p class="text-[9px] text-stone-400">Syns på denna sträcka</p>
                     </div>
                     <button onclick="startPlacement('gravel', 300)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">300 p</button>
                 </div>
@@ -302,7 +301,7 @@
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Placera Ståndsten</h4>
-                        <p class="text-[9px] text-stone-400">Skapar ståndplats för alla</p>
+                        <p class="text-[9px] text-stone-400">Skapar ståndplats</p>
                     </div>
                     <button onclick="startPlacement('boulder', 400)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">400 p</button>
                 </div>
@@ -310,7 +309,7 @@
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-stone-200 text-xs">Skapa Uppväxtplats</h4>
-                        <p class="text-[9px] text-stone-400">Skyddar smolt gemensamt</p>
+                        <p class="text-[9px] text-stone-400">Skyddar smolt</p>
                     </div>
                     <button onclick="startPlacement('nursery', 250)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">250 p</button>
                 </div>
@@ -334,7 +333,7 @@
                 <div class="bg-stone-950 p-3 rounded-xl border border-rose-900/40 flex justify-between items-center">
                     <div>
                         <h4 class="font-bold text-rose-400 text-xs">Ta bort senaste egen åtgärd</h4>
-                        <p class="text-[9px] text-stone-400">Endast din egen senaste</p>
+                        <p class="text-[9px] text-stone-400">Endast din egen senaste här</p>
                     </div>
                     <button onclick="removeMyLatestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-[11px]">Ångra min</button>
                 </div>
@@ -560,9 +559,6 @@
                     const defaultWorld = {
                         population: 210,
                         maxPop: 380,
-                        gravels: [],
-                        boulders: [],
-                        nurseries: [],
                         trees: 2,
                         bushes: 2
                     };
@@ -579,9 +575,6 @@
             try {
                 const docRef = doc(db, "world_zones", "shared_savean");
                 await setDoc(docRef, {
-                    gravels: worldData.gravels || [],
-                    boulders: worldData.boulders || [],
-                    nurseries: worldData.nurseries || [],
                     population: worldData.population,
                     maxPop: worldData.maxPop,
                     trees: worldData.trees,
@@ -645,20 +638,17 @@
             dayOfSeason: 1,
             castsRemaining: 5,
             zones: {
-                dickson: { playerPos: { x: null, y: null }, log: [] },
-                mannered: { playerPos: { x: null, y: null }, log: [] },
-                edbergsrakan: { playerPos: { x: null, y: null }, log: [] },
-                kahogsforsen: { playerPos: { x: null, y: null }, log: [] },
-                brittamaja: { playerPos: { x: null, y: null }, log: [] },
-                lortholjan: { playerPos: { x: null, y: null }, log: [] },
-                finngosagrundet: { playerPos: { x: null, y: null }, log: [] }
+                dickson: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
+                mannered: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
+                edbergsrakan: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
+                kahogsforsen: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
+                brittamaja: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
+                lortholjan: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
+                finngosagrundet: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] }
             },
             shared: {
                 population: 210,
                 maxPop: 380,
-                gravels: [],
-                boulders: [],
-                nurseries: [],
                 trees: 2,
                 bushes: 2
             }
@@ -675,7 +665,7 @@
             dickson: { name: "Säveån – Dickson", lat: 57.742, lon: 12.195, baseTemp: 11 },
             mannered: { name: "Säveån – Mannered", lat: 57.738, lon: 12.180, baseTemp: 11 },
             edbergsrakan: { name: "Säveån – Edbergsrakan", lat: 57.739, lon: 12.184, baseTemp: 11 },
-            kahogsforsen: { name: "Säveån – Kåhögsforsen", lat: 57.740, lon: 12.188, baseTemp: 11 },
+            kahogsforsen: { name: "Såveån – Kåhögsforsen", lat: 57.740, lon: 12.188, baseTemp: 11 },
             brittamaja: { name: "Säveån – Britta-Maja", lat: 57.736, lon: 12.175, baseTemp: 11 },
             lortholjan: { name: "Säveån – Lorthöljan", lat: 57.734, lon: 12.165, baseTemp: 11 },
             finngosagrundet: { name: "Säveån – Finngösagrundet", lat: 57.730, lon: 12.155, baseTemp: 11 }
@@ -858,6 +848,7 @@
 
         async function fetchWeather(key) {
             const z = saveanZones[key];
+            const zState = gameWorld.zones[key];
             try {
                 const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${z.lat}&longitude=${z.lon}&current=temperature_2m,precipitation,wind_speed_10m`);
                 const data = await res.json();
@@ -865,7 +856,7 @@
                     weatherData.temp = data.current.temperature_2m;
                     weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
                     let s = gameWorld.shared;
-                    let biotopeFlowBonus = (s.gravels.length * 0.8) + (s.boulders.length * 1.2);
+                    let biotopeFlowBonus = ((zState.gravels || []).length * 0.8) + ((zState.boulders || []).length * 1.2);
                     let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5) + biotopeFlowBonus;
                     weatherData.flow = Math.max(4, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
                     weatherData.condition = data.current.precipitation > 0 ? "Regn / Dis" : "Klart / Växlande";
@@ -874,7 +865,7 @@
                 weatherData.temp = z.baseTemp;
                 weatherData.waterTemp = 10.0;
                 let s = gameWorld.shared;
-                let biotopeFlowBonus = (s.gravels.length * 0.8) + (s.boulders.length * 1.2);
+                let biotopeFlowBonus = ((zState.gravels || []).length * 0.8) + ((zState.boulders || []).length * 1.2);
                 weatherData.flow = (16 + Math.sin(gameWorld.dayOfSeason)*6 + biotopeFlowBonus).toFixed(1);
                 weatherData.condition = "Normalt";
             }
@@ -917,12 +908,13 @@
             fetchWeather(key);
             initRises();
             initDriftLog();
-            document.getElementById('castStatus').innerText = `Flyttade till ${name} (Gemensam Open World).`;
+            document.getElementById('castStatus').innerText = `Flyttade till ${name} (Säveån).`;
             updateUI();
         }
 
         function updateUI() {
             const s = gameWorld.shared;
+            const zState = gameWorld.zones[currentZoneKey];
 
             document.getElementById('wCondition').innerText = weatherData.condition;
             document.getElementById('wTemp').innerText = weatherData.temp;
@@ -935,9 +927,9 @@
             document.getElementById('dayCounter').innerText = `Dag ${gameWorld.dayOfSeason}/7`;
             document.getElementById('currentFlyName').innerText = activeFly.name;
 
-            document.getElementById('statGravel').innerText = (s.gravels || []).length + " st";
-            document.getElementById('statBoulders').innerText = (s.boulders || []).length + " st";
-            document.getElementById('statNursery').innerText = (s.nurseries || []).length + " st";
+            document.getElementById('statGravel').innerText = (zState.gravels || []).length + " st";
+            document.getElementById('statBoulders').innerText = (zState.boulders || []).length + " st";
+            document.getElementById('statNursery').innerText = (zState.nurseries || []).length + " st";
             document.getElementById('statTrees').innerText = `${s.trees} träd, ${s.bushes} buskar`;
             document.getElementById('statLadders').innerText = gameWorld.laddersFixed ? "ÅTGÄRDAT" : "Ej åtgärdat";
 
@@ -964,7 +956,13 @@
                 gameWorld.dayOfSeason++;
                 gameWorld.castsRemaining = 5;
                 const s = gameWorld.shared;
-                let breedBoost = ((s.gravels||[]).length * 5) + ((s.boulders||[]).length * 3) + ((s.nurseries||[]).length * 6) + (gameWorld.laddersFixed ? 15 : 0);
+                let totalGravels = 0, totalBoulders = 0, totalNurseries = 0;
+                Object.values(gameWorld.zones).forEach(z => {
+                    totalGravels += (z.gravels || []).length;
+                    totalBoulders += (z.boulders || []).length;
+                    totalNurseries += (z.nurseries || []).length;
+                });
+                let breedBoost = (totalGravels * 5) + (totalBoulders * 3) + (totalNurseries * 6) + (gameWorld.laddersFixed ? 15 : 0);
                 s.population = Math.min(s.maxPop, s.population + breedBoost + 3);
                 gameWorld.points += 100;
                 
@@ -1004,7 +1002,7 @@
             placementCost = cost;
             closeBiotopModal();
             const banner = document.getElementById('modeBanner');
-            banner.innerText = `Placeringsläge: Klicka på spelytan för att bygga gemensamt!`;
+            banner.innerText = `Placeringsläge: Klicka på spelytan för att placera på denna sträcka!`;
             banner.classList.remove('hidden');
         }
 
@@ -1016,21 +1014,21 @@
         }
 
         async function removeMyLatestBiotope() {
-            const s = gameWorld.shared;
+            const zState = gameWorld.zones[currentZoneKey];
             let allMyItems = [];
 
-            (s.gravels || []).forEach((item, index) => {
+            (zState.gravels || []).forEach((item, index) => {
                 if (item.author === lockedAnglerName) allMyItems.push({ type: 'gravel', index, timestamp: item.timestamp || 0 });
             });
-            (s.boulders || []).forEach((item, index) => {
+            (zState.boulders || []).forEach((item, index) => {
                 if (item.author === lockedAnglerName) allMyItems.push({ type: 'boulder', index, timestamp: item.timestamp || 0 });
             });
-            (s.nurseries || []).forEach((item, index) => {
+            (zState.nurseries || []).forEach((item, index) => {
                 if (item.author === lockedAnglerName) allMyItems.push({ type: 'nursery', index, timestamp: item.timestamp || 0 });
             });
 
             if (allMyItems.length === 0) {
-                alert("Du har inga egna placerade biotoper på denna sträcka att ta bort!");
+                alert("Du har inga egna placerade biotoper på den här sträckan att ta bort!");
                 return;
             }
 
@@ -1039,21 +1037,21 @@
             let removedName = "";
 
             if (latest.type === 'gravel') {
-                s.gravels.splice(latest.index, 1);
+                zState.gravels.splice(latest.index, 1);
                 removedName = "Lekgrus";
             } else if (latest.type === 'boulder') {
-                s.boulders.splice(latest.index, 1);
-                s.maxPop -= 15;
+                zState.boulders.splice(latest.index, 1);
+                gameWorld.shared.maxPop -= 15;
                 removedName = "Ståndsten";
             } else if (latest.type === 'nursery') {
-                s.nurseries.splice(latest.index, 1);
+                zState.nurseries.splice(latest.index, 1);
                 removedName = "Uppväxtplats";
             }
 
             gameWorld.points += 150;
             
-            if (window.saveSharedWorld) await window.saveSharedWorld(s);
-            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort din ${removedName} (Open World)`, saveanZones[currentZoneKey].name);
+            if (window.saveSharedWorld) await window.saveSharedWorld(gameWorld.shared);
+            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort ${removedName}`, saveanZones[currentZoneKey].name);
             updateUI();
             closeBiotopModal();
             alert(`Tog bort din senaste ${removedName}! 150 p återbetalade.`);
@@ -1069,7 +1067,7 @@
             if (window.saveSharedWorld) await window.saveSharedWorld(s);
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Kantträd", saveanZones[currentZoneKey].name);
             updateUI();
-            alert("Nytt kantträd planterat i den gemensamma ån!");
+            alert("Nytt kantträd planterat längs ån!");
         }
 
         async function doBushPlanting(cost) {
@@ -1204,16 +1202,16 @@
                 ctx.fill();
             }
 
-            // Lekgrus
+            // Lekgrus på aktuell sträcka
             ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
-            (s.gravels || []).forEach(g => {
+            (zState.gravels || []).forEach(g => {
                 ctx.beginPath();
                 ctx.arc(g.x, g.y, 22, 0, Math.PI*2);
                 ctx.fill();
             });
 
-            // Ståndstenar
-            (s.boulders || []).forEach(b => {
+            // Ståndstenar på aktuell sträcka
+            (zState.boulders || []).forEach(b => {
                 ctx.fillStyle = '#1e293b';
                 ctx.beginPath();
                 ctx.ellipse(b.x, b.y, 25, 13, 0.1, 0, Math.PI*2);
@@ -1223,8 +1221,8 @@
                 ctx.stroke();
             });
 
-            // Uppväxtplatser
-            (s.nurseries || []).forEach(n => {
+            // Uppväxtplatser på aktuell sträcka
+            (zState.nurseries || []).forEach(n => {
                 ctx.fillStyle = 'rgba(21, 128, 61, 0.5)';
                 ctx.beginPath();
                 ctx.ellipse(n.x, n.y, 36, 18, 0.1, 0, Math.PI * 2);
@@ -1407,12 +1405,11 @@
                     gameWorld.points -= placementCost;
                     let actionText = "";
                     let timeNow = Date.now();
-                    let s = gameWorld.shared;
-                    if(placementMode === 'gravel') { s.gravels = s.gravels || []; s.gravels.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Lade Lekgrus"; }
-                    if(placementMode === 'boulder') { s.boulders = s.boulders || []; s.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); s.maxPop += 15; actionText = "Lade Ståndsten"; }
-                    if(placementMode === 'nursery') { s.nurseries = s.nurseries || []; s.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Skapade Uppväxtplats"; }
+                    if(placementMode === 'gravel') { zState.gravels = zState.gravels || []; zState.gravels.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Lade Lekgrus"; }
+                    if(placementMode === 'boulder') { zState.boulders = zState.boulders || []; zState.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); gameWorld.shared.maxPop += 15; actionText = "Lade Ståndsten"; }
+                    if(placementMode === 'nursery') { zState.nurseries = zState.nurseries || []; zState.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Skapade Uppväxtplats"; }
                     
-                    if (window.saveSharedWorld) await window.saveSharedWorld(s);
+                    if (window.saveSharedWorld) await window.saveSharedWorld(gameWorld.shared);
                     if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, actionText, saveanZones[currentZoneKey].name);
                     fetchWeather(currentZoneKey);
                 }
@@ -1446,11 +1443,11 @@
         });
 
         function triggerBite(isRiseBonus) {
-            let s = gameWorld.shared;
-            let gravelBonus = (s.gravels||[]).length;
-            let boulderBonus = (s.boulders||[]).length;
+            const zState = gameWorld.zones[currentZoneKey];
+            let gravelBonus = (zState.gravels || []).length;
+            let boulderBonus = (zState.boulders || []).length;
 
-            let overNursery = (s.nurseries || []).some(n => castLine && Math.hypot(castLine.x - n.x, castLine.y - n.y) < 40);
+            let overNursery = (zState.nurseries || []).some(n => castLine && Math.hypot(castLine.x - n.x, castLine.y - n.y) < 40);
 
             if (overNursery && Math.random() < 0.6) {
                 gameWorld.castsRemaining++;
