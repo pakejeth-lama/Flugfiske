@@ -146,9 +146,10 @@
                 </div>
 
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
-                    <span class="font-bold text-amber-400">Dela ut / Justera naturvårdspoäng:</span>
+                    <span class="font-bold text-amber-400">Dela ut / Justera naturvårdspoäng (tillåter minus):</span>
                     <input type="text" id="adminPointsPlayer" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
-                    <input type="number" id="adminPointsAmount" placeholder="Antal poäng (t.ex. 300 eller -100)..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
+                    <!-- Ändrat från type="number" till type="text" för att tillåta minus (-) tecken -->
+                    <input type="text" id="adminPointsAmount" placeholder="Antal poäng (t.ex. 300 eller -100)..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
                     <button onclick="adminGrantPoints()" class="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold py-2 rounded-xl">Uppdatera poäng</button>
                 </div>
 
@@ -188,7 +189,8 @@
                 <span id="conservationPoints" class="font-bold text-emerald-400 text-sm">700 p</span>
             </div>
             
-            <button onclick="nextDay()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold transition shadow flex items-center gap-1">
+            <!-- Knappen har nu en spärr-klass/attribut -->
+            <button id="nextDayBtn" onclick="nextDay()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold transition shadow flex items-center gap-1">
                 <span>🔄</span> <span id="dayCounter">Dag 1/7</span>
             </button>
         </div>
@@ -523,7 +525,7 @@
     <!-- Firebase SDK Modules -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, getDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCu_wYB1IljSf3PB1aAqC4hPlmTREslSA0",
@@ -655,7 +657,7 @@
             }
         };
 
-        // Säker molnlagring för spelarstatus (förhindrar fusk med poäng och kast)
+        // Atomär och säker molnuppdatering för att förhindra fusk och race conditions
         window.savePlayerStateToFirebase = async function(anglerName, stateData) {
             try {
                 await setDoc(doc(db, "players", anglerName), {
@@ -666,6 +668,19 @@
                 window.fetchGuestbook();
             } catch (e) {
                 console.error("Fel vid molnsynk:", e);
+            }
+        };
+
+        // Atomär ökning/minskning av poäng direkt på molnservern för att stoppa spam-fusk
+        window.updatePlayerPointsAtomic = async function(anglerName, deltaPoints) {
+            try {
+                const playerRef = doc(db, "players", anglerName);
+                await updateDoc(playerRef, {
+                    points: increment(deltaPoints),
+                    lastActive: new Date().toISOString()
+                });
+            } catch (e) {
+                console.error("Fel vid atomär poänguppdatering:", e);
             }
         };
 
@@ -792,7 +807,7 @@
                 });
                 logContainer.innerHTML = html;
 
-                    const docSnap = await getDoc(doc(db, "global", "stats"));
+                const docSnap = await getDoc(doc(db, "global", "stats"));
                 let count = docSnap.exists() ? (docSnap.data().totalRestored || 0) : 0;
                 document.getElementById('globalBiotopeDisplay').innerText = `${count} totalt`;
             } catch(e) {
@@ -840,6 +855,7 @@
         let placementMode = null; 
         let placementCost = 0;
         let wildlifeDisturbance = false;
+        let isActionLocked = false; // UI-lås mot spam-klick (fördröjningsspärr)
 
         const saveanZones = {
             dickson: { name: "Säveån – Dickson", lat: 57.742, lon: 12.195, baseTemp: 11 },
@@ -963,24 +979,26 @@
 
         async function adminGrantPoints() {
             let targetPlayer = document.getElementById('adminPointsPlayer').value.trim();
-            let amount = parseInt(document.getElementById('adminPointsAmount').value);
+            let amountStr = document.getElementById('adminPointsAmount').value.trim();
+            let amount = parseInt(amountStr);
             if(!targetPlayer || isNaN(amount)) return showCustomAlert("Ange giltigt spelarnamn och poängantal!", "Fel");
 
             if (targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
                 gameWorld.points = Math.max(0, gameWorld.points + amount);
                 updateUI();
-                if (window.savePlayerStateToFirebase) {
-                    await window.savePlayerStateToFirebase(lockedAnglerName, { points: gameWorld.points });
+                if (window.updatePlayerPointsAtomic) {
+                    await window.updatePlayerPointsAtomic(lockedAnglerName, amount);
                 }
-                showCustomAlert(`Gav ${amount} poäng till dig (${lockedAnglerName}). Ny summa: ${gameWorld.points} p.`, "GM Admin");
+                showCustomAlert(`Uppdaterade poäng med ${amount} för dig (${lockedAnglerName}). Ny summa: ${gameWorld.points} p.`, "GM Admin");
                 return;
             }
 
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
-                cloudState.points = Math.max(0, (cloudState.points || 0) + amount);
-                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
-                showCustomAlert(`Gav ${amount} poäng till ${targetPlayer}. Ny summa: ${cloudState.points} p.`, "GM Admin");
+                if (window.updatePlayerPointsAtomic) {
+                    await window.updatePlayerPointsAtomic(targetPlayer, amount);
+                }
+                showCustomAlert(`Uppdaterade poäng med ${amount} för ${targetPlayer}.`, "GM Admin");
             } else {
                 showCustomAlert("Hittade inte spelaren i molnet.", "Fel");
             }
@@ -1064,7 +1082,6 @@
             if (cloudState) {
                 if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
                 
-                // Strikt molnvalidering av datum, kast och poäng för att stoppa fusk
                 if (cloudState.lastPlayedDate === todayStr) {
                     gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
                     gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
@@ -1230,7 +1247,6 @@
 
             renderLog();
             
-            // Direkt molnsynk för att förhindra fusk vid refresh
             if (lockedAnglerName && window.savePlayerStateToFirebase) {
                 window.savePlayerStateToFirebase(lockedAnglerName, {
                     points: gameWorld.points,
@@ -1242,37 +1258,50 @@
             }
         }
 
+        // Med klick-spärr (isActionLocked) för att stoppa spam-klick
         async function nextDay() {
+            if (isActionLocked) return;
             if(gameWorld.castsRemaining > 0) {
                 showCustomAlert(`Du har fortfarande ${gameWorld.castsRemaining} kast kvar på Dag ${gameWorld.dayOfSeason}!`, "Kast kvar");
                 return;
             }
 
-            if(gameWorld.dayOfSeason < 7) {
-                gameWorld.dayOfSeason++;
-                gameWorld.castsRemaining = 5;
-                const s = gameWorld.shared;
-                let totalGravels = 0, totalBoulders = 0, totalNurseries = 0;
-                Object.values(gameWorld.zones).forEach(z => {
-                    totalGravels += (z.gravels || []).length;
-                    totalBoulders += (z.boulders || []).length;
-                    totalNurseries += (z.nurseries || []).length;
-                });
-                let breedBoost = (totalGravels * 5) + (totalBoulders * 3) + (totalNurseries * 6) + (gameWorld.laddersFixed ? 15 : 0);
-                s.population = Math.min(s.maxPop, s.population + breedBoost + 3);
-                gameWorld.points += 100;
-                
-                let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-                sharedWorldData.population = s.population;
-                sharedWorldData.maxPop = s.maxPop;
-                if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+            isActionLocked = true;
+            const btn = document.getElementById('nextDayBtn');
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
 
-                fetchWeather(currentZoneKey);
-                document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
-            } else {
-                showCustomAlert("Alla 7 dagar (35 kast) avklarade för idag! Kom tillbaka imorgon.", "Veckan slut");
+            try {
+                if(gameWorld.dayOfSeason < 7) {
+                    gameWorld.dayOfSeason++;
+                    gameWorld.castsRemaining = 5;
+                    const s = gameWorld.shared;
+                    let totalGravels = 0, totalBoulders = 0, totalNurseries = 0;
+                    Object.values(gameWorld.zones).forEach(z => {
+                        totalGravels += (z.gravels || []).length;
+                        totalBoulders += (z.boulders || []).length;
+                        totalNurseries += (z.nurseries || []).length;
+                    });
+                    let breedBoost = (totalGravels * 5) + (totalBoulders * 3) + (totalNurseries * 6) + (gameWorld.laddersFixed ? 15 : 0);
+                    s.population = Math.min(s.maxPop, s.population + breedBoost + 3);
+                    gameWorld.points += 100;
+                    
+                    let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                    sharedWorldData.population = s.population;
+                    sharedWorldData.maxPop = s.maxPop;
+                    if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
+                    fetchWeather(currentZoneKey);
+                    document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
+                } else {
+                    showCustomAlert("Alla 7 dagar (35 kast) avklarade för idag! Kom tillbaka imorgon.", "Veckan slut");
+                }
+                updateUI();
+            } finally {
+                setTimeout(() => {
+                    isActionLocked = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }, 800); // Låser upp knappen efter 0.8 sekunder
             }
-            updateUI();
         }
 
         function openBiotopModal() {
@@ -1771,7 +1800,6 @@
                 if(placementMode === 'rod') {
                     zState.playerPos = { x: clickX, y: clickY };
                 } else {
-                    // Validera och dra poäng direkt mot molnet
                     gameWorld.points -= placementCost;
                     let actionText = "";
                     let timeNow = Date.now();
@@ -1801,7 +1829,7 @@
             
             castLine = { x: clickX, y: clickY };
             gameWorld.castsRemaining--;
-            updateUI(); // Synkar ner återstående kast direkt till Firebase
+            updateUI();
 
             let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < 35);
             if (hitRise && !wildlifeDisturbance && Math.random() < 0.45) {
@@ -1822,7 +1850,7 @@
 
             if (overNursery && Math.random() < 0.6) {
                 gameWorld.castsRemaining++;
-                updateUI(); // Återställer kastet direkt i molnet
+                updateUI();
                 
                 if ("vibrate" in navigator) navigator.vibrate([120, 60, 120]);
                 let smoltHappened = Math.random() < 0.5;
@@ -2083,7 +2111,7 @@
             zStateLog.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - C&R (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
-            updateUI(); // Sparar poäng och kast direkt
+            updateUI();
             showCustomAlert(alertMsg, "C&R Resultat");
         }
 
@@ -2113,7 +2141,7 @@
             zStateLog.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - Hemtagen (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
-            updateUI(); // Sparar poäng och kast direkt
+            updateUI();
             showCustomAlert(alertMsg, "Fångstrapport");
         }
 
