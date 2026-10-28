@@ -22,8 +22,8 @@
 
         @media (orientation: landscape) and (max-width: 1024px) {
             #gameContainer {
-                height: 120vh !important;
-                max-height: 800px;
+                height: calc(120vh - 32px) !important;
+                max-height: 720px;
             }
         }
     </style>
@@ -336,21 +336,31 @@
             </div>
 
             <!-- Fångstdagbok -->
-            <div class="bg-stone-900 p-3.5 rounded-2xl border border-stone-800 flex-1 flex flex-col">
+            <div class="bg-stone-900 p-3.5 rounded-2xl border border-stone-800 flex flex-col">
                 <h3 class="text-xs font-bold text-stone-200 mb-2 flex items-center gap-1.5">
                     <span>📖</span> Fångstdagbok
                 </h3>
-                <div id="catchLog" class="flex-1 bg-stone-950 rounded-xl p-2.5 border border-stone-800 overflow-y-auto max-h-48 text-[11px] space-y-1.5">
+                <div id="catchLog" class="bg-stone-950 rounded-xl p-2.5 border border-stone-800 overflow-y-auto max-h-40 text-[11px] space-y-1.5">
                     <p class="text-stone-500 italic">Inga fångster än. Gör ett kast!</p>
+                </div>
+            </div>
+
+            <!-- Gästbok ("Vilka har besökt Säveån") -->
+            <div class="bg-stone-900 p-3.5 rounded-2xl border border-stone-800 flex-1 flex flex-col">
+                <h3 class="text-xs font-bold text-amber-400 mb-2 flex items-center gap-1.5">
+                    <span>📔</span> Gästbok – Vilka har besökt Säveån
+                </h3>
+                <div id="guestbookList" class="flex-1 bg-stone-950 rounded-xl p-2.5 border border-stone-800 overflow-y-auto max-h-40 text-[11px] space-y-1.5">
+                    <p class="text-stone-500 italic">Laddar besökare...</p>
                 </div>
             </div>
 
         </div>
     </main>
 
-    <!-- Modal: Biotopvård Meny -->
-    <div id="biotopModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5">
+    <!-- Modal: Biotopvård Meny (Stängs vid klick utanför) -->
+    <div id="biotopModal" onclick="checkOutsideBiotopeModal(event)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div id="biotopModalCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
                 <h3 class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                     <span>🌱</span> Biotopvård på sträckan
@@ -633,7 +643,12 @@
 
         window.savePlayerStateToFirebase = async function(anglerName, stateData) {
             try {
-                await setDoc(doc(db, "players", anglerName), stateData, { merge: true });
+                await setDoc(doc(db, "players", anglerName), {
+                    name: anglerName,
+                    lastActive: new Date().toISOString(),
+                    ...stateData
+                }, { merge: true });
+                window.fetchGuestbook();
             } catch (e) {
                 console.error("Fel vid molnsynk:", e);
             }
@@ -647,6 +662,36 @@
                 console.error("Fel vid hämtning:", e);
             }
             return null;
+        };
+
+        window.fetchGuestbook = async function() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "players"));
+                const guestbookEl = document.getElementById('guestbookList');
+                if (querySnapshot.empty) {
+                    guestbookEl.innerHTML = `<p class="text-stone-500 italic">Inga besökare än.</p>`;
+                    return;
+                }
+                let visitors = [];
+                querySnapshot.forEach(doc => {
+                    visitors.push(doc.data());
+                });
+                visitors.sort((a, b) => new Date(b.lastActive || 0) - new Date(a.lastActive || 0));
+
+                let html = "";
+                visitors.forEach(v => {
+                    let dateStr = v.lastActive ? new Date(v.lastActive).toLocaleDateString() : "Okänt datum";
+                    html += `
+                        <div class="border-b border-stone-900 pb-1 flex justify-between items-center text-[11px]">
+                            <span class="font-bold text-amber-300">🎣 ${v.name || 'Anonym'}</span>
+                            <span class="text-stone-500 text-[9px]">${dateStr}</span>
+                        </div>
+                    `;
+                });
+                guestbookEl.innerHTML = html;
+            } catch (e) {
+                console.error("Fel vid hämtning av gästbok:", e);
+            }
         };
 
         window.loadSharedWorld = async function() {
@@ -733,6 +778,7 @@
         };
 
         window.fetchBiotopeLogsFromFirebase();
+        window.fetchGuestbook();
     </script>
 
     <script>
@@ -935,6 +981,7 @@
         }
 
         function openPopulationModal() {
+            document.getElementById('populationModal').classList.0;
             document.getElementById('populationModal').classList.remove('hidden');
             document.getElementById('populationModal').classList.add('flex');
         }
@@ -1200,6 +1247,12 @@
         function closeBiotopModal() {
             document.getElementById('biotopModal').classList.add('hidden');
             document.getElementById('biotopModal').classList.remove('flex');
+        }
+
+        function checkOutsideBiotopeModal(e) {
+            if (e.target.id === 'biotopModal') {
+                closeBiotopModal();
+            }
         }
 
         function openHighscoreModal() {
@@ -1547,7 +1600,7 @@
                 ctx.stroke();
             });
 
-            // Fiskare
+            // Fiskare (Grön prick)
             ctx.fillStyle = '#14532d';
             ctx.beginPath();
             ctx.arc(rodX, rodY, 16, 0, Math.PI*2);
@@ -1717,7 +1770,6 @@
                 return;
             }
 
-            // Stora fiskar är mycket skygga och kräver att man träffar vak eller har god biotop
             let troutSalmonChance = 0.45 + Math.min(0.20, (gravelBonus + boulderBonus) * 0.015);
             if (isRiseBonus) troutSalmonChance += 0.25;
             
@@ -1747,18 +1799,14 @@
                 }
             } else {
                 let baseSize = species === "Lax" ? 75 : (species === "Gädda" ? 70 : (species === "Öring" ? 40 : 30));
-                
-                // Mycket sparsam biotopbonus för att hålla storlekarna svårfångade och realistiska
                 let rawBiotopeBonus = (gravelBonus * 0.4) + (boulderBonus * 0.6) + (gameWorld.laddersFixed ? 6 : 0) + (gameWorld.dayOfSeason * 0.6);
                 let biotopeSizeBonus = Math.min(10, rawBiotopeBonus);
 
-                // Slumpfaktor med låg chans för megastorlek om man inte prickat vak
                 let sizeRoll = Math.random();
                 let trophyChanceAdd = (isRiseBonus && (gravelBonus + boulderBonus >= 3)) ? (sizeRoll < 0.12 ? Math.random() * 22 : Math.random() * 8) : (sizeRoll < 0.04 ? Math.random() * 15 : Math.random() * 6);
 
                 size = Math.floor(baseSize + trophyChanceAdd + biotopeSizeBonus);
 
-                // Hemlig 125cm lax (extremt sällsynt)
                 let isHeavyRod = !gameWorld.equipment.spec.includes("#6") && !gameWorld.equipment.spec.includes("Enhands");
                 let isOptimalConditions = gameWorld.laddersFixed && gravelBonus > 0 && boulderBonus > 0 && nurseryBonus > 0 && gameWorld.dayOfSeason === 7 && parseFloat(weatherData.flow) > 16;
                 
@@ -1768,7 +1816,6 @@
                     size = 122;
                 }
 
-                // Hårt tak för öring på max 89 cm
                 if (species === "Öring" && size > 89) {
                     size = 89;
                 }
@@ -1804,7 +1851,7 @@
             let isLargeTrout = currentFish.species === "Öring" && currentFish.size > 65;
 
             if (isLightRod && (isLargeSalmon || isLargeTrout)) {
-                totalFightDuration = 2.0; // Mycket svårt att landa storfisk på klass #6
+                totalFightDuration = 2.0;
             } else {
                 totalFightDuration = Math.min(15, Math.max(5, (currentFish.size / 115) * 15));
             }
@@ -1824,7 +1871,7 @@
                 let isLargeTrout = currentFish.species === "Öring" && currentFish.size > 65;
 
                 let weightFactor = currentFish.size > 80 ? 7.5 : 4.0;
-                if (isLightRod && (isLargeSalmon || isLargeTrout)) weightFactor = 32.0; // Snabb tafsbrott vid fel utrustning
+                if (isLightRod && (isLargeSalmon || isLargeTrout)) weightFactor = 32.0;
 
                 let pullForce = (Math.random() - 0.38) * weightFactor;
 
@@ -1933,11 +1980,13 @@
             }
 
             if(survived) {
-                let pts = currentFish.size === 125 ? 500 : (currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 50 : 40));
+                // 1/4 av tidigare poängvärden
+                let rawPts = currentFish.size === 125 ? 500 : (currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 50 : 40));
+                let pts = Math.round(rawPts / 4);
 
                 if((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
-                    gameWorld.points = Math.max(0, gameWorld.points - 30);
-                    alertMsg += `Du släppte tillbaka en skadlig smårovfisk som äter smolt! (-30 naturvårdspoäng).`;
+                    gameWorld.points = Math.max(0, gameWorld.points - Math.round(30 / 4));
+                    alertMsg += `Du släppte tillbaka en skadlig smårovfisk som äter smolt! (-7 naturvårdspoäng).`;
                 } else if (currentFish.species === "Öring" && currentFish.size < 45) {
                     gameWorld.castsRemaining++;
                     gameWorld.points += pts;
@@ -1945,7 +1994,7 @@
                 } else {
                     gameWorld.points += pts;
                     if (currentFish.size === 125) {
-                        alertMsg += `👑 LEGENDARISK TROFÉ! Du är automatiskt inskriven i Hall of Fame för all framtid! (+500 p)`;
+                        alertMsg += `👑 LEGENDARISK TROFÉ! Du är automatiskt inskriven i Hall of Fame för all framtid! (+125 p)`;
                     } else {
                         alertMsg += `Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`;
                     }
@@ -1973,8 +2022,8 @@
             let alertMsg = "";
 
             if((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
-                gameWorld.points += 40;
-                alertMsg = "Du tog bort en skadlig smårovfisk! (+40 naturvårdspoäng).";
+                gameWorld.points += Math.round(40 / 4);
+                alertMsg = "Du tog bort en skadlig smårovfisk! (+10 naturvårdspoäng).";
             } else {
                 s.population = Math.max(10, s.population - 1);
                 alertMsg = currentFish.size === 125 ? "Du tog upp trofén! En historisk fångst sparad till Hall of Fame." : "Fisk hemtagen.";
