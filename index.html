@@ -144,6 +144,11 @@
                 </div>
 
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
+                    <span class="font-bold text-rose-400">Nollställ vandringshinder:</span>
+                    <button onclick="adminResetDamProgress()" class="w-full bg-rose-700 hover:bg-rose-600 text-white py-2 rounded-xl font-semibold">Återställ damm till 0 p</button>
+                </div>
+
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
                     <span class="font-bold text-rose-400">Nollställ biotop på aktiv sträcka:</span>
                     <button onclick="adminClearCurrentZoneBiotope()" class="w-full bg-rose-700 hover:bg-rose-600 text-white py-2 rounded-xl font-semibold">Rensa allt lekgrus/stenar här</button>
                 </div>
@@ -414,7 +419,7 @@
         </div>
     </div>
 
-    <!-- Modal: Highscore Topplista (Delad i Lax & Öring, max 10, kompaktare fönster) -->
+    <!-- Modal: Highscore Topplista -->
     <div id="highscoreModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-2xl w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -966,6 +971,17 @@
             }
         }
 
+        async function adminResetDamProgress() {
+            gameWorld.shared.damPoints = 0;
+            gameWorld.laddersFixed = false;
+            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+            sharedWorldData.damPoints = 0;
+            sharedWorldData.laddersFixed = false;
+            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+            updateUI();
+            showCustomAlert("Vandringshindret har nollställts i hela ån (0 / 10000 p).", "GM Admin");
+        }
+
         async function adminClearCurrentZoneBiotope() {
             const zState = gameWorld.zones[currentZoneKey];
             zState.gravels = [];
@@ -1032,6 +1048,8 @@
             let cloudState = await window.loadPlayerStateFromFirebase(lockedAnglerName);
             if (cloudState) {
                 if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
+                
+                // Fuskspärr mot molnets datum
                 if (cloudState.lastPlayedDate === todayStr) {
                     gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
                     gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
@@ -1423,12 +1441,16 @@
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                ctx.fillStyle = '#1c1917';
+                // Sandfärgad landzon på Mannered
+                ctx.fillStyle = '#d4b17e';
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
                 ctx.bezierCurveTo(canvas.width * 0.4, canvas.height * 0.7, canvas.width * 0.6, canvas.height * 0.3, canvas.width, 0);
                 ctx.lineTo(canvas.width, 0);
                 ctx.fill();
+                ctx.strokeStyle = '#b89765';
+                ctx.lineWidth = 2;
+                ctx.stroke();
             } else if (currentZoneKey === 'lortholjan') {
                 let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
                 bgGrad.addColorStop(0, '#011627');
@@ -1513,13 +1535,14 @@
                 ctx.fill();
             });
 
+            // Dimmiga / halvt genomskinliga ståndstenar under vattnet
             (zState.boulders || []).forEach(b => {
-                ctx.fillStyle = '#1e293b';
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.65)';
                 ctx.beginPath();
                 ctx.ellipse(b.x, b.y, 25, 13, 0.1, 0, Math.PI*2);
                 ctx.fill();
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
             });
 
@@ -1540,15 +1563,15 @@
                 ctx.fill();
             });
 
+            let kahogRocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
             if (currentZoneKey === 'kahogsforsen') {
-                let rocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
-                ctx.fillStyle = '#0f172a';
-                rocks.forEach(r => {
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+                kahogRocks.forEach(r => {
                     ctx.beginPath();
                     ctx.ellipse(r.x, r.y, 35, 18, 0, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.strokeStyle = '#e2e8f0';
-                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = 'rgba(226, 232, 240, 0.3)';
+                    ctx.lineWidth = 1.5;
                     ctx.stroke();
                 });
             }
@@ -1644,6 +1667,14 @@
                         }
                     }
 
+                    if (currentZoneKey === 'kahogsforsen' && castLine) {
+                        let hitKahogRock = kahogRocks.some(r => Math.hypot(castLine.x - r.x, castLine.y - r.y) < 32);
+                        if (hitKahogRock) {
+                            castLine = null;
+                            showCustomAlert("💥 Flugan kroka fast i stenen i Kåhögsforsen! Linan gick av.", "Bottennapp");
+                        }
+                    }
+
                     if(castLine && castLine.x > canvas.width) castLine = null;
 
                     let biteChance = currentFlow > 14 ? 0.00014 : 0.00008;
@@ -1671,6 +1702,12 @@
             const rect = canvas.getBoundingClientRect();
             let clickX = e.clientX - rect.left;
             let clickY = e.clientY - rect.top;
+
+            // Spärr för att fiska på landzonen i Mannered
+            if (currentZoneKey === 'mannered' && clickY < canvas.height * 0.4) {
+                showCustomAlert("Det är land här! Du kan inte kasta in på strandkanten på Mannered.", "Landzon");
+                return;
+            }
 
             const zState = gameWorld.zones[currentZoneKey];
             let rodX = zState.playerPos && zState.playerPos.x !== null ? zState.playerPos.x : 40;
