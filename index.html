@@ -55,23 +55,23 @@
 
     <!-- Modal: Utrustningsmeny -->
     <div id="equipmentModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3">
+        <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
                     <span>🎣</span> Välj Utrustning
                 </h3>
                 <button onclick="closeEquipmentModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
             </div>
-            <div class="flex flex-col gap-2.5 text-xs">
+            <div class="flex flex-col gap-2 text-xs">
                 <div>
-                    <label class="text-stone-400 text-[10px] block mb-1">Tillverkare & Modell:</label>
+                    <label class="text-stone-400 text-[10px] block mb-1">Tillverkare:</label>
                     <select id="eqBrand" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-stone-200 text-xs">
-                        <option value="Hardy Zephrus">Hardy Zephrus</option>
-                        <option value="G.Loomis NRX+">G.Loomis NRX+</option>
-                        <option value="Guideline NT8">Guideline NT8</option>
-                        <option value="Daiwa Lochmor">Daiwa Lochmor</option>
-                        <option value="Sage X">Sage X</option>
-                        <option value="Loop Evotec">Loop Evotec</option>
+                        <option value="Hardy">Hardy</option>
+                        <option value="G.Loomis">G.Loomis</option>
+                        <option value="Guideline">Guideline</option>
+                        <option value="Daiwa">Daiwa</option>
+                        <option value="Sage">Sage</option>
+                        <option value="Loop">Loop</option>
                     </select>
                 </div>
                 <div>
@@ -85,7 +85,7 @@
                     </select>
                 </div>
             </div>
-            <button onclick="saveEquipment()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-semibold shadow transition mt-1">Spara Utrustning</button>
+            <button onclick="saveEquipment()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl text-xs font-semibold shadow transition mt-1">Spara Utrustning</button>
         </div>
     </div>
 
@@ -101,12 +101,11 @@
             <div class="text-xs text-stone-300 space-y-2 leading-relaxed">
                 <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, predation och fiskepress.</p>
                 <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
-                    <strong>Så här ökar du beståndet:</strong>
+                    <strong>Tips för framgång:</strong>
                     <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
-                        <li>Bygg <strong>lekgrus</strong> på sträckan (gynnar reproduktion)</li>
-                        <li>Placera ut <strong>ståndstenar</strong> (ger skydd)</li>
-                        <li>Skapa <strong>uppväxtområden</strong> (skyddar smolt)</li>
-                        <li>Bidra till det gemensamma <strong>vandringshindret</strong></li>
+                        <li>Anpassa utrustningen efter fisken (Klass #7+ krävs för stor lax)</li>
+                        <li>Bygg lekgrus och ståndstenar på sträckorna</li>
+                        <li>Bidra till det gemensamma vandringshindret</li>
                     </ul>
                 </div>
             </div>
@@ -138,7 +137,7 @@
                     <button onclick="adminResetPlayerWeek()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl font-semibold">Återställ vecka (Dag 1 & 5 kast)</button>
                 </div>
 
-                <!-- Dela ut poäng (FIXAD) -->
+                <!-- Dela ut poäng -->
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
                     <span class="font-bold text-amber-400">Dela ut / Justera naturvårdspoäng:</span>
                     <input type="text" id="adminPointsPlayer" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
@@ -165,10 +164,20 @@
         </div>
 
         <div class="flex items-center gap-2 text-xs">
+            <!-- Utrustningsknapp flyttad hit -->
+            <button onclick="openEquipmentModal()" class="bg-stone-950 hover:bg-stone-800 text-stone-200 px-3 py-1.5 rounded-xl border border-stone-800 text-left transition flex items-center gap-1.5">
+                <span>🎣</span>
+                <div>
+                    <span class="text-stone-400 text-[9px] block">Utrustning</span>
+                    <span id="hudEqLabel" class="font-bold text-emerald-400 text-xs">Hardy 9' #6</span>
+                </div>
+            </button>
+
             <div class="bg-stone-950 px-3 py-1.5 rounded-xl border border-stone-800 text-center">
                 <span class="text-stone-400 text-[9px] block">Naturvårdspoäng</span>
                 <span id="conservationPoints" class="font-bold text-emerald-400 text-sm">700 p</span>
             </div>
+            
             <button onclick="nextDay()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold transition shadow flex items-center gap-1">
                 <span>🔄</span> <span id="dayCounter">Dag 1/7</span>
             </button>
@@ -224,9 +233,6 @@
                         <span>Kast: <strong id="castsLeft" class="text-amber-400">5 / 5</strong></span>
                     </div>
                     <div class="flex items-center gap-2.5 border-t md:border-t-0 border-stone-800 pt-1 md:pt-0">
-                        <button onclick="openEquipmentModal()" class="bg-emerald-800/80 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold transition border border-emerald-600/50 flex items-center gap-1" title="Välj utrustning">
-                            <span>🎣</span> <span id="hudEqLabel">Hardy 9' #6</span>
-                        </button>
                         <span>Väder: <strong id="wCondition" class="text-stone-200">-</strong></span>
                         <span>Temp: <strong class="text-emerald-400"><span id="wTemp">-</span>°C / <span id="wWaterTemp">-</span>°C</strong></span>
                         <span>Vatten: <strong id="wFlow" class="text-blue-400">- m³/s</strong></span>
@@ -343,86 +349,68 @@
         </div>
     </main>
 
-    <!-- Modal: Biotopvård Meny -->
+    <!-- Modal: Biotopvård Meny (Kompaktare) -->
     <div id="biotopModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
-            <div class="flex justify-between items-center border-b border-stone-800 pb-2">
-                <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
+                <h3 class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                     <span>🌱</span> Biotopvård på sträckan
                 </h3>
-                <button onclick="closeBiotopModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+                <button onclick="closeBiotopModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-1.5 py-0.5">✕</button>
             </div>
             
-            <div class="flex flex-col gap-2 text-xs">
-                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
-                    <div>
-                        <h4 class="font-bold text-stone-200 text-xs">Placera Lekgrus</h4>
-                        <p class="text-[9px] text-stone-400">Syns på denna sträcka</p>
-                    </div>
-                    <button onclick="startPlacement('gravel', 300)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">300 p</button>
+            <div class="flex flex-col gap-1.5 text-[11px]">
+                <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
+                    <div><span class="font-bold text-stone-200">Placera Lekgrus</span></div>
+                    <button onclick="startPlacement('gravel', 300)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">300 p</button>
                 </div>
 
-                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
-                    <div>
-                        <h4 class="font-bold text-stone-200 text-xs">Placera Ståndsten</h4>
-                        <p class="text-[9px] text-stone-400">Skapar ståndplats</p>
-                    </div>
-                    <button onclick="startPlacement('boulder', 400)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">400 p</button>
+                <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
+                    <div><span class="font-bold text-stone-200">Placera Ståndsten</span></div>
+                    <button onclick="startPlacement('boulder', 400)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">400 p</button>
                 </div>
 
-                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
-                    <div>
-                        <h4 class="font-bold text-stone-200 text-xs">Skapa Uppväxtplats</h4>
-                        <p class="text-[9px] text-stone-400">Skyddar smolt</p>
-                    </div>
-                    <button onclick="startPlacement('nursery', 250)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">250 p</button>
+                <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
+                    <div><span class="font-bold text-stone-200">Skapa Uppväxtplats</span></div>
+                    <button onclick="startPlacement('nursery', 250)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">250 p</button>
                 </div>
 
-                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
-                    <div>
-                        <h4 class="font-bold text-stone-200 text-xs">Plantera Kantträd</h4>
-                        <p class="text-[9px] text-stone-400">Skugga längs kanten</p>
-                    </div>
-                    <button onclick="doTreePlanting(200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">200 p</button>
+                <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
+                    <div><span class="font-bold text-stone-200">Plantera Kantträd</span></div>
+                    <button onclick="doTreePlanting(200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">200 p</button>
                 </div>
 
-                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex justify-between items-center">
-                    <div>
-                        <h4 class="font-bold text-stone-200 text-xs">Plantera Buske</h4>
-                        <p class="text-[9px] text-stone-400">Vegetation vid kanten</p>
-                    </div>
-                    <button onclick="doBushPlanting(150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px]">150 p</button>
+                <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
+                    <div><span class="font-bold text-stone-200">Plantera Buske</span></div>
+                    <button onclick="doBushPlanting(150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">150 p</button>
                 </div>
 
-                <div class="bg-stone-950 p-3 rounded-xl border border-rose-900/40 flex justify-between items-center">
-                    <div>
-                        <h4 class="font-bold text-rose-400 text-xs">Ta bort senaste egen åtgärd</h4>
-                        <p class="text-[9px] text-stone-400">Endast din egen senaste här</p>
-                    </div>
-                    <button onclick="removeMyLatestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-[11px]">Ångra min</button>
+                <div class="bg-stone-950 p-2 rounded-xl border border-rose-900/40 flex justify-between items-center">
+                    <div><span class="font-bold text-rose-400">Ta bort senaste egna</span></div>
+                    <button onclick="removeMyLatestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-2.5 py-1 rounded-lg text-[10px]">Ångra</button>
                 </div>
 
-                <div class="bg-stone-950 p-3 rounded-xl border border-amber-500/30 flex flex-col gap-2">
+                <div class="bg-stone-950 p-2 rounded-xl border border-amber-500/30 flex flex-col gap-1.5">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h4 class="font-bold text-amber-300 text-xs">Riv Vandringshinder (Gemensam insats)</h4>
-                            <p class="text-[9px] text-stone-400" id="damProgressText">Insamlad: 0 / 10000 p</p>
+                            <span class="font-bold text-amber-300 text-[11px] block">Riv Vandringshinder</span>
+                            <span class="text-[9px] text-stone-400" id="damProgressText">0 / 10000 p</span>
                         </div>
-                        <button onclick="contributeToDam()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-lg text-[11px]">Bidra 500 p</button>
+                        <button onclick="contributeToDam()" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1 rounded-lg text-[10px]">Bidra 500p</button>
                     </div>
-                    <div class="w-full bg-stone-900 h-2 rounded-full overflow-hidden border border-stone-800">
-                        <div id="damProgressBar" class="bg-amber-500 h-full w-0% transition-all"></div>
+                    <div class="w-full bg-stone-900 h-1.5 rounded-full overflow-hidden border border-stone-800">
+                        <div id="damProgressBar" class="bg-amber-500 h-full w-0%"></div>
                     </div>
                 </div>
             </div>
 
-            <button onclick="closeBiotopModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-200 py-2.5 rounded-xl text-xs font-semibold mt-1">Stäng meny</button>
+            <button onclick="closeBiotopModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-200 py-2 rounded-xl text-xs font-semibold mt-0.5">Stäng</button>
         </div>
     </div>
 
-    <!-- Modal: Highscore Topplista & Hall of Fame -->
+    <!-- Modal: Highscore Topplista (Delad i Lax & Öring) -->
     <div id="highscoreModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-md w-full p-5 shadow-2xl flex flex-col gap-3">
+        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-2xl w-full p-5 shadow-2xl flex flex-col gap-3 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
                     <span>🏆</span> Veckans Highscore & Hall of Fame
@@ -435,12 +423,24 @@
                 <div id="hallOfFameContent" class="text-stone-300 text-[11px]">Laddar mästare...</div>
             </div>
 
-            <div class="text-[10px] text-stone-400 font-semibold uppercase tracking-wider mt-1">Aktuell Veckotavla (Nollställs varje måndag)</div>
-            <div id="highscoreList" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto text-xs">
-                <p class="text-stone-400 italic text-center py-4">Laddar fångster från Firebase...</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+                <!-- Lax-tavla -->
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-2">
+                    <span class="text-xs font-bold text-emerald-400 flex items-center gap-1">🐟 Veckans Största Laxar</span>
+                    <div id="highscoreSalmonList" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto text-xs">
+                        <p class="text-stone-500 italic text-center py-2">Laddar laxar...</p>
+                    </div>
+                </div>
+                <!-- Öring-tavla -->
+                <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-2">
+                    <span class="text-xs font-bold text-amber-400 flex items-center gap-1">🐠 Veckans Största Öringar</span>
+                    <div id="highscoreTroutList" class="flex flex-col gap-1.5 max-h-48 overflow-y-auto text-xs">
+                        <p class="text-stone-500 italic text-center py-2">Laddar öringar...</p>
+                    </div>
+                </div>
             </div>
 
-            <button onclick="closeHighscoreModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-200 py-2.5 rounded-xl text-xs font-semibold">Stäng</button>
+            <button onclick="closeHighscoreModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-200 py-2.5 rounded-xl text-xs font-semibold mt-2">Stäng</button>
         </div>
     </div>
 
@@ -541,9 +541,12 @@
         };
 
         window.fetchHighscores = async function() {
-            const listEl = document.getElementById('highscoreList');
+            const salmonListEl = document.getElementById('highscoreSalmonList');
+            const troutListEl = document.getElementById('highscoreTroutList');
             const hofEl = document.getElementById('hallOfFameContent');
-            listEl.innerHTML = `<p class="text-stone-400 italic text-center py-4">Laddar veckans fångster...</p>`;
+            
+            salmonListEl.innerHTML = `<p class="text-stone-400 italic text-center py-2">Laddar laxar...</p>`;
+            troutListEl.innerHTML = `<p class="text-stone-400 italic text-center py-2">Laddar öringar...</p>`;
             hofEl.innerHTML = `Laddar förra veckans mästare...`;
 
             try {
@@ -552,30 +555,59 @@
                 let allCatches = [];
                 allSnap.forEach(d => allCatches.push(d.data()));
 
-                let currentWeekCatches = allCatches.filter(c => c.week === currentWeek).sort((a, b) => b.size - a.size);
+                let currentWeekCatches = allCatches.filter(c => c.week === currentWeek);
+                
+                let salmonCatches = currentWeekCatches.filter(c => c.species && c.species.includes("Lax")).sort((a, b) => b.size - a.size);
+                let troutCatches = currentWeekCatches.filter(c => c.species && c.species.includes("Öring")).sort((a, b) => b.size - a.size);
 
-                let html = "";
+                // Bygg Lax-lista
+                let salmonHtml = "";
                 let rank = 1;
-                if (currentWeekCatches.length === 0) {
-                    listEl.innerHTML = `<p class="text-stone-500 italic text-center py-4">Inga fångster registrerade denna vecka än. Bli först!</p>`;
+                if (salmonCatches.length === 0) {
+                    salmonListEl.innerHTML = `<p class="text-stone-500 italic text-center py-2">Inga laxar denna vecka.</p>`;
                 } else {
-                    currentWeekCatches.slice(0, 10).forEach((data) => {
+                    salmonCatches.slice(0, 5).forEach((data) => {
                         let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
-                        html += `
-                            <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 flex justify-between items-center">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-bold text-amber-400 text-sm w-6">${medal}</span>
+                        salmonHtml += `
+                            <div class="bg-stone-900 p-2 rounded-xl border border-stone-800 flex justify-between items-center text-[11px]">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-bold text-amber-400 w-5">${medal}</span>
                                     <div>
-                                        <span class="font-bold text-stone-200 block">${data.angler} <span class="text-[9px] text-stone-400">(${data.equipment || ''})</span></span>
-                                        <span class="text-[10px] text-stone-400 block">${data.species} • Fluga: ${data.fly} • ${data.zone}</span>
+                                        <span class="font-bold text-stone-200 block">${data.angler} <span class="text-[9px] text-stone-400">(${data.equipment})</span></span>
+                                        <span class="text-[9px] text-stone-400 block">${data.zone}</span>
                                     </div>
                                 </div>
-                                <span class="font-bold text-emerald-400 text-sm">${data.size} cm</span>
+                                <span class="font-bold text-emerald-400">${data.size} cm</span>
                             </div>
                         `;
                         rank++;
                     });
-                    listEl.innerHTML = html;
+                    salmonListEl.innerHTML = salmonHtml;
+                }
+
+                // Bygg Öring-lista
+                let troutHtml = "";
+                rank = 1;
+                if (troutCatches.length === 0) {
+                    troutListEl.innerHTML = `<p class="text-stone-500 italic text-center py-2">Inga öringar denna vecka.</p>`;
+                } else {
+                    troutCatches.slice(0, 5).forEach((data) => {
+                        let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
+                        troutHtml += `
+                            <div class="bg-stone-900 p-2 rounded-xl border border-stone-800 flex justify-between items-center text-[11px]">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-bold text-amber-400 w-5">${medal}</span>
+                                    <div>
+                                        <span class="font-bold text-stone-200 block">${data.angler} <span class="text-[9px] text-stone-400">(${data.equipment})</span></span>
+                                        <span class="text-[9px] text-stone-400 block">${data.zone}</span>
+                                    </div>
+                                </div>
+                                <span class="font-bold text-amber-400">${data.size} cm</span>
+                            </div>
+                        `;
+                        rank++;
+                    });
+                    troutListEl.innerHTML = troutHtml;
                 }
 
                 let pastWeeks = [...new Set(allCatches.map(c => c.week))].filter(w => w && w !== currentWeek).sort().reverse();
@@ -597,7 +629,7 @@
 
             } catch (e) {
                 console.error("Fel vid hämtning av highscores:", e);
-                listEl.innerHTML = `<p class="text-rose-400 italic text-center py-4">Kunde inte ladda highscores.</p>`;
+                salmonListEl.innerHTML = `<p class="text-rose-400 italic text-center py-2">Kunde inte ladda.</p>`;
             }
         };
 
@@ -715,7 +747,7 @@
             lastPlayedDate: todayStr,
             dayOfSeason: 1,
             castsRemaining: 5,
-            equipment: { brand: "Hardy", spec: "9' #6" },
+            equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" },
             zones: {
                 dickson: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
                 mannered: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
@@ -850,7 +882,7 @@
                 cloudState.castsRemaining = 5;
                 cloudState.dayOfSeason = 1;
                 cloudState.lastPlayedDate = todayStr;
-                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
+                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
                 showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`, "GM Admin");
                 if (targetPlayer === lockedAnglerName) {
                     gameWorld.castsRemaining = 5;
@@ -880,7 +912,7 @@
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
                 cloudState.points = Math.max(0, (cloudState.points || 0) + amount);
-                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
+                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
                 showCustomAlert(`Gav ${amount} poäng till ${targetPlayer}. Ny summa: ${cloudState.points} p.`, "GM Admin");
             } else {
                 showCustomAlert("Hittade inte spelaren i molnet.", "Fel");
@@ -1269,7 +1301,8 @@
 
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Kantträd", saveanZones[currentZoneKey].name);
             updateUI();
-            showCustomAlert("Nytt kantträd planterat längs ån!", "Biotopvård");
+            closeBiotopModal();
+            // Tyst plantering utan bekräftelseskylt
         }
 
         async function doBushPlanting(cost) {
@@ -1286,7 +1319,8 @@
 
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Buske", saveanZones[currentZoneKey].name);
             updateUI();
-            showCustomAlert("Ny buske planterad!", "Biotopvård");
+            closeBiotopModal();
+            // Tyst plantering utan bekräftelseskylt
         }
 
         async function contributeToDam() {
@@ -1745,7 +1779,16 @@
             isPressingScreen = false;
             tippetStress = 20;
 
-            totalFightDuration = Math.min(15, Math.max(5, (currentFish.size / 115) * 15));
+            let isLightRod = gameWorld.equipment.spec.includes("#6") || gameWorld.equipment.spec.includes("Enhands");
+            let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
+
+            if (isLightRod && isLargeSalmon) {
+                // Klass #6 spö orkar inte med stor lax -> tafsen går av snabbt
+                totalFightDuration = 2.5;
+            } else {
+                totalFightDuration = Math.min(15, Math.max(5, (currentFish.size / 115) * 15));
+            }
+
             fightTimeRemaining = totalFightDuration;
 
             document.getElementById('fightOverlay').classList.remove('hidden');
@@ -1756,7 +1799,12 @@
             fightInterval = setInterval(() => {
                 if(!isFighting) return;
 
+                let isLightRod = gameWorld.equipment.spec.includes("#6") || gameWorld.equipment.spec.includes("Enhands");
+                let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
+
                 let weightFactor = currentFish.size > 80 ? 6.5 : 3.5;
+                if (isLightRod && isLargeSalmon) weightFactor = 25.0; // Snabb stressökning
+
                 let pullForce = (Math.random() - 0.38) * weightFactor;
 
                 if(isPressingScreen) {
@@ -1805,6 +1853,15 @@
             
             document.getElementById('fightOverlay').classList.add('hidden');
             document.getElementById('canvasNotification').classList.add('hidden');
+
+            let isLightRod = gameWorld.equipment.spec.includes("#6") || gameWorld.equipment.spec.includes("Enhands");
+            let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
+
+            if (isLightRod && isLargeSalmon && !success) {
+                showCustomAlert("Tafsen och spöt rekvirerades hårt! Ett klass #6-spö klarar inte en storfisk som denna lax. Anpassa utrustningen efter fisken (använd klass #7 och uppåt)!", "Utrustningsvarning");
+                resetAfterCatch();
+                return;
+            }
 
             if(success) {
                 if ("vibrate" in navigator) navigator.vibrate([150, 100, 350]);
