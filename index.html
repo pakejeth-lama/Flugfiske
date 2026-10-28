@@ -148,7 +148,6 @@
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
                     <span class="font-bold text-amber-400">Dela ut / Justera naturvårdspoäng (tillåter minus):</span>
                     <input type="text" id="adminPointsPlayer" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
-                    <!-- Ändrat från type="number" till type="text" för att tillåta minus (-) tecken -->
                     <input type="text" id="adminPointsAmount" placeholder="Antal poäng (t.ex. 300 eller -100)..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
                     <button onclick="adminGrantPoints()" class="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold py-2 rounded-xl">Uppdatera poäng</button>
                 </div>
@@ -189,7 +188,6 @@
                 <span id="conservationPoints" class="font-bold text-emerald-400 text-sm">700 p</span>
             </div>
             
-            <!-- Knappen har nu en spärr-klass/attribut -->
             <button id="nextDayBtn" onclick="nextDay()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold transition shadow flex items-center gap-1">
                 <span>🔄</span> <span id="dayCounter">Dag 1/7</span>
             </button>
@@ -657,7 +655,6 @@
             }
         };
 
-        // Atomär och säker molnuppdatering för att förhindra fusk och race conditions
         window.savePlayerStateToFirebase = async function(anglerName, stateData) {
             try {
                 await setDoc(doc(db, "players", anglerName), {
@@ -671,7 +668,7 @@
             }
         };
 
-        // Atomär ökning/minskning av poäng direkt på molnservern för att stoppa spam-fusk
+        // Atomär poänguppdatering direkt i molnet
         window.updatePlayerPointsAtomic = async function(anglerName, deltaPoints) {
             try {
                 const playerRef = doc(db, "players", anglerName);
@@ -681,6 +678,32 @@
                 });
             } catch (e) {
                 console.error("Fel vid atomär poänguppdatering:", e);
+            }
+        };
+
+        // Atomär kastförbrukning direkt i molnet (skyddar mot F5-fusk)
+        window.consumeCastAtomic = async function(anglerName) {
+            try {
+                const playerRef = doc(db, "players", anglerName);
+                await updateDoc(playerRef, {
+                    castsRemaining: increment(-1),
+                    lastActive: new Date().toISOString()
+                });
+            } catch (e) {
+                console.error("Fel vid atomärt kast:", e);
+            }
+        };
+
+        // Atomär kaståterställning direkt i molnet (för smolt/uppväxtområden)
+        window.restoreCastAtomic = async function(anglerName) {
+            try {
+                const playerRef = doc(db, "players", anglerName);
+                await updateDoc(playerRef, {
+                    castsRemaining: increment(1),
+                    lastActive: new Date().toISOString()
+                });
+            } catch (e) {
+                console.error("Fel vid atomär kaståterställning:", e);
             }
         };
 
@@ -855,7 +878,7 @@
         let placementMode = null; 
         let placementCost = 0;
         let wildlifeDisturbance = false;
-        let isActionLocked = false; // UI-lås mot spam-klick (fördröjningsspärr)
+        let isActionLocked = false;
 
         const saveanZones = {
             dickson: { name: "Säveån – Dickson", lat: 57.742, lon: 12.195, baseTemp: 11 },
@@ -1258,7 +1281,6 @@
             }
         }
 
-        // Med klick-spärr (isActionLocked) för att stoppa spam-klick
         async function nextDay() {
             if (isActionLocked) return;
             if(gameWorld.castsRemaining > 0) {
@@ -1300,7 +1322,7 @@
                 setTimeout(() => {
                     isActionLocked = false;
                     btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }, 800); // Låser upp knappen efter 0.8 sekunder
+                }, 800);
             }
         }
 
@@ -1549,7 +1571,6 @@
                 ctx.fill();
             }
 
-            // Lekgrus med texturerade grå/mörka prickar
             (zState.gravels || []).forEach(g => {
                 ctx.fillStyle = 'rgba(253, 224, 71, 0.4)';
                 ctx.beginPath();
@@ -1568,7 +1589,6 @@
                 });
             });
 
-            // Dimmiga / halvt genomskinliga ståndstenar under vattnet
             (zState.boulders || []).forEach(b => {
                 ctx.fillStyle = 'rgba(30, 41, 59, 0.65)';
                 ctx.beginPath();
@@ -1611,7 +1631,6 @@
                 ctx.stroke();
             }
 
-            // Kåhögsforsen stenar
             let kahogRocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
             if (currentZoneKey === 'kahogsforsen') {
                 ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
@@ -1625,7 +1644,6 @@
                 });
             }
 
-            // Sandbotten (Mannered & Britta-Maja) ritas EFTER vattenlinjerna
             if (currentZoneKey === 'mannered') {
                 ctx.fillStyle = '#d4b17e';
                 ctx.beginPath();
@@ -1831,6 +1849,11 @@
             gameWorld.castsRemaining--;
             updateUI();
 
+            // Atomärt molnanrop för kastet (skyddar direkt mot omstart / F5-fusk)
+            if (window.consumeCastAtomic) {
+                await window.consumeCastAtomic(lockedAnglerName);
+            }
+
             let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < 35);
             if (hitRise && !wildlifeDisturbance && Math.random() < 0.45) {
                 setTimeout(() => { if (castLine && !currentFish) triggerBite(true); }, 1200);
@@ -1840,7 +1863,7 @@
             document.getElementById('castStatus').innerText = statusText;
         });
 
-        function triggerBite(isRiseBonus) {
+        async function triggerBite(isRiseBonus) {
             const zState = gameWorld.zones[currentZoneKey];
             let gravelBonus = (zState.gravels || []).length;
             let boulderBonus = (zState.boulders || []).length;
@@ -1851,6 +1874,11 @@
             if (overNursery && Math.random() < 0.6) {
                 gameWorld.castsRemaining++;
                 updateUI();
+
+                // Atomär återställning i molnet
+                if (window.restoreCastAtomic) {
+                    await window.restoreCastAtomic(lockedAnglerName);
+                }
                 
                 if ("vibrate" in navigator) navigator.vibrate([120, 60, 120]);
                 let smoltHappened = Math.random() < 0.5;
