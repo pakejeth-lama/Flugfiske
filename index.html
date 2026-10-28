@@ -101,11 +101,11 @@
             <div class="text-xs text-stone-300 space-y-2 leading-relaxed">
                 <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, predation och fiskepress.</p>
                 <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
-                    <strong>Tips för drömfiske (125 cm Lax):</strong>
+                    <strong>Tips för storfiske:</strong>
                     <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
-                        <li>Åtgärda vandringshindret (10 000 p)</li>
-                        <li>Bygg full biotop och nå Dag 7</li>
-                        <li>Använd klass #7+ spö och fiska vid högvatten</li>
+                        <li>Stora fiskar är mycket skygga och kräver optimal biotop</li>
+                        <li>Anpassa utrustningen efter fisken (Klass #7+ för grov fisk)</li>
+                        <li>Bygg lekgrus och ståndstenar på sträckorna</li>
                     </ul>
                 </div>
             </div>
@@ -418,7 +418,7 @@
             </div>
 
             <div id="hallOfFameSection" class="bg-stone-950 p-3 rounded-xl border border-amber-600/30 text-xs flex flex-col gap-1">
-                <span class="font-bold text-amber-300 flex items-center gap-1">⭐ Förra Veckans Mästare & 125cm Legendarer (Hall of Fame)</span>
+                <span class="font-bold text-amber-300 flex items-center gap-1">⭐ Förra Veckans Mästare & Legendarer (Hall of Fame)</span>
                 <div id="hallOfFameContent" class="text-stone-300 text-[11px]">Laddar mästare...</div>
             </div>
 
@@ -567,13 +567,12 @@
                 } else {
                     salmonCatches.slice(0, 5).forEach((data) => {
                         let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
-                        let isMega = data.size === 125 ? " 🔥 125cm LEGEND!" : "";
                         salmonHtml += `
                             <div class="bg-stone-900 p-2 rounded-xl border border-stone-800 flex justify-between items-center text-[11px]">
                                 <div class="flex items-center gap-1.5">
                                     <span class="font-bold text-amber-400 w-5">${medal}</span>
                                     <div>
-                                        <span class="font-bold text-stone-200 block">${data.angler}${isMega} <span class="text-[9px] text-stone-400">(${data.equipment})</span></span>
+                                        <span class="font-bold text-stone-200 block">${data.angler} <span class="text-[9px] text-stone-400">(${data.equipment})</span></span>
                                         <span class="text-[9px] text-stone-400 block">${data.zone}</span>
                                     </div>
                                 </div>
@@ -610,19 +609,8 @@
                     troutListEl.innerHTML = troutHtml;
                 }
 
-                // Hitta alla 125cm laxar någonsin i databasen för Hall of Fame
-                let legendaryLax = allCatches.filter(c => c.size === 125);
-
                 let pastWeeks = [...new Set(allCatches.map(c => c.week))].filter(w => w && w !== currentWeek).sort().reverse();
                 let hofHtml = "";
-
-                if (legendaryLax.length > 0) {
-                    hofHtml += `<div class="text-amber-400 font-bold mb-1">👑 125 cm Mytomspunna Lax-Legendarer:</div>`;
-                    legendaryLax.forEach(l => {
-                        hofHtml += `<div>🔥 <strong>${l.angler}</strong> landade en 125 cm trofé vid ${l.zone} (${l.week}, ${l.equipment})!</div>`;
-                    });
-                    hofHtml += `<div class="border-t border-amber-500/20 my-1.5"></div>`;
-                }
                 
                 if (pastWeeks.length > 0) {
                     let lastWeekKey = pastWeeks[0];
@@ -922,7 +910,7 @@
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
                 cloudState.points = Math.max(0, (cloudState.points || 0) + amount);
-                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
+                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
                 showCustomAlert(`Gav ${amount} poäng till ${targetPlayer}. Ny summa: ${cloudState.points} p.`, "GM Admin");
             } else {
                 showCustomAlert("Hittade inte spelaren i molnet.", "Fel");
@@ -1729,8 +1717,9 @@
                 return;
             }
 
-            let troutSalmonChance = 0.50 + Math.min(0.25, (gravelBonus + boulderBonus) * 0.02);
-            if (isRiseBonus) troutSalmonChance += 0.20;
+            // Stora fiskar är mycket skygga och kräver att man träffar vak eller har god biotop
+            let troutSalmonChance = 0.45 + Math.min(0.20, (gravelBonus + boulderBonus) * 0.015);
+            if (isRiseBonus) troutSalmonChance += 0.25;
             
             let species = "Öring";
             let gender = "";
@@ -1757,19 +1746,23 @@
                     size = Math.floor(41 + Math.random() * 5);
                 }
             } else {
-                let baseSize = species === "Lax" ? 82 : (species === "Gädda" ? 70 : (species === "Öring" ? 44 : 30));
+                let baseSize = species === "Lax" ? 75 : (species === "Gädda" ? 70 : (species === "Öring" ? 40 : 30));
                 
-                // Halverad biotopbonus (0.75 / 1.0 per enhet istället för 1.5 / 2.0) + mjukare tak
-                let rawBiotopeBonus = (gravelBonus * 0.75) + (boulderBonus * 1.0) + (gameWorld.laddersFixed ? 10 : 0) + (gameWorld.dayOfSeason * 1.0);
-                let biotopeSizeBonus = Math.min(18, rawBiotopeBonus);
+                // Mycket sparsam biotopbonus för att hålla storlekarna svårfångade och realistiska
+                let rawBiotopeBonus = (gravelBonus * 0.4) + (boulderBonus * 0.6) + (gameWorld.laddersFixed ? 6 : 0) + (gameWorld.dayOfSeason * 0.6);
+                let biotopeSizeBonus = Math.min(10, rawBiotopeBonus);
 
-                size = Math.floor(baseSize + (Math.random() * 14 - 3) + biotopeSizeBonus + (isRiseBonus ? 4 : 0));
+                // Slumpfaktor med låg chans för megastorlek om man inte prickat vak
+                let sizeRoll = Math.random();
+                let trophyChanceAdd = (isRiseBonus && (gravelBonus + boulderBonus >= 3)) ? (sizeRoll < 0.12 ? Math.random() * 22 : Math.random() * 8) : (sizeRoll < 0.04 ? Math.random() * 15 : Math.random() * 6);
 
-                // Kolla efter den ultrasällsynta 125cm legendariska laxen!
+                size = Math.floor(baseSize + trophyChanceAdd + biotopeSizeBonus);
+
+                // Hemlig 125cm lax (extremt sällsynt)
                 let isHeavyRod = !gameWorld.equipment.spec.includes("#6") && !gameWorld.equipment.spec.includes("Enhands");
                 let isOptimalConditions = gameWorld.laddersFixed && gravelBonus > 0 && boulderBonus > 0 && nurseryBonus > 0 && gameWorld.dayOfSeason === 7 && parseFloat(weatherData.flow) > 16;
                 
-                if (species === "Lax" && isHeavyRod && isOptimalConditions && Math.random() < 0.04) {
+                if (species === "Lax" && isHeavyRod && isOptimalConditions && Math.random() < 0.015) {
                     size = 125;
                 } else if (species === "Lax" && size > 122) {
                     size = 122;
@@ -1782,10 +1775,10 @@
             }
 
             currentFish = { species, size, gender };
-            let feelDescription = size === 125 ? "MEGAGIGANTISK LUGN RUSH! ETT LIVSTIDSFÅNGST PÅ 125CM!" : (size > 85 ? "HUGG! En riktig jätte till lax rusar lina!" : (size > 65 ? "HUGG! Tunga knixar i spöt!" : "HUGG! Pigg fisk som kämpar!"));
+            let feelDescription = size === 125 ? "MEGAGIGANTISK LUGN RUSH! ETT LIVSTIDSFÅNGST PÅ 125CM!" : (size > 85 ? "HUGG! En jätte till öring rusar ursinnigt i strömmen!" : (size > 65 ? "HUGG! Tung och stark fisk som pressar spöt hårt!" : "HUGG! Pigg fisk som kämpar!"));
 
             if ("vibrate" in navigator) {
-                navigator.vibrate(size >= 100 ? [500, 100, 500, 100, 800] : [200, 80, 200]);
+                navigator.vibrate(size >= 80 ? [500, 100, 500, 100, 800] : [200, 80, 200]);
             }
             
             const gameContainer = document.getElementById('gameContainer');
@@ -1808,9 +1801,10 @@
 
             let isLightRod = gameWorld.equipment.spec.includes("#6") || gameWorld.equipment.spec.includes("Enhands");
             let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
+            let isLargeTrout = currentFish.species === "Öring" && currentFish.size > 65;
 
-            if (isLightRod && isLargeSalmon) {
-                totalFightDuration = 2.5;
+            if (isLightRod && (isLargeSalmon || isLargeTrout)) {
+                totalFightDuration = 2.0; // Mycket svårt att landa storfisk på klass #6
             } else {
                 totalFightDuration = Math.min(15, Math.max(5, (currentFish.size / 115) * 15));
             }
@@ -1827,14 +1821,15 @@
 
                 let isLightRod = gameWorld.equipment.spec.includes("#6") || gameWorld.equipment.spec.includes("Enhands");
                 let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
+                let isLargeTrout = currentFish.species === "Öring" && currentFish.size > 65;
 
-                let weightFactor = currentFish.size > 80 ? 6.5 : 3.5;
-                if (isLightRod && isLargeSalmon) weightFactor = 25.0;
+                let weightFactor = currentFish.size > 80 ? 7.5 : 4.0;
+                if (isLightRod && (isLargeSalmon || isLargeTrout)) weightFactor = 32.0; // Snabb tafsbrott vid fel utrustning
 
                 let pullForce = (Math.random() - 0.38) * weightFactor;
 
                 if(isPressingScreen) {
-                    tippetStress += (currentFish.size > 80 ? 8.0 : 6.0) + pullForce;
+                    tippetStress += (currentFish.size > 80 ? 9.0 : 6.5) + pullForce;
                     fightTimeRemaining -= 0.1;
                     
                     if ("vibrate" in navigator && Math.random() < 0.4) {
@@ -1882,9 +1877,10 @@
 
             let isLightRod = gameWorld.equipment.spec.includes("#6") || gameWorld.equipment.spec.includes("Enhands");
             let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
+            let isLargeTrout = currentFish.species === "Öring" && currentFish.size > 65;
 
-            if (isLightRod && isLargeSalmon && !success) {
-                showCustomAlert("Tafsen och spöt rekvirerades hårt! Ett klass #6-spö klarar inte en storfisk som denna lax. Anpassa utrustningen efter fisken (använd klass #7 och uppåt)!", "Utrustningsvarning");
+            if (isLightRod && (isLargeSalmon || isLargeTrout) && !success) {
+                showCustomAlert("Tafsen gick av direkt! Ett klass #6-spö klarar inte av att tygla en storfisk i den här storleken. Anpassa utrustningen efter fisken (använd klass #7 och uppåt)!", "Utrustningsvarning");
                 resetAfterCatch();
                 return;
             }
@@ -1949,7 +1945,7 @@
                 } else {
                     gameWorld.points += pts;
                     if (currentFish.size === 125) {
-                        alertMsg += `👑 LEGENDARISK 125 CM LAX! Du är automatiskt inskriven i Hall of Fame för all framtid! (+500 p)`;
+                        alertMsg += `👑 LEGENDARISK TROFÉ! Du är automatiskt inskriven i Hall of Fame för all framtid! (+500 p)`;
                     } else {
                         alertMsg += `Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`;
                     }
@@ -1981,7 +1977,7 @@
                 alertMsg = "Du tog bort en skadlig smårovfisk! (+40 naturvårdspoäng).";
             } else {
                 s.population = Math.max(10, s.population - 1);
-                alertMsg = currentFish.size === 125 ? "Du tog upp 125cm-laxen! En historisk trofé sparad till Hall of Fame." : "Fisk hemtagen.";
+                alertMsg = currentFish.size === 125 ? "Du tog upp trofén! En historisk fångst sparad till Hall of Fame." : "Fisk hemtagen.";
             }
 
             if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name, eqString);
