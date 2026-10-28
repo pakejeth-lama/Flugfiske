@@ -101,11 +101,11 @@
             <div class="text-xs text-stone-300 space-y-2 leading-relaxed">
                 <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, predation och fiskepress.</p>
                 <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
-                    <strong>Tips för framgång:</strong>
+                    <strong>Tips för drömfiske (125 cm Lax):</strong>
                     <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
-                        <li>Anpassa utrustningen efter fisken (Klass #7+ krävs för stor lax)</li>
-                        <li>Bygg lekgrus och ståndstenar på sträckorna</li>
-                        <li>Bidra till det gemensamma vandringshindret</li>
+                        <li>Åtgärda vandringshindret (10 000 p)</li>
+                        <li>Bygg full biotop och nå Dag 7</li>
+                        <li>Använd klass #7+ spö och fiska vid högvatten</li>
                     </ul>
                 </div>
             </div>
@@ -164,7 +164,6 @@
         </div>
 
         <div class="flex items-center gap-2 text-xs">
-            <!-- Utrustningsknapp flyttad hit -->
             <button onclick="openEquipmentModal()" class="bg-stone-950 hover:bg-stone-800 text-stone-200 px-3 py-1.5 rounded-xl border border-stone-800 text-left transition flex items-center gap-1.5">
                 <span>🎣</span>
                 <div>
@@ -349,7 +348,7 @@
         </div>
     </main>
 
-    <!-- Modal: Biotopvård Meny (Kompaktare) -->
+    <!-- Modal: Biotopvård Meny -->
     <div id="biotopModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -419,7 +418,7 @@
             </div>
 
             <div id="hallOfFameSection" class="bg-stone-950 p-3 rounded-xl border border-amber-600/30 text-xs flex flex-col gap-1">
-                <span class="font-bold text-amber-300 flex items-center gap-1">⭐ Förra Veckans Mästare (Hall of Fame)</span>
+                <span class="font-bold text-amber-300 flex items-center gap-1">⭐ Förra Veckans Mästare & 125cm Legendarer (Hall of Fame)</span>
                 <div id="hallOfFameContent" class="text-stone-300 text-[11px]">Laddar mästare...</div>
             </div>
 
@@ -568,12 +567,13 @@
                 } else {
                     salmonCatches.slice(0, 5).forEach((data) => {
                         let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
+                        let isMega = data.size === 125 ? " 🔥 125cm LEGEND!" : "";
                         salmonHtml += `
                             <div class="bg-stone-900 p-2 rounded-xl border border-stone-800 flex justify-between items-center text-[11px]">
                                 <div class="flex items-center gap-1.5">
                                     <span class="font-bold text-amber-400 w-5">${medal}</span>
                                     <div>
-                                        <span class="font-bold text-stone-200 block">${data.angler} <span class="text-[9px] text-stone-400">(${data.equipment})</span></span>
+                                        <span class="font-bold text-stone-200 block">${data.angler}${isMega} <span class="text-[9px] text-stone-400">(${data.equipment})</span></span>
                                         <span class="text-[9px] text-stone-400 block">${data.zone}</span>
                                     </div>
                                 </div>
@@ -610,7 +610,19 @@
                     troutListEl.innerHTML = troutHtml;
                 }
 
+                // Hitta alla 125cm laxar någonsin i databasen för Hall of Fame
+                let legendaryLax = allCatches.filter(c => c.size === 125);
+
                 let pastWeeks = [...new Set(allCatches.map(c => c.week))].filter(w => w && w !== currentWeek).sort().reverse();
+                let hofHtml = "";
+
+                if (legendaryLax.length > 0) {
+                    hofHtml += `<div class="text-amber-400 font-bold mb-1">👑 125 cm Mytomspunna Lax-Legendarer:</div>`;
+                    legendaryLax.forEach(l => {
+                        hofHtml += `<div>🔥 <strong>${l.angler}</strong> landade en 125 cm trofé vid ${l.zone} (${l.week}, ${l.equipment})!</div>`;
+                    });
+                    hofHtml += `<div class="border-t border-amber-500/20 my-1.5"></div>`;
+                }
                 
                 if (pastWeeks.length > 0) {
                     let lastWeekKey = pastWeeks[0];
@@ -619,13 +631,11 @@
                     let bestSalmon = lastWeekCatches.filter(c => c.species && c.species.includes("Lax")).sort((a,b) => b.size - a.size)[0];
                     let bestTrout = lastWeekCatches.filter(c => c.species && c.species.includes("Öring")).sort((a,b) => b.size - a.size)[0];
 
-                    let hofHtml = "";
-                    hofHtml += bestSalmon ? `<div>🐟 <strong>Största Lax:</strong> ${bestSalmon.angler} (${bestSalmon.size} cm)</div>` : `<div>🐟 <strong>Största Lax:</strong> Ingen registrerad</div>`;
-                    hofHtml += bestTrout ? `<div>🐠 <strong>Största Öring:</strong> ${bestTrout.angler} (${bestTrout.size} cm)</div>` : `<div>🐠 <strong>Största Öring:</strong> Ingen registrerad</div>`;
-                    hofEl.innerHTML = hofHtml;
-                } else {
-                    hofEl.innerHTML = `Ingen tidigare vecka arkiverad än.`;
+                    hofHtml += bestSalmon ? `<div>🐟 <strong>Största Lax (${lastWeekKey}):</strong> ${bestSalmon.angler} (${bestSalmon.size} cm)</div>` : ``;
+                    hofHtml += bestTrout ? `<div>🐠 <strong>Största Öring (${lastWeekKey}):</strong> ${bestTrout.angler} (${bestTrout.size} cm)</div>` : ``;
                 }
+
+                hofEl.innerHTML = hofHtml || `Inga Hall of Fame-poster än. Bli den förste!`;
 
             } catch (e) {
                 console.error("Fel vid hämtning av highscores:", e);
@@ -912,7 +922,7 @@
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
                 cloudState.points = Math.max(0, (cloudState.points || 0) + amount);
-                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
+                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
                 showCustomAlert(`Gav ${amount} poäng till ${targetPlayer}. Ny summa: ${cloudState.points} p.`, "GM Admin");
             } else {
                 showCustomAlert("Hittade inte spelaren i molnet.", "Fel");
@@ -1302,7 +1312,6 @@
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Kantträd", saveanZones[currentZoneKey].name);
             updateUI();
             closeBiotopModal();
-            // Tyst plantering utan bekräftelseskylt
         }
 
         async function doBushPlanting(cost) {
@@ -1320,7 +1329,6 @@
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "Planterade Buske", saveanZones[currentZoneKey].name);
             updateUI();
             closeBiotopModal();
-            // Tyst plantering utan bekräftelseskylt
         }
 
         async function contributeToDam() {
@@ -1701,6 +1709,7 @@
             const zState = gameWorld.zones[currentZoneKey];
             let gravelBonus = (zState.gravels || []).length;
             let boulderBonus = (zState.boulders || []).length;
+            let nurseryBonus = (zState.nurseries || []).length;
 
             let overNursery = (zState.nurseries || []).some(n => castLine && Math.hypot(castLine.x - n.x, castLine.y - n.y) < 40);
 
@@ -1720,7 +1729,7 @@
                 return;
             }
 
-            let troutSalmonChance = 0.50 + Math.min(0.25, (gravelBonus + boulderBonus) * 0.03);
+            let troutSalmonChance = 0.50 + Math.min(0.25, (gravelBonus + boulderBonus) * 0.02);
             if (isRiseBonus) troutSalmonChance += 0.20;
             
             let species = "Öring";
@@ -1749,16 +1758,34 @@
                 }
             } else {
                 let baseSize = species === "Lax" ? 82 : (species === "Gädda" ? 70 : (species === "Öring" ? 44 : 30));
-                let biotopeSizeBonus = (gravelBonus * 1.5) + (boulderBonus * 2.0) + (gameWorld.laddersFixed ? 12 : 0) + (gameWorld.dayOfSeason * 1.2);
-                size = Math.floor(baseSize + (Math.random() * 18 - 4) + biotopeSizeBonus + (isRiseBonus ? 6 : 0));
-                if (species === "Lax" && size > 122) size = 122;
+                
+                // Halverad biotopbonus (0.75 / 1.0 per enhet istället för 1.5 / 2.0) + mjukare tak
+                let rawBiotopeBonus = (gravelBonus * 0.75) + (boulderBonus * 1.0) + (gameWorld.laddersFixed ? 10 : 0) + (gameWorld.dayOfSeason * 1.0);
+                let biotopeSizeBonus = Math.min(18, rawBiotopeBonus);
+
+                size = Math.floor(baseSize + (Math.random() * 14 - 3) + biotopeSizeBonus + (isRiseBonus ? 4 : 0));
+
+                // Kolla efter den ultrasällsynta 125cm legendariska laxen!
+                let isHeavyRod = !gameWorld.equipment.spec.includes("#6") && !gameWorld.equipment.spec.includes("Enhands");
+                let isOptimalConditions = gameWorld.laddersFixed && gravelBonus > 0 && boulderBonus > 0 && nurseryBonus > 0 && gameWorld.dayOfSeason === 7 && parseFloat(weatherData.flow) > 16;
+                
+                if (species === "Lax" && isHeavyRod && isOptimalConditions && Math.random() < 0.04) {
+                    size = 125;
+                } else if (species === "Lax" && size > 122) {
+                    size = 122;
+                }
+
+                // Hårt tak för öring på max 89 cm
+                if (species === "Öring" && size > 89) {
+                    size = 89;
+                }
             }
 
             currentFish = { species, size, gender };
-            let feelDescription = size > 85 ? "HUGG! En riktig jätte till lax rusar lina!" : (size > 65 ? "HUGG! Tunga knixar i spöt!" : "HUGG! Pigg fisk som kämpar!");
+            let feelDescription = size === 125 ? "MEGAGIGANTISK LUGN RUSH! ETT LIVSTIDSFÅNGST PÅ 125CM!" : (size > 85 ? "HUGG! En riktig jätte till lax rusar lina!" : (size > 65 ? "HUGG! Tunga knixar i spöt!" : "HUGG! Pigg fisk som kämpar!"));
 
             if ("vibrate" in navigator) {
-                navigator.vibrate(size > 85 ? [400, 100, 400, 100, 600] : [200, 80, 200]);
+                navigator.vibrate(size >= 100 ? [500, 100, 500, 100, 800] : [200, 80, 200]);
             }
             
             const gameContainer = document.getElementById('gameContainer');
@@ -1783,7 +1810,6 @@
             let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
 
             if (isLightRod && isLargeSalmon) {
-                // Klass #6 spö orkar inte med stor lax -> tafsen går av snabbt
                 totalFightDuration = 2.5;
             } else {
                 totalFightDuration = Math.min(15, Math.max(5, (currentFish.size / 115) * 15));
@@ -1803,7 +1829,7 @@
                 let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
 
                 let weightFactor = currentFish.size > 80 ? 6.5 : 3.5;
-                if (isLightRod && isLargeSalmon) weightFactor = 25.0; // Snabb stressökning
+                if (isLightRod && isLargeSalmon) weightFactor = 25.0;
 
                 let pullForce = (Math.random() - 0.38) * weightFactor;
 
@@ -1911,7 +1937,7 @@
             }
 
             if(survived) {
-                let pts = currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 50 : 40);
+                let pts = currentFish.size === 125 ? 500 : (currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 50 : 40));
 
                 if((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
                     gameWorld.points = Math.max(0, gameWorld.points - 30);
@@ -1922,7 +1948,11 @@
                     alertMsg += `Fisken var under minimimåttet (45 cm) och släpptes tillbaka varsamt. (+${pts} p) och du får tillbaka ett kast!`;
                 } else {
                     gameWorld.points += pts;
-                    alertMsg += `Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`;
+                    if (currentFish.size === 125) {
+                        alertMsg += `👑 LEGENDARISK 125 CM LAX! Du är automatiskt inskriven i Hall of Fame för all framtid! (+500 p)`;
+                    } else {
+                        alertMsg += `Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`;
+                    }
                 }
 
                 if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name, eqString);
@@ -1951,7 +1981,7 @@
                 alertMsg = "Du tog bort en skadlig smårovfisk! (+40 naturvårdspoäng).";
             } else {
                 s.population = Math.max(10, s.population - 1);
-                alertMsg = "Fisk hemtagen.";
+                alertMsg = currentFish.size === 125 ? "Du tog upp 125cm-laxen! En historisk trofé sparad till Hall of Fame." : "Fisk hemtagen.";
             }
 
             if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name, eqString);
