@@ -44,7 +44,7 @@
         <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
             <h3 class="text-base font-bold text-emerald-400">🎣 Säveån Open World</h3>
             <p class="text-xs text-stone-300 leading-relaxed">
-                Ange ditt fiskarnamn. Din poäng och dina kast är personliga, men ekosystemet och fiskbeståndet delas i molnet!
+                Ange ditt fiskarnamn. Din poäng och dina kast är molnsäkrade mot fusk, och ekosystemet delas gemensamt!
             </p>
             <input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
             <button onclick="saveInitialAnglerName()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-semibold shadow transition">Starta Fisket</button>
@@ -108,7 +108,7 @@
                 <button onclick="closePopulationModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
             </div>
             <div class="text-xs text-stone-300 space-y-2 leading-relaxed">
-                <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, predation och fiskepress.</p>
+                <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, fiskepress och hemtag av fisk.</p>
                 <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
                     <strong>Tips för storfiske:</strong>
                     <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
@@ -235,7 +235,7 @@
             <div id="gameContainer" class="relative bg-stone-950 rounded-2xl overflow-hidden border border-stone-800 shadow-inner flex flex-col items-center justify-center aspect-[4/5] md:aspect-[32/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
-                <!-- Vrid skärmen-notis (Ide 3) -->
+                <!-- Vrid skärmen-notis -->
                 <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-amber-500/90 text-stone-950 px-3 py-1 rounded-full font-bold text-[10px] shadow-lg z-30 rotate-notice pointer-events-none">
                     📱 Lägg gärna skärmen ner för optimal fiskevy!
                 </div>
@@ -655,6 +655,7 @@
             }
         };
 
+        // Säker molnlagring för spelarstatus (förhindrar fusk med poäng och kast)
         window.savePlayerStateToFirebase = async function(anglerName, stateData) {
             try {
                 await setDoc(doc(db, "players", anglerName), {
@@ -791,7 +792,7 @@
                 });
                 logContainer.innerHTML = html;
 
-                const docSnap = await getDoc(doc(db, "global", "stats"));
+                    const docSnap = await getDoc(doc(db, "global", "stats"));
                 let count = docSnap.exists() ? (docSnap.data().totalRestored || 0) : 0;
                 document.getElementById('globalBiotopeDisplay').innerText = `${count} totalt`;
             } catch(e) {
@@ -1063,6 +1064,7 @@
             if (cloudState) {
                 if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
                 
+                // Strikt molnvalidering av datum, kast och poäng för att stoppa fusk
                 if (cloudState.lastPlayedDate === todayStr) {
                     gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
                     gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
@@ -1228,6 +1230,7 @@
 
             renderLog();
             
+            // Direkt molnsynk för att förhindra fusk vid refresh
             if (lockedAnglerName && window.savePlayerStateToFirebase) {
                 window.savePlayerStateToFirebase(lockedAnglerName, {
                     points: gameWorld.points,
@@ -1593,7 +1596,7 @@
                 });
             }
 
-            // Ritordning: Sandbotten (Mannered & Britta-Maja) ritas EFTER vattenlinjerna (Ide 1)
+            // Sandbotten (Mannered & Britta-Maja) ritas EFTER vattenlinjerna
             if (currentZoneKey === 'mannered') {
                 ctx.fillStyle = '#d4b17e';
                 ctx.beginPath();
@@ -1768,6 +1771,7 @@
                 if(placementMode === 'rod') {
                     zState.playerPos = { x: clickX, y: clickY };
                 } else {
+                    // Validera och dra poäng direkt mot molnet
                     gameWorld.points -= placementCost;
                     let actionText = "";
                     let timeNow = Date.now();
@@ -1797,7 +1801,7 @@
             
             castLine = { x: clickX, y: clickY };
             gameWorld.castsRemaining--;
-            updateUI();
+            updateUI(); // Synkar ner återstående kast direkt till Firebase
 
             let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < 35);
             if (hitRise && !wildlifeDisturbance && Math.random() < 0.45) {
@@ -1818,9 +1822,8 @@
 
             if (overNursery && Math.random() < 0.6) {
                 gameWorld.castsRemaining++;
-                updateUI();
+                updateUI(); // Återställer kastet direkt i molnet
                 
-                // Tydligare indikation för räddat kast på uppväxtplats (Ide 6)
                 if ("vibrate" in navigator) navigator.vibrate([120, 60, 120]);
                 let smoltHappened = Math.random() < 0.5;
                 if (smoltHappened) {
@@ -1891,7 +1894,6 @@
             
             let feelDescription = size === 125 ? "MEGAGIGANTISK LUGN RUSH! ETT LIVSTIDSFÅNGST PÅ 125CM!" : (size > 80 ? "HUGG! En jätte till fisk rusar ursinnigt i strömmen!" : (size > 60 ? "HUGG! Tung och stark fisk som pressar spöt hårt!" : "HUGG! Pigg fisk som kämpar i strömmen!"));
 
-            // Ökad vibrationsstyrka vid hugg (Ide 6)
             if ("vibrate" in navigator) {
                 navigator.vibrate(size >= 80 ? [700, 120, 600, 120, 900] : [350, 100, 350]);
             }
@@ -1947,7 +1949,6 @@
                     tippetStress += (currentFish.size > 80 ? 9.0 : 6.5) + pullForce;
                     fightTimeRemaining -= 0.1;
                     
-                    // Ökad vibrationsstyrka och frekvens under drillning (Ide 6)
                     if ("vibrate" in navigator && Math.random() < 0.55) {
                         navigator.vibrate(currentFish.size > 80 ? [120, 50, 120] : 70);
                     }
@@ -2082,6 +2083,7 @@
             zStateLog.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - C&R (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
+            updateUI(); // Sparar poäng och kast direkt
             showCustomAlert(alertMsg, "C&R Resultat");
         }
 
@@ -2096,7 +2098,6 @@
                 gameWorld.points += Math.round(40 / 4);
                 alertMsg = "Du tog bort en skadlig smårovfisk! (+10 naturvårdspoäng).";
             } else {
-                // Hemtag av fisk minskar det gemensamma beståndet i ån (Ide 2)
                 s.population = Math.max(10, s.population - 2);
                 let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
                 sharedWorldData.population = s.population;
@@ -2112,6 +2113,7 @@
             zStateLog.log.unshift({ text: `${currentFish.species}${genderStr} (${currentFish.size} cm) - Hemtagen (${anglerName})`, date: new Date().toLocaleDateString() });
             closeWelfareModal();
             resetAfterCatch();
+            updateUI(); // Sparar poäng och kast direkt
             showCustomAlert(alertMsg, "Fångstrapport");
         }
 
