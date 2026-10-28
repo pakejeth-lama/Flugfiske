@@ -1528,11 +1528,24 @@
                 ctx.fill();
             }
 
-            ctx.fillStyle = 'rgba(253, 224, 71, 0.35)';
+            // Lekgrus med texturerade grå/mörka prickar
             (zState.gravels || []).forEach(g => {
+                ctx.fillStyle = 'rgba(253, 224, 71, 0.4)';
                 ctx.beginPath();
                 ctx.arc(g.x, g.y, 22, 0, Math.PI*2);
                 ctx.fill();
+
+                // Små grusprickar
+                ctx.fillStyle = 'rgba(80, 70, 50, 0.65)';
+                let dotOffsets = [
+                    {dx: -8, dy: -5}, {dx: 6, dy: -10}, {dx: -3, dy: 8}, 
+                    {dx: 10, dy: 4}, {dx: -12, dy: 2}, {dx: 2, dy: -2}
+                ];
+                dotOffsets.forEach(d => {
+                    ctx.beginPath();
+                    ctx.arc(g.x + d.dx, g.y + d.dy, 2.2, 0, Math.PI*2);
+                    ctx.fill();
+                });
             });
 
             // Dimmiga / halvt genomskinliga ståndstenar under vattnet
@@ -1563,19 +1576,6 @@
                 ctx.fill();
             });
 
-            let kahogRocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
-            if (currentZoneKey === 'kahogsforsen') {
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
-                kahogRocks.forEach(r => {
-                    ctx.beginPath();
-                    ctx.ellipse(r.x, r.y, 35, 18, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = 'rgba(226, 232, 240, 0.3)';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                });
-            }
-
             let currentFlow = parseFloat(weatherData.flow);
             let flowMultiplier = currentFlow > 14 ? 2.5 : 1.0;
             flowOffset += (1.5 + (currentFlow * 0.05)) * flowMultiplier;
@@ -1589,6 +1589,20 @@
                     ctx.lineTo(x + flowOffset, y + Math.sin((x + flowOffset) * 0.05) * 4);
                 }
                 ctx.stroke();
+            }
+
+            // Kåhögsforsen stenar placerade EFTER vattenlinjerna för att slippa streck
+            let kahogRocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
+            if (currentZoneKey === 'kahogsforsen') {
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                kahogRocks.forEach(r => {
+                    ctx.beginPath();
+                    ctx.ellipse(r.x, r.y, 35, 18, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(226, 232, 240, 0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                });
             }
 
             if (currentFlow > 14 && singleDriftLog) {
