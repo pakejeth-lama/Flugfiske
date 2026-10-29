@@ -39,7 +39,7 @@
 </head>
 <body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col select-none">
 
-    <!-- Säkerhets- och Laddningsslöja (Blockerar klick tills molnet har svarat) -->
+    <!-- Säkerhets- och Laddningsslöja med tidsspärr -->
     <div id="loadingOverlay" class="fixed inset-0 bg-stone-950/95 backdrop-blur-md flex flex-col items-center justify-center z-50 transition-opacity duration-500 p-4 text-center">
         <div class="flex flex-col items-center gap-3">
             <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
@@ -923,13 +923,24 @@
         const ctx = canvas.getContext('2d');
         let castLine = null;
 
+        let isOverlayHidden = false;
         function hideLoadingOverlay() {
+            if (isOverlayHidden) return;
+            isOverlayHidden = true;
             const overlay = document.getElementById('loadingOverlay');
             if (overlay) {
                 overlay.style.opacity = '0';
                 setTimeout(() => { overlay.classList.add('hidden'); }, 500);
             }
         }
+
+        // Bombsäker tidsspärr (Fail-safe): Tvingar bort slöjan efter max 3.5 sekunder oavsett molnsvar
+        setTimeout(() => {
+            if (!isOverlayHidden) {
+                console.warn("Tidsspärr utlöst: Tvingar bort laddningsslöjan.");
+                hideLoadingOverlay();
+            }
+        }, 3500);
 
         function showCustomAlert(text, title = "Meddelande") {
             document.getElementById('customAlertTitle').innerHTML = `<span>💬</span> ${title}`;
@@ -1086,62 +1097,72 @@
                 document.getElementById('nameModal').classList.add('flex');
             } else {
                 document.getElementById('currentAnglerLabel').innerText = lockedAnglerName;
-                await initCloudSession();
+                try {
+                    await initCloudSession();
+                } catch (e) {
+                    console.error("Kritiskt fel vid uppstart:", e);
+                    hideLoadingOverlay();
+                }
             }
         });
 
         async function initCloudSession() {
             if (!lockedAnglerName) return;
             
-            if (window.loadSharedWorld) {
-                let sharedWorldData = await window.loadSharedWorld();
-                if (sharedWorldData) {
-                    gameWorld.shared.population = sharedWorldData.population !== undefined ? sharedWorldData.population : gameWorld.shared.population;
-                    gameWorld.shared.maxPop = sharedWorldData.maxPop !== undefined ? sharedWorldData.maxPop : gameWorld.shared.maxPop;
-                    gameWorld.shared.trees = sharedWorldData.trees !== undefined ? sharedWorldData.trees : gameWorld.shared.trees;
-                    gameWorld.shared.bushes = sharedWorldData.bushes !== undefined ? sharedWorldData.bushes : gameWorld.shared.bushes;
-                    gameWorld.shared.damPoints = sharedWorldData.damPoints !== undefined ? sharedWorldData.damPoints : gameWorld.shared.damPoints;
-                    gameWorld.shared.damTarget = sharedWorldData.damTarget !== undefined ? sharedWorldData.damTarget : gameWorld.shared.damTarget;
-                    gameWorld.laddersFixed = sharedWorldData.laddersFixed !== undefined ? sharedWorldData.laddersFixed : gameWorld.laddersFixed;
-                    
-                    if (sharedWorldData.zones) {
-                        for (let zKey in sharedWorldData.zones) {
-                            if (gameWorld.zones[zKey]) {
-                                gameWorld.zones[zKey].gravels = sharedWorldData.zones[zKey].gravels || [];
-                                gameWorld.zones[zKey].boulders = sharedWorldData.zones[zKey].boulders || [];
-                                gameWorld.zones[zKey].nurseries = sharedWorldData.zones[zKey].nurseries || [];
+            try {
+                if (window.loadSharedWorld) {
+                    let sharedWorldData = await window.loadSharedWorld();
+                    if (sharedWorldData) {
+                        gameWorld.shared.population = sharedWorldData.population !== undefined ? sharedWorldData.population : gameWorld.shared.population;
+                        gameWorld.shared.maxPop = sharedWorldData.maxPop !== undefined ? sharedWorldData.maxPop : gameWorld.shared.maxPop;
+                        gameWorld.shared.trees = sharedWorldData.trees !== undefined ? sharedWorldData.trees : gameWorld.shared.trees;
+                        gameWorld.shared.bushes = sharedWorldData.bushes !== undefined ? sharedWorldData.bushes : gameWorld.shared.bushes;
+                        gameWorld.shared.damPoints = sharedWorldData.damPoints !== undefined ? sharedWorldData.damPoints : gameWorld.shared.damPoints;
+                        gameWorld.shared.damTarget = sharedWorldData.damTarget !== undefined ? sharedWorldData.damTarget : gameWorld.shared.damTarget;
+                        gameWorld.laddersFixed = sharedWorldData.laddersFixed !== undefined ? sharedWorldData.laddersFixed : gameWorld.laddersFixed;
+                        
+                        if (sharedWorldData.zones) {
+                            for (let zKey in sharedWorldData.zones) {
+                                if (gameWorld.zones[zKey]) {
+                                    gameWorld.zones[zKey].gravels = sharedWorldData.zones[zKey].gravels || [];
+                                    gameWorld.zones[zKey].boulders = sharedWorldData.zones[zKey].boulders || [];
+                                    gameWorld.zones[zKey].nurseries = sharedWorldData.zones[zKey].nurseries || [];
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            let cloudState = await window.loadPlayerStateFromFirebase(lockedAnglerName);
-            if (cloudState) {
-                if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
-                
-                if (cloudState.lastPlayedDate === todayStr) {
-                    gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
-                    gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
-                    gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
+                let cloudState = await window.loadPlayerStateFromFirebase(lockedAnglerName);
+                if (cloudState) {
+                    if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
+                    
+                    if (cloudState.lastPlayedDate === todayStr) {
+                        gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
+                        gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
+                        gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
+                    } else {
+                        gameWorld.points = (cloudState.points !== undefined ? cloudState.points : 700) + 100;
+                        gameWorld.lastPlayedDate = todayStr;
+                        gameWorld.castsRemaining = 5;
+                        gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
+                        if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
+                        
+                        gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 8);
+                        
+                        let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                        sharedWorldData.population = gameWorld.shared.population;
+                        if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
+                        await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
+                    }
                 } else {
-                    gameWorld.points = (cloudState.points !== undefined ? cloudState.points : 700) + 100;
-                    gameWorld.lastPlayedDate = todayStr;
-                    gameWorld.castsRemaining = 5;
-                    gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
-                    if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
-                    
-                    gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 8);
-                    
-                    let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-                    sharedWorldData.population = gameWorld.shared.population;
-                    if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
-
                     await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
                 }
-            } else {
-                await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
+            } catch (e) {
+                console.error("Fel vid molnsynk under initiering:", e);
             }
+
             await selectZone('dickson', 'Dickson');
             hideLoadingOverlay();
         }
@@ -1158,10 +1179,16 @@
             document.getElementById('nameModal').classList.add('hidden');
             document.getElementById('nameModal').classList.remove('flex');
             
-            // Visa slöjan igen medan vi laddar in den nya spelarens data
+            isOverlayHidden = false;
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.getElementById('loadingOverlay').style.opacity = '1';
-            await initCloudSession();
+            
+            try {
+                await initCloudSession();
+            } catch (e) {
+                console.error("Fel vid skapande av spelare:", e);
+                hideLoadingOverlay();
+            }
         }
 
         function resizeCanvas() {
@@ -1231,14 +1258,16 @@
                 }
             });
             
-            if (window.loadSharedWorld) {
-                let sharedWorldData = await window.loadSharedWorld();
-                if (sharedWorldData && sharedWorldData.zones && sharedWorldData.zones[key]) {
-                    gameWorld.zones[key].gravels = sharedWorldData.zones[key].gravels || [];
-                    gameWorld.zones[key].boulders = sharedWorldData.zones[key].boulders || [];
-                    gameWorld.zones[key].nurseries = sharedWorldData.zones[key].nurseries || [];
+            try {
+                if (window.loadSharedWorld) {
+                    let sharedWorldData = await window.loadSharedWorld();
+                    if (sharedWorldData && sharedWorldData.zones && sharedWorldData.zones[key]) {
+                        gameWorld.zones[key].gravels = sharedWorldData.zones[key].gravels || [];
+                        gameWorld.zones[key].boulders = sharedWorldData.zones[key].boulders || [];
+                        gameWorld.zones[key].nurseries = sharedWorldData.zones[key].nurseries || [];
+                    }
                 }
-            }
+            } catch(e) { console.error("Kunde inte ladda zondata", e); }
 
             wildlifeDisturbance = Math.random() < 0.25;
             const alertBox = document.getElementById('wildlifeAlert');
@@ -2177,7 +2206,7 @@
                 sharedWorldData.population = s.population;
                 if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                alertMsg = currentFish.size === 125 ? "Du tog upp trofén! En historisk fångst sparad till Hall of Fame. (Det gemensamma beståndet minskade)." : "Fisk hemtagen. Det gemensamma fiskbeståndet i Säveån has minskat något.";
+                alertMsg = currentFish.size === 125 ? "Du tog upp trofén! En historisk fångst sparad till Hall of Fame. (Det gemensamma beståndet minskade)." : "Fisk hemtagen. Det gemensamma fiskbeståndet i Säveån har minskat något.";
             }
 
             if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name, eqString);
