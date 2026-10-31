@@ -857,7 +857,7 @@
             laddersFixed: false,
             lastPlayedDate: todayStr,
             dayOfSeason: 1,
-            castsRemaining: 35,
+            castsRemaining: 5, // Tillbaks på 5 kast per dag som nollställs korrekt
             equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" },
             zones: {
                 dickson: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
@@ -1021,13 +1021,15 @@
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
-                cloudState.castsRemaining = 35;
+                cloudState.castsRemaining = 5;
                 cloudState.dayOfSeason = 1;
                 cloudState.lastPlayedDate = todayStr;
                 await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
-                showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 35 fulla kast!`, "GM Admin");
-                if (targetPlayer === lockedAnglerName) {
-                    gameWorld.castsRemaining = 35;
+                showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`, "GM Admin");
+                
+                // Om det är du själv som nollställs, uppdatera skärmen direkt!
+                if (targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
+                    gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = 1;
                     updateUI();
                 }
@@ -1148,14 +1150,15 @@
                 if (cloudState) {
                     if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
                     
+                    // Om det är samma dag, behåll poäng och kast. Om det är ny dag, nollställ alltid till fulla 5 kast!
                     if (cloudState.lastPlayedDate === todayStr) {
                         gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
-                        gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 35;
+                        gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
                         gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
                     } else {
                         gameWorld.points = (cloudState.points !== undefined ? cloudState.points : 700) + 100;
                         gameWorld.lastPlayedDate = todayStr;
-                        gameWorld.castsRemaining = 35; // Hela veckans pott (35 kast) nollställs varje ny dag
+                        gameWorld.castsRemaining = 5; // Alltid exakt 5 nya kast på en ny dag (inga sparade kast bärs med)
                         gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
                         if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
                         
@@ -1313,7 +1316,7 @@
 
             document.getElementById('conservationPoints').innerText = gameWorld.points + " p";
             document.getElementById('hudPopulation').innerText = s.population;
-            document.getElementById('castsLeft').innerText = `${gameWorld.castsRemaining} / 35`;
+            document.getElementById('castsLeft').innerText = `${gameWorld.castsRemaining} / 5`;
             document.getElementById('dayCounter').innerText = `Dag ${gameWorld.dayOfSeason}/7`;
             document.getElementById('currentFlyName').innerText = activeFly.name;
             document.getElementById('hudEqLabel').innerText = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
@@ -1355,7 +1358,7 @@
             try {
                 if(gameWorld.dayOfSeason < 7) {
                     gameWorld.dayOfSeason++;
-                    gameWorld.castsRemaining = 35;
+                    gameWorld.castsRemaining = 5;
                     const s = gameWorld.shared;
                     let totalGravels = 0, totalBoulders = 0, totalNurseries = 0;
                     Object.values(gameWorld.zones).forEach(z => {
@@ -1373,7 +1376,7 @@
                     if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
                     fetchWeather(currentZoneKey);
-                    document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 35 nya kast & +100 p!`;
+                    document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
                 } else {
                     showCustomAlert("Alla 7 dagar avklarade för idag! Kom tillbaka imorgon.", "Veckan slut");
                 }
@@ -1680,7 +1683,6 @@
                 ctx.fill();
             });
 
-            // Om menyer är öppna pausas spelet bakom (ström och fluga flyter inte iväg)
             let paused = isAnyModalOpen();
 
             let currentFlow = parseFloat(weatherData.flow);
@@ -1857,7 +1859,6 @@
             let clickX = e.clientX - rect.left;
             let clickY = e.clientY - rect.top;
 
-            // Spärr för land på Mannered (får stå på sanden, men inte kasta på land)
             if (currentZoneKey === 'mannered' && clickY < canvas.height * 0.4) {
                 showCustomAlert("Det är land här! Du kan inte kasta in på strandkanten på Mannered.", "Landzon");
                 return;
@@ -1915,7 +1916,7 @@
             }
 
             if(gameWorld.castsRemaining <= 0) {
-                showCustomAlert("Slut på kast för idag! Dagens kast är förbrukade.", "Slut på kast");
+                showCustomAlert("Slut på kast för idag! Dagens 5 kast är förbrukade.", "Slut på kast");
                 return;
             }
             
@@ -1953,7 +1954,7 @@
                 }
                 
                 if ("vibrate" in navigator) navigator.vibrate([120, 60, 120]);
-                let smoltSize = Math.floor(14 + Math.random() * 11); // Smoltstorlek t.ex. 14-24 cm
+                let smoltSize = Math.floor(14 + Math.random() * 11);
                 document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">⚡ UPPVÄXTOMRÅDE: Smolt (${smoltSize} cm) kroka av direkt tack vare hullinglösa krokar!</span>`;
                 showCustomAlert(`🐟 UPPVÄXTOMRÅDE!\n\nEtt lätt hugg kändes i spöt! Tack vare hullinglösa krokar krokade smolten (${smoltSize} cm) av sig själv under vattnet utan att röras. Ditt kast har återställts.`, "Skonsamt Fiske");
                 
