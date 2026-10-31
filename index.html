@@ -1017,7 +1017,6 @@
         }
 
         async function adminResetPlayerWeek() {
-            // .trim() rensar automatiskt osynliga mellanslag som mobila tangentbord kan lägga till
             let targetPlayer = document.getElementById('targetPlayerInput').value.trim();
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
             
@@ -1026,10 +1025,9 @@
                 cloudState.castsRemaining = 5;
                 cloudState.dayOfSeason = 1;
                 cloudState.lastPlayedDate = todayStr;
-                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
+                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
                 showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`, "GM Admin");
                 
-                // Om det är du själv som nollställs, uppdatera skärmen direkt!
                 if (targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
                     gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = 1;
@@ -1247,10 +1245,32 @@
                 if(data && data.current) {
                     weatherData.temp = data.current.temperature_2m;
                     weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
+                    
+                    // Extremt högflöde (kollas slumpmässigt vid väderhämtning med ~3% chans)
+                    let extremeFlood = Math.random() < 0.03;
+                    if (extremeFlood) {
+                        gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 300);
+                        // Skölj bort 1/3 av allt lekgrus på alla sträckor
+                        for (let zKey in gameWorld.zones) {
+                            let gravels = gameWorld.zones[zKey].gravels || [];
+                            if (gravels.length > 0) {
+                                let keepCount = Math.ceil(gravels.length * (2/3));
+                                gameWorld.zones[zKey].gravels = gravels.slice(0, keepCount);
+                            }
+                        }
+                        let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                        sharedWorldData.population = gameWorld.shared.population;
+                        sharedWorldData.zones = gameWorld.zones;
+                        if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+                        if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", "⚠️ EXTREMT HÖGFLÖDE! -300 fiskar & 1/3 lekgrus sköljdes bort!", saveanZones[key].name);
+                        showCustomAlert("⚠️ EXTREMT HÖGFLÖDE!\n\nEtt historiskt oväder drog fram över Säveån! Vattenmassorna slog ut -300 fiskar ur beståndet och spolade bort en tredjedel av allt utplacerat lekgrus. Ståndstenar och uppväxtplatser stod emot trycket!", "Naturkatastrof");
+                    }
+
                     let biotopeFlowBonus = ((zState.gravels || []).length * 0.8) + ((zState.boulders || []).length * 1.2);
-                    let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5) + biotopeFlowBonus;
+                    let floodExtra = extremeFlood ? 35 : 0;
+                    let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5) + biotopeFlowBonus + floodExtra;
                     weatherData.flow = Math.max(4, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
-                    weatherData.condition = data.current.precipitation > 0 ? "Regn / Dis" : "Klart / Växlande";
+                    weatherData.condition = extremeFlood ? "Extremt Högflöde / Skyfall" : (data.current.precipitation > 0 ? "Regn / Dis" : "Klart / Växlande");
                 }
             } catch(e) {
                 weatherData.temp = z.baseTemp;
@@ -1911,8 +1931,8 @@
                 return;
             }
 
+            // Spärr: Om flugan redan är ute (aktivt kast), gör ingenting (ingen pop-up rura)
             if (castLine !== null && castLine.x < canvas.width) {
-                showCustomAlert("Låt flugan fiska ut först innan nästa kast", "Fiskeetikett");
                 return;
             }
 
