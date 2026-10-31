@@ -1246,11 +1246,24 @@
                     weatherData.temp = data.current.temperature_2m;
                     weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
                     
-                    // Extremt högflöde (kollas slumpmässigt vid väderhämtning med ~3% chans)
+                    // Extrem torka (1% chans) som tar bort 50% av beståndet
+                    let extremeDrought = Math.random() < 0.01;
+                    if (extremeDrought) {
+                        let removedFish = Math.floor(gameWorld.shared.population * 0.5);
+                        gameWorld.shared.population = Math.max(30, gameWorld.shared.population - removedFish);
+                        
+                        let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                        sharedWorldData.population = gameWorld.shared.population;
+                        if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
+                        if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `☀️ EXTREM TORKA! -50% av beståndet (${removedFish} fiskar) slogs ut!`, saveanZones[key].name);
+                        showCustomAlert(`☀️ EXTREM TORKA!\n\nEn extrem värmebölja och torka har drabbat Säveån! Vattennivåerna sjunker drastiskt och syrehalten kraschar. 50% av fiskbeståndet (${removedFish} st) slogs ut.`, "Naturkatastrof");
+                    }
+
+                    // Extremt högflöde (~3% chans)
                     let extremeFlood = Math.random() < 0.03;
                     if (extremeFlood) {
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 300);
-                        // Skölj bort 1/3 av allt lekgrus på alla sträckor
                         for (let zKey in gameWorld.zones) {
                             let gravels = gameWorld.zones[zKey].gravels || [];
                             if (gravels.length > 0) {
@@ -1262,15 +1275,18 @@
                         sharedWorldData.population = gameWorld.shared.population;
                         sharedWorldData.zones = gameWorld.zones;
                         if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
                         if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", "⚠️ EXTREMT HÖGFLÖDE! -300 fiskar & 1/3 lekgrus sköljdes bort!", saveanZones[key].name);
                         showCustomAlert("⚠️ EXTREMT HÖGFLÖDE!\n\nEtt historiskt oväder drog fram över Säveån! Vattenmassorna slog ut -300 fiskar ur beståndet och spolade bort en tredjedel av allt utplacerat lekgrus. Ståndstenar och uppväxtplatser stod emot trycket!", "Naturkatastrof");
                     }
 
                     let biotopeFlowBonus = ((zState.gravels || []).length * 0.8) + ((zState.boulders || []).length * 1.2);
                     let floodExtra = extremeFlood ? 35 : 0;
-                    let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5) + biotopeFlowBonus + floodExtra;
-                    weatherData.flow = Math.max(4, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
-                    weatherData.condition = extremeFlood ? "Extremt Högflöde / Skyfall" : (data.current.precipitation > 0 ? "Regn / Dis" : "Klart / Växlande");
+                    let droughtExtra = extremeDrought ? -6 : 0;
+                    let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5) + biotopeFlowBonus + floodExtra + droughtExtra;
+                    weatherData.flow = Math.max(2, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
+                    
+                    weatherData.condition = extremeDrought ? "Extrem Torka / Lågvatten" : (extremeFlood ? "Extremt Högflöde / Skyfall" : (data.current.precipitation > 0 ? "Regn / Dis" : "Klart / Växlande"));
                 }
             } catch(e) {
                 weatherData.temp = z.baseTemp;
@@ -1931,7 +1947,6 @@
                 return;
             }
 
-            // Spärr: Om flugan redan är ute (aktivt kast), gör ingenting (ingen pop-up rura)
             if (castLine !== null && castLine.x < canvas.width) {
                 return;
             }
