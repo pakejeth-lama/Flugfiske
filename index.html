@@ -857,7 +857,7 @@
             laddersFixed: false,
             lastPlayedDate: todayStr,
             dayOfSeason: 1,
-            castsRemaining: 5, // Tillbaks på 5 kast per dag som nollställs korrekt
+            castsRemaining: 5,
             equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" },
             zones: {
                 dickson: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
@@ -1017,14 +1017,16 @@
         }
 
         async function adminResetPlayerWeek() {
+            // .trim() rensar automatiskt osynliga mellanslag som mobila tangentbord kan lägga till
             let targetPlayer = document.getElementById('targetPlayerInput').value.trim();
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
+            
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
                 cloudState.castsRemaining = 5;
                 cloudState.dayOfSeason = 1;
                 cloudState.lastPlayedDate = todayStr;
-                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
+                await window.savePlayerStateToFirebase(targetPlayer, cloudState);
                 showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`, "GM Admin");
                 
                 // Om det är du själv som nollställs, uppdatera skärmen direkt!
@@ -1034,7 +1036,7 @@
                     updateUI();
                 }
             } else {
-                showCustomAlert("Hittade inte spelaren i molnet.", "Fel");
+                showCustomAlert(`Hittade inte spelaren "${targetPlayer}" i molnet. Kolla versaler/gemener!`, "Fel");
             }
         }
 
@@ -1150,7 +1152,6 @@
                 if (cloudState) {
                     if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
                     
-                    // Om det är samma dag, behåll poäng och kast. Om det är ny dag, nollställ alltid till fulla 5 kast!
                     if (cloudState.lastPlayedDate === todayStr) {
                         gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
                         gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
@@ -1158,7 +1159,7 @@
                     } else {
                         gameWorld.points = (cloudState.points !== undefined ? cloudState.points : 700) + 100;
                         gameWorld.lastPlayedDate = todayStr;
-                        gameWorld.castsRemaining = 5; // Alltid exakt 5 nya kast på en ny dag (inga sparade kast bärs med)
+                        gameWorld.castsRemaining = 5;
                         gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
                         if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
                         
