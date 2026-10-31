@@ -522,10 +522,10 @@
                 <h3 class="text-sm font-bold text-stone-200 flex items-center gap-1.5">
                     <span>🪰</span> Välj Fluga
                 </h3>
-                <button onclick="document.getElementById('flyModal').classList.add('hidden')" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+                <button onclick="closeFlyModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
             </div>
             <div id="flyList" class="flex flex-col gap-1.5 max-h-60 overflow-y-auto"></div>
-            <button onclick="document.getElementById('flyModal').classList.add('hidden')" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 py-2.5 rounded-xl text-xs font-semibold mt-1">Stäng</button>
+            <button onclick="closeFlyModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 py-2.5 rounded-xl text-xs font-semibold mt-1">Stäng</button>
         </div>
     </div>
 
@@ -857,7 +857,7 @@
             laddersFixed: false,
             lastPlayedDate: todayStr,
             dayOfSeason: 1,
-            castsRemaining: 5,
+            castsRemaining: 35,
             equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" },
             zones: {
                 dickson: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
@@ -934,13 +934,24 @@
             }
         }
 
-        // Bombsäker tidsspärr (Fail-safe): Tvingar bort slöjan efter max 3.5 sekunder oavsett molnsvar
         setTimeout(() => {
             if (!isOverlayHidden) {
                 console.warn("Tidsspärr utlöst: Tvingar bort laddningsslöjan.");
                 hideLoadingOverlay();
             }
         }, 3500);
+
+        function isAnyModalOpen() {
+            return !document.getElementById('nameModal').classList.contains('hidden') ||
+                   !document.getElementById('customAlertModal').classList.contains('hidden') ||
+                   !document.getElementById('equipmentModal').classList.contains('hidden') ||
+                   !document.getElementById('populationModal').classList.contains('hidden') ||
+                   !document.getElementById('adminModal').classList.contains('hidden') ||
+                   !document.getElementById('biotopModal').classList.contains('hidden') ||
+                   !document.getElementById('highscoreModal').classList.contains('hidden') ||
+                   !document.getElementById('welfareModal').classList.contains('hidden') ||
+                   !document.getElementById('flyModal').classList.contains('hidden');
+        }
 
         function showCustomAlert(text, title = "Meddelande") {
             document.getElementById('customAlertTitle').innerHTML = `<span>💬</span> ${title}`;
@@ -1010,13 +1021,13 @@
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
-                cloudState.castsRemaining = 5;
+                cloudState.castsRemaining = 35;
                 cloudState.dayOfSeason = 1;
                 cloudState.lastPlayedDate = todayStr;
                 await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
-                showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`, "GM Admin");
+                showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 35 fulla kast!`, "GM Admin");
                 if (targetPlayer === lockedAnglerName) {
-                    gameWorld.castsRemaining = 5;
+                    gameWorld.castsRemaining = 35;
                     gameWorld.dayOfSeason = 1;
                     updateUI();
                 }
@@ -1139,12 +1150,12 @@
                     
                     if (cloudState.lastPlayedDate === todayStr) {
                         gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
-                        gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
+                        gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 35;
                         gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
                     } else {
                         gameWorld.points = (cloudState.points !== undefined ? cloudState.points : 700) + 100;
                         gameWorld.lastPlayedDate = todayStr;
-                        gameWorld.castsRemaining = 5;
+                        gameWorld.castsRemaining = 35; // Hela veckans pott (35 kast) nollställs varje ny dag
                         gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
                         if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
                         
@@ -1302,7 +1313,7 @@
 
             document.getElementById('conservationPoints').innerText = gameWorld.points + " p";
             document.getElementById('hudPopulation').innerText = s.population;
-            document.getElementById('castsLeft').innerText = `${gameWorld.castsRemaining} / 5`;
+            document.getElementById('castsLeft').innerText = `${gameWorld.castsRemaining} / 35`;
             document.getElementById('dayCounter').innerText = `Dag ${gameWorld.dayOfSeason}/7`;
             document.getElementById('currentFlyName').innerText = activeFly.name;
             document.getElementById('hudEqLabel').innerText = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
@@ -1344,7 +1355,7 @@
             try {
                 if(gameWorld.dayOfSeason < 7) {
                     gameWorld.dayOfSeason++;
-                    gameWorld.castsRemaining = 5;
+                    gameWorld.castsRemaining = 35;
                     const s = gameWorld.shared;
                     let totalGravels = 0, totalBoulders = 0, totalNurseries = 0;
                     Object.values(gameWorld.zones).forEach(z => {
@@ -1362,9 +1373,9 @@
                     if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
                     fetchWeather(currentZoneKey);
-                    document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
+                    document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 35 nya kast & +100 p!`;
                 } else {
-                    showCustomAlert("Alla 7 dagar (35 kast) avklarade för idag! Kom tillbaka imorgon.", "Veckan slut");
+                    showCustomAlert("Alla 7 dagar avklarade för idag! Kom tillbaka imorgon.", "Veckan slut");
                 }
                 updateUI();
             } finally {
@@ -1400,6 +1411,10 @@
         function closeHighscoreModal() {
             document.getElementById('highscoreModal').classList.add('hidden');
             document.getElementById('highscoreModal').classList.remove('flex');
+        }
+
+        function closeFlyModal() {
+            document.getElementById('flyModal').classList.add('hidden');
         }
 
         function startPlacement(type, cost) {
@@ -1665,10 +1680,15 @@
                 ctx.fill();
             });
 
+            // Om menyer är öppna pausas spelet bakom (ström och fluga flyter inte iväg)
+            let paused = isAnyModalOpen();
+
             let currentFlow = parseFloat(weatherData.flow);
             let flowMultiplier = currentFlow > 14 ? 2.5 : 1.0;
-            flowOffset += (1.5 + (currentFlow * 0.05)) * flowMultiplier;
-            if(flowOffset > 40) flowOffset = 0;
+            if (!paused) {
+                flowOffset += (1.5 + (currentFlow * 0.05)) * flowMultiplier;
+                if(flowOffset > 40) flowOffset = 0;
+            }
             
             ctx.strokeStyle = currentFlow > 14 ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.2)';
             ctx.lineWidth = currentFlow > 14 ? 1.5 : 1;
@@ -1719,8 +1739,10 @@
             }
 
             if (currentFlow > 14 && singleDriftLog) {
-                singleDriftLog.x += singleDriftLog.speed * 1.8;
-                if (singleDriftLog.x > canvas.width + 50) singleDriftLog.x = -80;
+                if (!paused) {
+                    singleDriftLog.x += singleDriftLog.speed * 1.8;
+                    if (singleDriftLog.x > canvas.width + 50) singleDriftLog.x = -80;
+                }
 
                 ctx.fillStyle = '#78350f';
                 ctx.fillRect(singleDriftLog.x, singleDriftLog.y, singleDriftLog.width, singleDriftLog.height);
@@ -1730,14 +1752,16 @@
             }
 
             rises.forEach(r => {
-                r.timer++;
-                if(r.timer > 150) {
-                    r.radius += 0.4;
-                    r.alpha = Math.max(0, 1 - (r.radius / r.maxRadius));
-                    if(r.radius > r.maxRadius) {
-                        r.radius = 2; r.alpha = 1.0; r.timer = 0;
-                        r.x = 60 + Math.random() * (canvas.width - 120);
-                        r.y = 70 + Math.random() * (canvas.height - 140);
+                if (!paused) {
+                    r.timer++;
+                    if(r.timer > 150) {
+                        r.radius += 0.4;
+                        r.alpha = Math.max(0, 1 - (r.radius / r.maxRadius));
+                        if(r.radius > r.maxRadius) {
+                            r.radius = 2; r.alpha = 1.0; r.timer = 0;
+                            r.x = 60 + Math.random() * (canvas.width - 120);
+                            r.y = 70 + Math.random() * (canvas.height - 140);
+                        }
                     }
                 }
                 ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.6})`;
@@ -1774,7 +1798,7 @@
                 ctx.arc(castLine.x, castLine.y + bobbing, 3.5, 0, Math.PI * 2);
                 ctx.fill();
 
-                if(!isFighting) {
+                if(!isFighting && !paused) {
                     let baseDriftSpeed = 0.4 + (currentFlow * 0.04);
                     let driftSpeed = currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed;
                     castLine.x += driftSpeed;
@@ -1826,13 +1850,14 @@
         window.addEventListener('touchend', () => { isPressingScreen = false; });
 
         canvas.addEventListener('click', async (e) => {
-            if(isFighting) return;
+            if(isFighting || isAnyModalOpen()) return;
             if(wildlifeDisturbance) return showCustomAlert("Djur skrämmer fisken! Byt sträcka.", "Störning");
 
             const rect = canvas.getBoundingClientRect();
             let clickX = e.clientX - rect.left;
             let clickY = e.clientY - rect.top;
 
+            // Spärr för land på Mannered (får stå på sanden, men inte kasta på land)
             if (currentZoneKey === 'mannered' && clickY < canvas.height * 0.4) {
                 showCustomAlert("Det är land här! Du kan inte kasta in på strandkanten på Mannered.", "Landzon");
                 return;
@@ -1885,12 +1910,12 @@
             }
 
             if (castLine !== null && castLine.x < canvas.width) {
-                showCustomAlert("Du kan inte göra ett nytt kast förrän flugan har åkt ur bilden eller hemtagits!", "Vänta");
+                showCustomAlert("Låt flugan fiska ut först innan nästa kast", "Fiskeetikett");
                 return;
             }
 
             if(gameWorld.castsRemaining <= 0) {
-                showCustomAlert("Slut på kast för idag! Dagens 5 kast är förbrukade.", "Slut på kast");
+                showCustomAlert("Slut på kast för idag! Dagens kast är förbrukade.", "Slut på kast");
                 return;
             }
             
@@ -1928,14 +1953,10 @@
                 }
                 
                 if ("vibrate" in navigator) navigator.vibrate([120, 60, 120]);
-                let smoltHappened = Math.random() < 0.5;
-                if (smoltHappened) {
-                    document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">⚡ UPPVÄXTOMRÅDE: Liten smolt kroka av direkt! Kastet räknas ej (+1 kast återställt).</span>`;
-                    showCustomAlert("🐟 UPPVÄXTOMRÅDE!\n\nEtt lätt plask – en liten smolt nappade men kroka av sig själv direkt! Ditt kast har återställts.", "Skonsamt Fiske");
-                } else {
-                    document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">⚡ UPPVÄXTOMRÅDE: Ett nafs som inte krokade! Kastet räknas ej (+1 kast återställt).</span>`;
-                    showCustomAlert("⚡ UPPVÄXTOMRÅDE!\n\nEtt rappt nafs i strömmen som inte fastnade! Ditt kast har återställts.", "Skonsamt Fiske");
-                }
+                let smoltSize = Math.floor(14 + Math.random() * 11); // Smoltstorlek t.ex. 14-24 cm
+                document.getElementById('castStatus').innerHTML = `<span class="text-amber-400 font-bold">⚡ UPPVÄXTOMRÅDE: Smolt (${smoltSize} cm) kroka av direkt tack vare hullinglösa krokar!</span>`;
+                showCustomAlert(`🐟 UPPVÄXTOMRÅDE!\n\nEtt lätt hugg kändes i spöt! Tack vare hullinglösa krokar krokade smolten (${smoltSize} cm) av sig själv under vattnet utan att röras. Ditt kast har återställts.`, "Skonsamt Fiske");
+                
                 castLine = null;
                 return;
             }
@@ -2230,7 +2251,7 @@
             if(isFighting) return;
             const list = document.getElementById('flyList');
             list.innerHTML = flies.map(f => `
-                <div onclick="activeFly = flies.find(x => x.name === '${f.name}'); updateUI(); document.getElementById('flyModal').classList.add('hidden');" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 hover:border-emerald-500 cursor-pointer flex justify-between text-xs transition">
+                <div onclick="activeFly = flies.find(x => x.name === '${f.name}'); updateUI(); closeFlyModal();" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 hover:border-emerald-500 cursor-pointer flex justify-between text-xs transition">
                     <span class="font-bold text-stone-200">${f.name}</span>
                     <span class="text-stone-400 text-[9px]">${f.type}</span>
                 </div>
