@@ -415,7 +415,7 @@
             <div class="flex flex-col gap-1.5 text-[11px]">
                 <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
                     <div><span class="font-bold text-stone-200">Placera Lekgrus</span></div>
-                    <button onclick="startPlacement('gravel', 300)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">300 p</button>
+                    <button onclick="startPlacement('gravel', 150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">150 p</button>
                 </div>
 
                 <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
@@ -941,7 +941,7 @@
             { name: "Mysen", type: "Laxfluga / Tubfluga", category: "salmon" },
             { name: "Ullsock", type: "Laxfluga (Säveån klassiker)", category: "salmon" },
             { name: "Sunray Shadow", type: "Laxfluga (Tubfluga)", category: "salmon" },
-            { name: "Francis (Röd)", type: "Laxfluga", category: "salmon" },
+            { name: "Pärs räka", type: "Laxfluga", category: "salmon" },
             { name: "Klinkhammer", type: "Torrfluga (Öring)", category: "dry" },
             { name: "Caddis", type: "Torrfluga (Öring / Nattslända)", category: "dry" },
             { name: "Europa 12", type: "Torrfluga (Öring)", category: "dry" },
@@ -1097,7 +1097,6 @@
             let targetPlayer = document.getElementById('targetPlayerInput').value.trim();
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
             
-            // Uppdatera lokalt om det är den inloggade spelaren
             if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
                 gameWorld.castsRemaining = 5;
                 gameWorld.dayOfSeason = 1;
@@ -1245,6 +1244,7 @@
                         gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
                         if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
                         
+                        // TRÖGARE ÅTERHÄMTNING: Endast +1 fisk per dag naturlig tillväxt (istället för tidigare +3)
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 8);
                         
                         let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
@@ -1489,8 +1489,10 @@
                         totalBoulders += (z.boulders || []).length;
                         totalNurseries += (z.nurseries || []).length;
                     });
-                    let breedBoost = (totalGravels * 5) + (totalBoulders * 3) + (totalNurseries * 6) + (gameWorld.laddersFixed ? 15 : 0);
-                    s.population = Math.min(s.maxPop, s.population + breedBoost + 3);
+                    
+                    // TRÖGARE ÅTERHÄMTNING: Sänkt reproduktionsboost per dag
+                    let breedBoost = Math.floor((totalGravels * 2) + (totalBoulders * 1.5) + (totalNurseries * 3) + (gameWorld.laddersFixed ? 8 : 0));
+                    s.population = Math.min(s.maxPop, s.population + breedBoost + 1);
                     gameWorld.points += 100;
                     
                     let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
@@ -1597,22 +1599,23 @@
             if (latest.type === 'gravel') {
                 zState.gravels.splice(latest.index, 1);
                 removedName = "Lekgrus";
+                gameWorld.points += 75; // Halverad återbäring vid ångra (satt till 75 eftersom kostnaden nu är 150)
             } else if (latest.type === 'boulder') {
                 zState.boulders.splice(latest.index, 1);
                 gameWorld.shared.maxPop -= 15;
                 removedName = "Ståndsten";
+                gameWorld.points += 200;
             } else if (latest.type === 'nursery') {
                 zState.nurseries.splice(latest.index, 1);
                 removedName = "Uppväxtplats";
+                gameWorld.points += 125;
             }
-
-            gameWorld.points += 150;
             
             await saveCurrentZoneBiotopeToCloud();
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort ${removedName}`, saveanZones[currentZoneKey].name);
             updateUI();
             closeBiotopModal();
-            showCustomAlert(`Tog bort din senaste ${removedName}! 150 p återbetalade.`, "Åtgärd borttagen");
+            showCustomAlert(`Tog bort din senaste ${removedName}! Poäng återbetalade.`, "Åtgärd borttagen");
         }
 
         async function doTreePlanting(cost) {
@@ -2100,6 +2103,10 @@
                 species = "Öring";
             } else {
                 let nonSalmonOptions = ["Abborre", "Gädda", "Färna", "Id", "Mört"];
+                // Filtrera bort Mört om flödet är 5 m³/s eller högre
+                if (currentFlowVal >= 5.0) {
+                    nonSalmonOptions = nonSalmonOptions.filter(opt => opt !== "Mört");
+                }
                 species = nonSalmonOptions[Math.floor(Math.random() * nonSalmonOptions.length)];
             }
 
@@ -2114,7 +2121,8 @@
                 else if (abRand < 0.97) size = Math.floor(35 + Math.random() * 6);
                 else size = Math.floor(41 + Math.random() * 5);
             } else if (species === "Mört") {
-                size = Math.floor(18 + Math.random() * 14);
+                // MÖRT-JUSTERING: Mindre storlek (10–18 cm)
+                size = Math.floor(10 + Math.random() * 9);
             } else if (species === "Id") {
                 size = Math.floor(30 + Math.random() * 20);
             } else if (species === "Färna") {
