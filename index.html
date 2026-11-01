@@ -1097,18 +1097,24 @@
             let targetPlayer = document.getElementById('targetPlayerInput').value.trim();
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
             
+            // Uppdatera direkt lokalt om det är du själv som nollställs
+            if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
+                gameWorld.castsRemaining = 5;
+                updateUI();
+            }
+
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
                 cloudState.castsRemaining = 5;
                 await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
-                showCustomAlert(`Alla kast har återställts till 5 st för ${targetPlayer}!`, "GM Admin");
-                
-                if (targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
-                    gameWorld.castsRemaining = 5;
-                    updateUI();
-                }
+                showCustomAlert(`Alla kast har nollställts till 5 st för ${targetPlayer}!`, "GM Admin");
             } else {
-                showCustomAlert(`Hittade inte spelaren "${targetPlayer}" i molnet. Kolla versaler/gemener!`, "Fel");
+                if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
+                    await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
+                    showCustomAlert(`Alla kast har nollställts till 5 st för ${targetPlayer}!`, "GM Admin");
+                } else {
+                    showCustomAlert(`Hittade inte spelaren "${targetPlayer}" i molnet. Kolla versaler/gemener!`, "Fel");
+                }
             }
         }
 
