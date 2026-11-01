@@ -169,9 +169,9 @@
 
             <div id="adminToolsView" class="hidden flex flex-col gap-3 text-xs">
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
-                    <span class="font-bold text-emerald-400">Nollställ hela fiskeveckan:</span>
+                    <span class="font-bold text-emerald-400">Återställ kast för spelare:</span>
                     <input type="text" id="targetPlayerInput" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
-                    <button onclick="adminResetPlayerWeek()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl font-semibold">Återställ vecka (Dag 1 & 5 kast)</button>
+                    <button onclick="adminResetPlayerWeek()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl font-semibold">Återställ alla kast</button>
                 </div>
 
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
@@ -1100,14 +1100,11 @@
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
                 cloudState.castsRemaining = 5;
-                cloudState.dayOfSeason = 1;
-                cloudState.lastPlayedDate = todayStr;
                 await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
-                showCustomAlert(`Heja ${targetPlayer}! Fiskeveckan är nollställd till Dag 1 med 5 nya kast!`, "GM Admin");
+                showCustomAlert(`Alla kast har återställts till 5 st för ${targetPlayer}!`, "GM Admin");
                 
                 if (targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
                     gameWorld.castsRemaining = 5;
-                    gameWorld.dayOfSeason = 1;
                     updateUI();
                 }
             } else {
@@ -2078,11 +2075,9 @@
                 return;
             }
 
-            // KONTROLL AV UTRUSTNING FÖR LAX (Kräver klass #7 eller högre, dvs ej #6)
             let rodSpecStr = gameWorld.equipment.spec;
             let isTooLightRodForSalmon = rodSpecStr.includes("#6");
 
-            // Lax triggas ALDRIG av torrflugor eller om spöt är för klent (#6)
             let canCatchSalmon = (activeFly.category !== 'dry') && !isTooLightRodForSalmon;
             
             let species = "Öring";
@@ -2119,7 +2114,6 @@
                 let rawBiotopeBonus = (gravelBonus * 0.4) + (boulderBonus * 0.6) + (gameWorld.laddersFixed ? 6 : 0) + (gameWorld.dayOfSeason * 0.6);
                 let biotopeSizeBonus = Math.min(10, rawBiotopeBonus);
 
-                // BALANSERAD FLÖDESBONUS FÖR LAX (Vid flöden ≥ 20 m³/s) - Ger både mellanlax och chans på storfisk
                 let highFlowBonus = (species === "Lax" && currentFlowVal >= 20.0) ? Math.floor(Math.random() * 14) : 0;
 
                 let sizeRoll = Math.random();
@@ -2354,7 +2348,7 @@
                 sharedWorldData.population = s.population;
                 if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                alertMsg = currentFish.size === 125 ? "Du tog upp trofén! En historisk fångst sparad till Hall of Fame. (Det gemensamma beståndet minskade)." : "Fisk hemtagen. Det gemensamma fiskbeståndet i Säveån ha minskat något.";
+                alertMsg = currentFish.size === 125 ? "Du tog upp trofén! En historisk fångst sparad till Hall of Fame. (Det gemensamma beståndet minskade)." : "Fisk hemtagen. Det gemensamma fiskbeståndet i Säveån har minskat något.";
             }
 
             if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name, eqString);
