@@ -114,8 +114,9 @@
                 <div>
                     <label class="text-stone-400 text-[10px] block mb-1">Spölängd & Klass:</label>
                     <select id="eqRodSpec" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-stone-200 text-xs">
-                        <option value="9 fot #6 (Enhands)">9 fot #6 (Enhands)</option>
-                        <option value="10 fot #7 (Enhands)">10 fot #7 (Enhands)</option>
+                        <option value="9 fot #6 (Enhands)">9 fot #6 (Enhands - Lätt)</option>
+                        <option value="10 fot #7 (Enhands)">10 fot #7 (Enhands - Medel)</option>
+                        <option value="10 fot #8 (Enhands)">10 fot #8 (Enhands - Kraftig)</option>
                         <option value="11 fot #8 (Switch)">11 fot #8 (Switch)</option>
                         <option value="13 fot #9/10 (Tvåhands)">13 fot #9/10 (Tvåhands)</option>
                         <option value="14 fot #10/11 (Tvåhands)">14 fot #10/11 (Tvåhands)</option>
@@ -140,10 +141,9 @@
                 <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
                     <strong>Tips för storfiske:</strong>
                     <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
-                        <li>Stora fiskar kräver god bärförmåga (maxPop) och ståndstenar</li>
-                        <li>Lax hugger KUN på lax/tubflugor i strömdrag (ej torrflugor!)</li>
-                        <li>Öring är opportunistisk och hugger på nästan alla flugtyper</li>
-                        <li>Vid flöden ≥ 20 m³/s stiger snittstorleken på laxen drastiskt</li>
+                        <li>Lax kräver spö klass #7 eller grövre (#8 enhands, switch eller tvåhands)</li>
+                        <li>Lax hugger på lax/tubflugor i strömdrag (ej torrflugor)</li>
+                        <li>Vid högt flöde (≥ 20 m³/s) rör sig fin mellanlax och storfisk i ån</li>
                     </ul>
                 </div>
             </div>
@@ -1323,7 +1323,6 @@
                     weatherData.temp = data.current.temperature_2m;
                     weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
                     
-                    // Extrem torka (1% chans) - minskar population med 50% & sänker maxPop permanent (-40)
                     let extremeDrought = Math.random() < 0.01;
                     if (extremeDrought) {
                         let removedFish = Math.floor(gameWorld.shared.population * 0.5);
@@ -1339,7 +1338,6 @@
                         showCustomAlert(`☀️ EXTREM TORKA!\n\nEn extrem värmebölja har drabbat Säveån! Vattennivåerna sjunker och syrekris slår ut 50% av fiskbeståndet (${removedFish} st). Dessutom sänktes åns bärförmåga (maxPop).`, "Naturkatastrof");
                     }
 
-                    // Extremt högflöde (~3% chans) - minskar population med 300 & sänker maxPop permanent (-50)
                     let extremeFlood = Math.random() < 0.03;
                     if (extremeFlood) {
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 300);
@@ -1552,7 +1550,7 @@
             placementMode = 'rod';
             const banner = document.getElementById('modeBanner');
             banner.innerText = `Placera ståplats: Klicka där du vill stå!`;
-            banner.classList.remove('hidden');
+            banner.classList.add('hidden');
         }
 
         async function saveCurrentZoneBiotopeToCloud() {
@@ -2063,7 +2061,6 @@
 
             let overNursery = (zState.nurseries || []).some(n => castLine && Math.hypot(castLine.x - n.x, castLine.y - n.y) < 45);
 
-            // Ökad chans för Smolt i uppväxtområde (75% chans)
             if (overNursery && Math.random() < 0.75) {
                 gameWorld.castsRemaining++;
                 updateUI();
@@ -2081,9 +2078,12 @@
                 return;
             }
 
-            // ART- och FLUGMEKANIK:
-            // Lax triggas ALDRIG av rena torrflugor (dry)
-            let canCatchSalmon = activeFly.category !== 'dry'; 
+            // KONTROLL AV UTRUSTNING FÖR LAX (Kräver klass #7 eller högre, dvs ej #6)
+            let rodSpecStr = gameWorld.equipment.spec;
+            let isTooLightRodForSalmon = rodSpecStr.includes("#6");
+
+            // Lax triggas ALDRIG av torrflugor eller om spöt är för klent (#6)
+            let canCatchSalmon = (activeFly.category !== 'dry') && !isTooLightRodForSalmon;
             
             let species = "Öring";
             let gender = "";
@@ -2092,7 +2092,7 @@
             if (canCatchSalmon && (currentFlowVal >= 16 || boulderBonus > 0) && rand < 0.45) {
                 species = "Lax";
             } else if (rand < 0.75) {
-                species = "Öring"; // Öringen hugger opportunistiskt på allt!
+                species = "Öring";
             } else {
                 let nonSalmonOptions = ["Abborre", "Gädda", "Färna", "Id", "Mört"];
                 species = nonSalmonOptions[Math.floor(Math.random() * nonSalmonOptions.length)];
@@ -2119,18 +2119,18 @@
                 let rawBiotopeBonus = (gravelBonus * 0.4) + (boulderBonus * 0.6) + (gameWorld.laddersFixed ? 6 : 0) + (gameWorld.dayOfSeason * 0.6);
                 let biotopeSizeBonus = Math.min(10, rawBiotopeBonus);
 
-                // FLÖDESBONUS FÖR STOR LAX (Vid flöden ≥ 20 m³/s)
-                let highFlowBonus = (species === "Lax" && currentFlowVal >= 20.0) ? (10 + Math.floor(Math.random() * 20)) : 0;
+                // BALANSERAD FLÖDESBONUS FÖR LAX (Vid flöden ≥ 20 m³/s) - Ger både mellanlax och chans på storfisk
+                let highFlowBonus = (species === "Lax" && currentFlowVal >= 20.0) ? Math.floor(Math.random() * 14) : 0;
 
                 let sizeRoll = Math.random();
                 let trophyChanceAdd = (isRiseBonus && (gravelBonus + boulderBonus >= 3)) ? (sizeRoll < 0.12 ? Math.random() * 22 : Math.random() * 8) : (sizeRoll < 0.04 ? Math.random() * 15 : Math.random() * 6);
 
                 size = Math.floor(baseSize + trophyChanceAdd + biotopeSizeBonus + highFlowBonus);
 
-                let isHeavyRod = !gameWorld.equipment.spec.includes("#6") && !gameWorld.equipment.spec.includes("Enhands");
+                let isLightRod = rodSpecStr.includes("#6");
                 let isOptimalConditions = gameWorld.laddersFixed && gravelBonus > 0 && boulderBonus > 0 && nurseryBonus > 0 && gameWorld.dayOfSeason === 7 && currentFlowVal > 16;
                 
-                if (species === "Lax" && isHeavyRod && isOptimalConditions && Math.random() < 0.02) {
+                if (species === "Lax" && !isLightRod && isOptimalConditions && Math.random() < 0.02) {
                     size = 125;
                 } else if (species === "Lax" && size > 122) {
                     size = 122;
@@ -2167,7 +2167,7 @@
             isPressingScreen = false;
             tippetStress = 20;
 
-            let isLightRod = gameWorld.equipment.spec.includes("#6") || gameWorld.equipment.spec.includes("Enhands");
+            let isLightRod = gameWorld.equipment.spec.includes("#6");
             let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
             let isLargeTrout = currentFish.species === "Öring" && currentFish.size > 65;
 
@@ -2187,7 +2187,7 @@
             fightInterval = setInterval(() => {
                 if(!isFighting) return;
 
-                let isLightRod = gameWorld.equipment.spec.includes("#6") || gameWorld.equipment.spec.includes("Enhands");
+                let isLightRod = gameWorld.equipment.spec.includes("#6");
                 let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
                 let isLargeTrout = currentFish.species === "Öring" && currentFish.size > 65;
 
@@ -2243,7 +2243,7 @@
             document.getElementById('fightOverlay').classList.add('hidden');
             document.getElementById('canvasNotification').classList.add('hidden');
 
-            let isLightRod = gameWorld.equipment.spec.includes("#6") || gameWorld.equipment.spec.includes("Enhands");
+            let isLightRod = gameWorld.equipment.spec.includes("#6");
             let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
             let isLargeTrout = currentFish.species === "Öring" && currentFish.size > 65;
 
@@ -2354,7 +2354,7 @@
                 sharedWorldData.population = s.population;
                 if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                alertMsg = currentFish.size === 125 ? "Du tog upp trofén! En historisk fångst sparad till Hall of Fame. (Det gemensamma beståndet minskade)." : "Fisk hemtagen. Det gemensamma fiskbeståndet i Säveån har minskat något.";
+                alertMsg = currentFish.size === 125 ? "Du tog upp trofén! En historisk fångst sparad till Hall of Fame. (Det gemensamma beståndet minskade)." : "Fisk hemtagen. Det gemensamma fiskbeståndet i Säveån ha minskat något.";
             }
 
             if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name, eqString);
