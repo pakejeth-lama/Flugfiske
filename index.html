@@ -60,6 +60,25 @@
         </div>
     </div>
 
+    <!-- Modal: Spelarprofil & Personliga Rekord (PB) -->
+    <div id="playerProfileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-2">
+                <h3 id="profilePlayerName" class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+                    <span>👤</span> Spelarprofil
+                </h3>
+                <button onclick="closePlayerProfileModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+            </div>
+            <div class="flex flex-col gap-2 text-xs">
+                <span class="font-bold text-emerald-400 text-[11px]">🏆 Personliga Rekord (PB):</span>
+                <div id="profilePbList" class="bg-stone-950 p-3 rounded-xl border border-stone-800 space-y-1.5 text-[11px]">
+                    <p class="text-stone-500 italic text-center">Laddar rekord...</p>
+                </div>
+            </div>
+            <button onclick="closePlayerProfileModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 py-2 rounded-xl text-xs font-semibold">Stäng</button>
+        </div>
+    </div>
+
     <!-- Modal: Universal Meddelanderuta -->
     <div id="customAlertModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3.5 text-center">
@@ -121,9 +140,10 @@
                 <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
                     <strong>Tips för storfiske:</strong>
                     <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
-                        <li>Stora fiskar är mycket skygga och kräver optimal biotop</li>
-                        <li>Anpassa utrustningen efter fisken (Klass #7+ för grov fisk)</li>
-                        <li>Bygg lekgrus och ståndstenar på sträckorna</li>
+                        <li>Stora fiskar kräver god bärförmåga (maxPop) och ståndstenar</li>
+                        <li>Lax hugger KUN på lax/tubflugor i strömdrag (ej torrflugor!)</li>
+                        <li>Öring är opportunistisk och hugger på nästan alla flugtyper</li>
+                        <li>Vid flöden ≥ 20 m³/s stiger snittstorleken på laxen drastiskt</li>
                     </ul>
                 </div>
             </div>
@@ -155,9 +175,9 @@
                 </div>
 
                 <div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
-                    <span class="font-bold text-amber-400">Dela ut / Justera naturvårdspoäng (tillåter minus):</span>
+                    <span class="font-bold text-amber-400">Dela ut / Justera naturvårdspoäng:</span>
                     <input type="text" id="adminPointsPlayer" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
-                    <input type="text" id="adminPointsAmount" placeholder="Antal poäng (t.ex. 300 eller -100)..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
+                    <input type="text" id="adminPointsAmount" placeholder="Antal poäng (t.ex. 300)..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
                     <button onclick="adminGrantPoints()" class="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold py-2 rounded-xl">Uppdatera poäng</button>
                 </div>
 
@@ -180,7 +200,7 @@
             <h1 id="mainTitleHeader" class="text-xl md:text-2xl font-bold text-emerald-400 flex items-center gap-1.5 cursor-pointer select-none" title="Klicka 3 gånger för Admin">
                 <span>🌍</span> Säveån Open World
             </h1>
-            <p id="headerAnglerDisplay" class="text-[11px] text-stone-400">Fiskar som: <strong class="text-emerald-300" id="currentAnglerLabel">-</strong></p>
+            <p id="headerAnglerDisplay" class="text-[11px] text-stone-400">Fiskar som: <strong class="text-emerald-300 cursor-pointer underline" id="currentAnglerLabel" onclick="openPlayerProfile(lockedAnglerName)">-</strong></p>
         </div>
 
         <div class="flex items-center gap-2 text-xs">
@@ -244,7 +264,6 @@
             <div id="gameContainer" class="relative bg-stone-950 rounded-2xl overflow-hidden border border-stone-800 shadow-inner flex flex-col items-center justify-center aspect-[4/5] md:aspect-[32/9]">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
-                <!-- Vrid skärmen-notis -->
                 <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-amber-500/90 text-stone-950 px-3 py-1 rounded-full font-bold text-[10px] shadow-lg z-30 rotate-notice pointer-events-none">
                     📱 Lägg gärna skärmen ner för optimal fiskevy!
                 </div>
@@ -606,7 +625,7 @@
                                 <div class="flex items-center gap-1.5">
                                     <span class="font-bold text-amber-400 w-5">${medal}</span>
                                     <div>
-                                        <span class="font-bold text-stone-200 block">${data.angler} <span class="text-[9px] text-stone-400">(${data.equipment})</span></span>
+                                        <span class="font-bold text-stone-200 block cursor-pointer hover:text-amber-300 underline" onclick="openPlayerProfile('${data.angler}')">${data.angler} <span class="text-[9px] text-stone-400">(${data.equipment})</span></span>
                                         <span class="text-[9px] text-stone-400 block">${data.zone}</span>
                                     </div>
                                 </div>
@@ -630,7 +649,7 @@
                                 <div class="flex items-center gap-1.5">
                                     <span class="font-bold text-amber-400 w-5">${medal}</span>
                                     <div>
-                                        <span class="font-bold text-stone-200 block">${data.angler} <span class="text-[9px] text-stone-400">(${data.equipment})</span></span>
+                                        <span class="font-bold text-stone-200 block cursor-pointer hover:text-amber-300 underline" onclick="openPlayerProfile('${data.angler}')">${data.angler} <span class="text-[9px] text-stone-400">(${data.equipment})</span></span>
                                         <span class="text-[9px] text-stone-400 block">${data.zone}</span>
                                     </div>
                                 </div>
@@ -652,8 +671,8 @@
                     let bestSalmon = lastWeekCatches.filter(c => c.species && c.species.includes("Lax")).sort((a,b) => b.size - a.size)[0];
                     let bestTrout = lastWeekCatches.filter(c => c.species && c.species.includes("Öring")).sort((a,b) => b.size - a.size)[0];
 
-                    hofHtml += bestSalmon ? `<div>🐟 <strong>Största Lax (${lastWeekKey}):</strong> ${bestSalmon.angler} (${bestSalmon.size} cm)</div>` : ``;
-                    hofHtml += bestTrout ? `<div>🐠 <strong>Största Öring (${lastWeekKey}):</strong> ${bestTrout.angler} (${bestTrout.size} cm)</div>` : ``;
+                    hofHtml += bestSalmon ? `<div>🐟 <strong>Största Lax (${lastWeekKey}):</strong> <span class="cursor-pointer underline font-bold text-amber-300" onclick="openPlayerProfile('${bestSalmon.angler}')">${bestSalmon.angler}</span> (${bestSalmon.size} cm)</div>` : ``;
+                    hofHtml += bestTrout ? `<div>🐠 <strong>Största Öring (${lastWeekKey}):</strong> <span class="cursor-pointer underline font-bold text-amber-300" onclick="openPlayerProfile('${bestTrout.angler}')">${bestTrout.angler}</span> (${bestTrout.size} cm)</div>` : ``;
                 }
 
                 hofEl.innerHTML = hofHtml || `Inga Hall of Fame-poster än. Bli den förste!`;
@@ -661,6 +680,26 @@
             } catch (e) {
                 console.error("Fel vid hämtning av highscores:", e);
                 salmonListEl.innerHTML = `<p class="text-rose-400 italic text-center py-2">Kunde inte ladda.</p>`;
+            }
+        };
+
+        window.fetchPlayerPbRecords = async function(anglerName) {
+            try {
+                const allSnap = await getDocs(collection(db, "highscores"));
+                let pbs = {};
+                allSnap.forEach(d => {
+                    let data = d.data();
+                    if (data.angler && data.angler.toLowerCase() === anglerName.toLowerCase()) {
+                        let cleanSpecies = data.species ? data.species.split(' ')[0] : "Okänd";
+                        if (!pbs[cleanSpecies] || data.size > pbs[cleanSpecies]) {
+                            pbs[cleanSpecies] = data.size;
+                        }
+                    }
+                });
+                return pbs;
+            } catch (e) {
+                console.error("Fel vid PB-hämtning:", e);
+                return {};
             }
         };
 
@@ -750,7 +789,7 @@
                     let dateStr = v.lastActive ? new Date(v.lastActive).toLocaleDateString() : "Okänt datum";
                     html += `
                         <div class="border-b border-stone-900 pb-1 flex justify-between items-center text-[11px]">
-                            <span class="font-bold text-amber-300">🎣 ${v.name}</span>
+                            <span class="font-bold text-amber-300 cursor-pointer hover:underline" onclick="openPlayerProfile('${v.name}')">🎣 ${v.name}</span>
                             <span class="text-stone-500 text-[9px]">${dateStr}</span>
                         </div>
                     `;
@@ -832,7 +871,7 @@
                 let html = "";
                 querySnapshot.forEach(doc => {
                     const data = doc.data();
-                    html += `<div class="border-b border-stone-900 pb-0.5"><strong class="text-emerald-400">${data.angler}</strong>: ${data.action} (${data.zone})</div>`;
+                    html += `<div class="border-b border-stone-900 pb-0.5"><strong class="text-emerald-400 cursor-pointer hover:underline" onclick="openPlayerProfile('${data.angler}')">${data.angler}</strong>: ${data.action} (${data.zone})</div>`;
                 });
                 logContainer.innerHTML = html;
 
@@ -897,14 +936,17 @@
         };
 
         const flies = [
-            { name: "Fireball", type: "Laxfluga (Klassiker)" },
-            { name: "Mysen", type: "Laxfluga / Tubfluga" },
-            { name: "Europa 12", type: "Torrfluga (Öring)" },
-            { name: "Haröra (Goldhead)", type: "Nymf (Öring)" },
-            { name: "Ullsock", type: "Laxfluga (Säveån klassiker)" },
-            { name: "Sunray Shadow", type: "Laxfluga (Tubfluga)" },
-            { name: "Den Vanliga", type: "Laxfluga / Öring" },
-            { name: "Francis (Röd)", type: "Laxfluga" }
+            { name: "Fireball", type: "Laxfluga (Klassiker)", category: "salmon" },
+            { name: "Strong Medicine", type: "Laxfluga (Stigande fisk)", category: "salmon" },
+            { name: "Mysen", type: "Laxfluga / Tubfluga", category: "salmon" },
+            { name: "Ullsock", type: "Laxfluga (Säveån klassiker)", category: "salmon" },
+            { name: "Sunray Shadow", type: "Laxfluga (Tubfluga)", category: "salmon" },
+            { name: "Francis (Röd)", type: "Laxfluga", category: "salmon" },
+            { name: "Klinkhammer", type: "Torrfluga (Öring)", category: "dry" },
+            { name: "Caddis", type: "Torrfluga (Öring / Nattslända)", category: "dry" },
+            { name: "Europa 12", type: "Torrfluga (Öring)", category: "dry" },
+            { name: "Haröra (Goldhead)", type: "Nymf (Öring)", category: "nymph" },
+            { name: "Den Vanliga", type: "Allround (Lax / Öring)", category: "allround" }
         ];
 
         let activeFly = flies[0];
@@ -943,6 +985,7 @@
 
         function isAnyModalOpen() {
             return !document.getElementById('nameModal').classList.contains('hidden') ||
+                   !document.getElementById('playerProfileModal').classList.contains('hidden') ||
                    !document.getElementById('customAlertModal').classList.contains('hidden') ||
                    !document.getElementById('equipmentModal').classList.contains('hidden') ||
                    !document.getElementById('populationModal').classList.contains('hidden') ||
@@ -951,6 +994,40 @@
                    !document.getElementById('highscoreModal').classList.contains('hidden') ||
                    !document.getElementById('welfareModal').classList.contains('hidden') ||
                    !document.getElementById('flyModal').classList.contains('hidden');
+        }
+
+        async function openPlayerProfile(anglerName) {
+            if (!anglerName || anglerName === "NATUREN" || anglerName === "Fiskare") return;
+            document.getElementById('profilePlayerName').innerHTML = `<span>👤</span> ${anglerName}`;
+            const pbListEl = document.getElementById('profilePbList');
+            pbListEl.innerHTML = `<p class="text-stone-400 italic text-center">Hämtar PB-rekord...</p>`;
+            
+            document.getElementById('playerProfileModal').classList.remove('hidden');
+            document.getElementById('playerProfileModal').classList.add('flex');
+
+            if (window.fetchPlayerPbRecords) {
+                let pbs = await window.fetchPlayerPbRecords(anglerName);
+                let speciesKeys = Object.keys(pbs);
+                if (speciesKeys.length === 0) {
+                    pbListEl.innerHTML = `<p class="text-stone-500 italic text-center">Inga fångade rekord registrerade än.</p>`;
+                } else {
+                    let html = "";
+                    speciesKeys.forEach(sp => {
+                        html += `
+                            <div class="flex justify-between items-center border-b border-stone-900 pb-1">
+                                <span class="text-stone-300 font-medium">${sp}:</span>
+                                <span class="font-bold text-amber-400">${pbs[sp]} cm</span>
+                            </div>
+                        `;
+                    });
+                    pbListEl.innerHTML = html;
+                }
+            }
+        }
+
+        function closePlayerProfileModal() {
+            document.getElementById('playerProfileModal').classList.add('hidden');
+            document.getElementById('playerProfileModal').classList.remove('flex');
         }
 
         function showCustomAlert(text, title = "Meddelande") {
@@ -1246,24 +1323,27 @@
                     weatherData.temp = data.current.temperature_2m;
                     weatherData.waterTemp = Math.max(2, (weatherData.temp * 0.7 + 2)).toFixed(1);
                     
-                    // Extrem torka (1% chans) som tar bort 50% av beståndet
+                    // Extrem torka (1% chans) - minskar population med 50% & sänker maxPop permanent (-40)
                     let extremeDrought = Math.random() < 0.01;
                     if (extremeDrought) {
                         let removedFish = Math.floor(gameWorld.shared.population * 0.5);
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - removedFish);
+                        gameWorld.shared.maxPop = Math.max(150, gameWorld.shared.maxPop - 40);
                         
                         let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
                         sharedWorldData.population = gameWorld.shared.population;
+                        sharedWorldData.maxPop = gameWorld.shared.maxPop;
                         if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                        if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `☀️ EXTREM TORKA! -50% av beståndet (${removedFish} fiskar) slogs ut!`, saveanZones[key].name);
-                        showCustomAlert(`☀️ EXTREM TORKA!\n\nEn extrem värmebölja och torka har drabbat Säveån! Vattennivåerna sjunker drastiskt och syrehalten kraschar. 50% av fiskbeståndet (${removedFish} st) slogs ut.`, "Naturkatastrof");
+                        if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `☀️ EXTREM TORKA! -50% fiskar & bärförmågan sjönk!`, saveanZones[key].name);
+                        showCustomAlert(`☀️ EXTREM TORKA!\n\nEn extrem värmebölja har drabbat Säveån! Vattennivåerna sjunker och syrekris slår ut 50% av fiskbeståndet (${removedFish} st). Dessutom sänktes åns bärförmåga (maxPop).`, "Naturkatastrof");
                     }
 
-                    // Extremt högflöde (~3% chans)
+                    // Extremt högflöde (~3% chans) - minskar population med 300 & sänker maxPop permanent (-50)
                     let extremeFlood = Math.random() < 0.03;
                     if (extremeFlood) {
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 300);
+                        gameWorld.shared.maxPop = Math.max(150, gameWorld.shared.maxPop - 50);
                         for (let zKey in gameWorld.zones) {
                             let gravels = gameWorld.zones[zKey].gravels || [];
                             if (gravels.length > 0) {
@@ -1273,11 +1353,12 @@
                         }
                         let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
                         sharedWorldData.population = gameWorld.shared.population;
+                        sharedWorldData.maxPop = gameWorld.shared.maxPop;
                         sharedWorldData.zones = gameWorld.zones;
                         if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                        if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", "⚠️ EXTREMT HÖGFLÖDE! -300 fiskar & 1/3 lekgrus sköljdes bort!", saveanZones[key].name);
-                        showCustomAlert("⚠️ EXTREMT HÖGFLÖDE!\n\nEtt historiskt oväder drog fram över Säveån! Vattenmassorna slog ut -300 fiskar ur beståndet och spolade bort en tredjedel av allt utplacerat lekgrus. Ståndstenar och uppväxtplatser stod emot trycket!", "Naturkatastrof");
+                        if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", "⚠️ EXTREMT HÖGFLÖDE! -300 fiskar & skadad bärförmåga!", saveanZones[key].name);
+                        showCustomAlert("⚠️ EXTREMT HÖGFLÖDE!\n\nEtt historiskt oväder drog fram över Säveån! -300 fiskar sköljdes bort, 1/3 av lekgruset spolades väck och åns bärförmåga (maxPop) tog stryk.", "Naturkatastrof");
                     }
 
                     let biotopeFlowBonus = ((zState.gravels || []).length * 0.8) + ((zState.boulders || []).length * 1.2);
@@ -1832,7 +1913,7 @@
 
                 let bobbing = Math.sin(Date.now() * 0.015) * 3;
 
-                ctx.fillStyle = '#c2410c';
+                ctx.fillStyle = activeFly.category === 'dry' ? '#f59e0b' : '#c2410c';
                 ctx.beginPath();
                 ctx.arc(castLine.x, castLine.y + bobbing, 3.5, 0, Math.PI * 2);
                 ctx.fill();
@@ -1978,10 +2059,12 @@
             let gravelBonus = (zState.gravels || []).length;
             let boulderBonus = (zState.boulders || []).length;
             let nurseryBonus = (zState.nurseries || []).length;
+            let currentFlowVal = parseFloat(weatherData.flow);
 
-            let overNursery = (zState.nurseries || []).some(n => castLine && Math.hypot(castLine.x - n.x, castLine.y - n.y) < 40);
+            let overNursery = (zState.nurseries || []).some(n => castLine && Math.hypot(castLine.x - n.x, castLine.y - n.y) < 45);
 
-            if (overNursery && Math.random() < 0.6) {
+            // Ökad chans för Smolt i uppväxtområde (75% chans)
+            if (overNursery && Math.random() < 0.75) {
                 gameWorld.castsRemaining++;
                 updateUI();
 
@@ -1998,17 +2081,21 @@
                 return;
             }
 
-            let troutSalmonChance = 0.45 + Math.min(0.20, (gravelBonus + boulderBonus) * 0.015);
-            if (isRiseBonus) troutSalmonChance += 0.25;
+            // ART- och FLUGMEKANIK:
+            // Lax triggas ALDRIG av rena torrflugor (dry)
+            let canCatchSalmon = activeFly.category !== 'dry'; 
             
             let species = "Öring";
             let gender = "";
             let rand = Math.random();
 
-            if (rand < troutSalmonChance) {
-                species = Math.random() < 0.45 ? "Öring" : (Math.random() < 0.75 ? "Lax" : (Math.random() < 0.6 ? "Färna" : (Math.random() < 0.5 ? "Id" : "Mört")));
+            if (canCatchSalmon && (currentFlowVal >= 16 || boulderBonus > 0) && rand < 0.45) {
+                species = "Lax";
+            } else if (rand < 0.75) {
+                species = "Öring"; // Öringen hugger opportunistiskt på allt!
             } else {
-                species = Math.random() < 0.65 ? "Abborre" : "Gädda";
+                let nonSalmonOptions = ["Abborre", "Gädda", "Färna", "Id", "Mört"];
+                species = nonSalmonOptions[Math.floor(Math.random() * nonSalmonOptions.length)];
             }
 
             if (species === "Lax" || species === "Öring") {
@@ -2032,15 +2119,18 @@
                 let rawBiotopeBonus = (gravelBonus * 0.4) + (boulderBonus * 0.6) + (gameWorld.laddersFixed ? 6 : 0) + (gameWorld.dayOfSeason * 0.6);
                 let biotopeSizeBonus = Math.min(10, rawBiotopeBonus);
 
+                // FLÖDESBONUS FÖR STOR LAX (Vid flöden ≥ 20 m³/s)
+                let highFlowBonus = (species === "Lax" && currentFlowVal >= 20.0) ? (10 + Math.floor(Math.random() * 20)) : 0;
+
                 let sizeRoll = Math.random();
                 let trophyChanceAdd = (isRiseBonus && (gravelBonus + boulderBonus >= 3)) ? (sizeRoll < 0.12 ? Math.random() * 22 : Math.random() * 8) : (sizeRoll < 0.04 ? Math.random() * 15 : Math.random() * 6);
 
-                size = Math.floor(baseSize + trophyChanceAdd + biotopeSizeBonus);
+                size = Math.floor(baseSize + trophyChanceAdd + biotopeSizeBonus + highFlowBonus);
 
                 let isHeavyRod = !gameWorld.equipment.spec.includes("#6") && !gameWorld.equipment.spec.includes("Enhands");
-                let isOptimalConditions = gameWorld.laddersFixed && gravelBonus > 0 && boulderBonus > 0 && nurseryBonus > 0 && gameWorld.dayOfSeason === 7 && parseFloat(weatherData.flow) > 16;
+                let isOptimalConditions = gameWorld.laddersFixed && gravelBonus > 0 && boulderBonus > 0 && nurseryBonus > 0 && gameWorld.dayOfSeason === 7 && currentFlowVal > 16;
                 
-                if (species === "Lax" && isHeavyRod && isOptimalConditions && Math.random() < 0.015) {
+                if (species === "Lax" && isHeavyRod && isOptimalConditions && Math.random() < 0.02) {
                     size = 125;
                 } else if (species === "Lax" && size > 122) {
                     size = 122;
@@ -2229,7 +2319,7 @@
                     if (currentFish.size === 125) {
                         alertMsg += `👑 LEGENDARISK TROFÉ! Du är automatiskt inskriven i Hall of Fame för all framtid! (+125 p)`;
                     } else {
-                        alertMsg += `Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore.`;
+                        alertMsg += `Fisken simmade piggt tillbaka! (+${pts} p) och sparades till Highscore/PB.`;
                     }
                 }
 
