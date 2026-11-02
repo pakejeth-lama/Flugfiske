@@ -228,12 +228,13 @@
         
         <div class="lg:col-span-2 flex flex-col gap-2.5">
             
-            <!-- ÄNDRING 1: Dropdown-meny för zonval -->
+            <!-- Dropdown-meny för zonval (Jonsereds Kraftverk först) -->
             <div class="bg-stone-900 p-3 rounded-2xl border border-stone-800 flex flex-col gap-1.5">
                 <label for="zoneSelectDropdown" class="text-xs font-bold text-emerald-400 flex items-center gap-1">
                     <span>🗺️</span> Välj Fiskeplats (Sträcka):
                 </label>
                 <select id="zoneSelectDropdown" onchange="onZoneDropdownChange(this.value)" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-300 font-semibold focus:outline-none focus:border-emerald-500">
+                    <option value="jonsered_kraftverk">Jonsereds Kraftverk (Fredat område / Fiskeförbud)</option>
                     <option value="dickson">Dickson</option>
                     <option value="mannered">Mannered (Sandbanken)</option>
                     <option value="edbergsrakan">Edbergsrakan</option>
@@ -241,7 +242,6 @@
                     <option value="brittamaja">Britta-Maja</option>
                     <option value="lortholjan">Lorthöljan</option>
                     <option value="ingvarssons">Ingvarssons</option>
-                    <option value="jonsered_kraftverk">Jonsereds Kraftverk (Fredat område / Fiskeförbud)</option>
                 </select>
             </div>
 
@@ -251,11 +251,6 @@
                 
                 <div class="absolute top-2 left-1/2 -translate-x-1/2 bg-amber-500/90 text-stone-950 px-3 py-1 rounded-full font-bold text-[10px] shadow-lg z-30 rotate-notice pointer-events-none">
                     📱 Lägg gärna skärmen ner för optimal fiskevy!
-                </div>
-
-                <!-- Varningsbanner för fiskeförbud (Ändring 5) -->
-                <div id="forbiddenNoticeBanner" class="hidden absolute top-12 left-1/2 -translate-x-1/2 bg-rose-600/95 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-2xl z-30 border border-rose-400 text-center animate-pulse">
-                    ⚠️ FISKEFÖRBUD - FREDAT OMRÅDE (Endast observation)
                 </div>
 
                 <!-- Canvas HUD -->
@@ -889,14 +884,14 @@
             castsRemaining: 5,
             equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" },
             zones: {
+                jonsered_kraftverk: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] }, // Första zon
                 dickson: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
-                mannered: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] }, // ÄNDRING 2: Mannered tillagd som aktiv zon
+                mannered: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
                 edbergsrakan: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
                 kahogsforsen: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
                 brittamaja: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
                 lortholjan: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
-                ingvarssons: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] }, // ÄNDRING 4: Bytt från Finngösagrundet
-                jonsered_kraftverk: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] } // ÄNDRING 5: Jonsereds Kraftverket (fiskeförbud)
+                ingvarssons: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] }
             },
             shared: {
                 population: 210,
@@ -908,7 +903,7 @@
             }
         };
 
-        let currentZoneKey = 'dickson';
+        let currentZoneKey = 'jonsered_kraftverk'; // Startar på kraftverket
         let weatherData = { temp: 11, waterTemp: 10, flow: 18, condition: "Molnigt" };
         
         let placementMode = null; 
@@ -917,17 +912,16 @@
         let isActionLocked = false;
 
         const saveanZones = {
+            jonsered_kraftverk: { name: "Jonsereds Kraftverk (Fredat område)", lat: 57.745, lon: 12.205, baseTemp: 11, fishable: false },
             dickson: { name: "Säveån – Dickson", lat: 57.742, lon: 12.195, baseTemp: 11 },
-            mannered: { name: "Säveån – Mannered (Sandbanken)", lat: 57.738, lon: 12.180, baseTemp: 11 }, // Ändring 2
+            mannered: { name: "Säveån – Mannered (Sandbanken)", lat: 57.738, lon: 12.180, baseTemp: 11 },
             edbergsrakan: { name: "Säveån – Edbergsrakan", lat: 57.739, lon: 12.184, baseTemp: 11 },
             kahogsforsen: { name: "Säveån – Kåhögsforsen", lat: 57.740, lon: 12.188, baseTemp: 11 },
             brittamaja: { name: "Säveån – Britta-Maja", lat: 57.736, lon: 12.175, baseTemp: 11 },
             lortholjan: { name: "Säveån – Lorthöljan", lat: 57.734, lon: 12.165, baseTemp: 11 },
-            ingvarssons: { name: "Säveån – Ingvarssons", lat: 57.730, lon: 12.155, baseTemp: 11 }, // Ändring 4
-            jonsered_kraftverk: { name: "Jonsereds Kraftverk (Fredat område)", lat: 57.745, lon: 12.205, baseTemp: 11, fishable: false } // Ändring 5
+            ingvarssons: { name: "Säveån – Ingvarssons", lat: 57.730, lon: 12.155, baseTemp: 11 }
         };
 
-        // ÄNDRING 3: Alla parenteser och beskrivningar borttagna bakom flugorna
         const flies = [
             { name: "Fireball", category: "salmon" },
             { name: "Strong Medicine", category: "salmon" },
@@ -1251,7 +1245,7 @@
                 console.error("Fel vid molnsynk under initiering:", e);
             }
 
-            await selectZone('dickson', 'Dickson');
+            await selectZone('jonsered_kraftverk', 'Jonsereds Kraftverk');
             hideLoadingOverlay();
         }
 
@@ -1385,14 +1379,6 @@
             if (dropdown && dropdown.value !== key) {
                 dropdown.value = key;
             }
-            
-            const isFishable = saveanZones[key].fishable !== false;
-            const noticeBanner = document.getElementById('forbiddenNoticeBanner');
-            if (!isFishable) {
-                noticeBanner.classList.remove('hidden');
-            } else {
-                noticeBanner.classList.add('hidden');
-            }
 
             try {
                 if (window.loadSharedWorld) {
@@ -1405,6 +1391,7 @@
                 }
             } catch(e) { console.error("Kunde inte ladda zondata", e); }
 
+            const isFishable = saveanZones[key].fishable !== false;
             wildlifeDisturbance = isFishable && (Math.random() < 0.25);
             const alertBox = document.getElementById('wildlifeAlert');
             if (wildlifeDisturbance) {
@@ -1697,7 +1684,15 @@
             let rodX = zState.playerPos && zState.playerPos.x !== null ? zState.playerPos.x : 40;
             let rodY = zState.playerPos && zState.playerPos.y !== null ? zState.playerPos.y : canvas.height - 40;
 
-            if (currentZoneKey === 'mannered') {
+            // Bakgrund: Jonsereds Kraftverk har nu en ljusblå bakgrund
+            if (currentZoneKey === 'jonsered_kraftverk') {
+                let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                bgGrad.addColorStop(0, '#7dd3fc');
+                bgGrad.addColorStop(0.5, '#38bdf8');
+                bgGrad.addColorStop(1, '#0284c7');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } else if (currentZoneKey === 'mannered') {
                 let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
                 bgGrad.addColorStop(0, '#0369a1');
                 bgGrad.addColorStop(0.5, '#0284c7');
@@ -1709,14 +1704,6 @@
                 bgGrad.addColorStop(0, '#011627');
                 bgGrad.addColorStop(0.5, '#032b52');
                 bgGrad.addColorStop(1, '#011627');
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            } else if (currentZoneKey === 'jonsered_kraftverk') {
-                // Särskild bakgrund / färgton för Jonsereds Kraftverk
-                let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                bgGrad.addColorStop(0, '#292524');
-                bgGrad.addColorStop(0.5, '#1c1917');
-                bgGrad.addColorStop(1, '#0c0a09');
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             } else {
@@ -1735,23 +1722,69 @@
                 ctx.strokeRect(0, 24, canvas.width, 130);
             }
 
-            // ÄNDRING 5: Enkel illustration för Jonsereds Kraftverk uppe till vänster (laxtrappa / damm)
+            // Jonsereds Kraftverk: Större, centrerat kraftverk + brun laxtrappa med vattenflum uppe till vänster
             if (currentZoneKey === 'jonsered_kraftverk') {
-                ctx.fillStyle = '#44403c';
-                ctx.fillRect(20, 40, 180, 70);
-                ctx.strokeStyle = '#78716c';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(20, 40, 180, 70);
+                let centerX = canvas.width / 2;
                 
-                ctx.fillStyle = '#a855f7';
-                ctx.font = 'bold 11px Inter';
-                ctx.fillText("Jonsereds Kraftverk & Laxtrappa", 25, 33);
+                // Kraftverksbyggnad (större och centrerad)
+                ctx.fillStyle = '#44403c';
+                ctx.fillRect(centerX - 130, 25, 260, 90);
+                ctx.strokeStyle = '#292524';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(centerX - 130, 25, 260, 90);
 
-                // Laxtrappa steg uppåt till vänster
-                ctx.fillStyle = '#78716c';
-                for (let i = 0; i < 4; i++) {
-                    ctx.fillRect(10 + (i * 15), 90 - (i * 12), 14, 10);
+                // Fönster på kraftverket
+                ctx.fillStyle = '#b91c1c';
+                for(let fx = centerX - 100; fx <= centerX + 70; fx += 35) {
+                    ctx.fillRect(fx, 40, 20, 35);
                 }
+
+                ctx.fillStyle = '#fde047';
+                ctx.font = 'bold 12px Inter';
+                ctx.fillText("Jonsereds Kraftverk", centerX - 55, 15);
+
+                // Brun laxtrappa uppe till vänster med vattenflum
+                ctx.fillStyle = '#78350f'; // Brun laxtrappa
+                ctx.fillRect(20, 45, 90, 75);
+                ctx.strokeStyle = '#451a03';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(20, 45, 90, 75);
+
+                // Steg i laxtrappa
+                ctx.fillStyle = '#92400e';
+                for(let i = 0; i < 4; i++) {
+                    ctx.fillRect(25 + (i * 20), 55 + (i * 14), 16, 10);
+                }
+
+                // Vattenflum / skum i laxtrappa
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+                ctx.beginPath();
+                ctx.arc(35, 110, 12, 0, Math.PI * 2);
+                ctx.arc(55, 95, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#fef08a';
+                ctx.font = '10px Inter';
+                ctx.fillText("Laxtrappa", 25, 40);
+            }
+
+            // Hela botten ner till vänster har illustrerat grus (grunt område)
+            ctx.fillStyle = 'rgba(217, 185, 133, 0.55)';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            ctx.lineTo(0, canvas.height - 120);
+            ctx.quadraticCurveTo(canvas.width * 0.25, canvas.height - 70, canvas.width * 0.45, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+
+            // Grusdetaljer i det grunda hörnet
+            ctx.fillStyle = 'rgba(120, 100, 70, 0.75)';
+            for(let gx = 20; gx < canvas.width * 0.4; gx += 22) {
+                let gy = canvas.height - 30 - (Math.sin(gx) * 25);
+                ctx.beginPath();
+                ctx.arc(gx, gy, 4, 0, Math.PI * 2);
+                ctx.arc(gx + 8, gy + 6, 3, 0, Math.PI * 2);
+                ctx.fill();
             }
 
             let dicksonBlockX = canvas.width / 3;
@@ -1845,7 +1878,7 @@
             let currentFlow = parseFloat(weatherData.flow);
             let flowMultiplier = currentFlow > 14 ? 2.5 : 1.0;
             
-            // ÄNDRING 5: Vattnet flyter tvärtom (från höger till vänster) om zonen är jonsered_kraftverk
+            // Vattnet flyter från höger till vänster (-1) i Jonsereds Kraftverk
             let flowDirection = (currentZoneKey === 'jonsered_kraftverk') ? -1 : 1;
 
             if (!paused) {
@@ -1974,7 +2007,6 @@
                     if(castLine && (castLine.x > canvas.width || castLine.x < 0)) castLine = null;
 
                     let biteChance = currentFlow > 14 ? 0.00014 : 0.00008;
-                    // Jonsereds Kraftverk har fiskeförbud, inga hugg
                     let isFishableZone = saveanZones[currentZoneKey].fishable !== false;
                     if(castLine && isFishableZone && !wildlifeDisturbance && Math.random() < biteChance && !currentFish) {
                         triggerBite(false);
@@ -1996,7 +2028,6 @@
         canvas.addEventListener('click', async (e) => {
             if(isFighting || isAnyModalOpen()) return;
             
-            // ÄNDRING 5: Spärra kast i Jonsereds Kraftverk (fiskeförbud)
             if (saveanZones[currentZoneKey].fishable === false) {
                 return showCustomAlert("Det är fiskeförbud och fredat område här vid Jonsereds Kraftverk! Du kan endast titta på laxtrappan och njuta av utsikten.", "Fiskeförbud");
             }
@@ -2406,7 +2437,6 @@
             updateUI();
         }
 
-        // ÄNDRING 3: Flygande meny utan parenteser eller beskrivningar
         function changeFlyModal() {
             if(isFighting) return;
             const list = document.getElementById('flyList');
