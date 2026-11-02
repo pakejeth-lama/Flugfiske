@@ -1383,7 +1383,8 @@
                         showCustomAlert(`☀️ EXTREM TORKA!\n\nEn extrem värmebölja har drabbat Säveån! Vattennivåerna har sjunkit kraftigt och syrebrist har slagit ut hälften av fiskbeståndet (${removedFish} st).`, "Naturkatastrof");
                     }
 
-                    let extremeFlood = Math.random() < 0.03;
+                    // Toning ner extremt högflöde: Sänkt från 3% (0.03) till 1% (0.01)
+                    let extremeFlood = Math.random() < 0.01;
                     if (extremeFlood) {
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 300);
                         gameWorld.shared.maxPop = Math.max(150, gameWorld.shared.maxPop - 50);
