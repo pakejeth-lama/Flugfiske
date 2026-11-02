@@ -1,425 +1,787 @@
 <!DOCTYPE html>
 <html lang="sv">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Säveån Open World - Fiskesimulator</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a2421;
-            color: #ecf0f1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 10px;
-        }
-        #gameContainer {
-            position: relative;
-            width: 100%;
-            max-width: 900px;
-            background: #2c3e50;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        #canvasContainer {
-            position: relative;
-            width: 100%;
-            height: 450px;
-            background: #111;
-        }
-        canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        #uiOverlay {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            display: flex;
-            justify-content: space-between;
-            pointer-events: none;
-        }
-        .uiBox {
-            background: rgba(0, 0, 0, 0.65);
-            padding: 8px 14px;
-            border-radius: 6px;
-            font-size: 14px;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        #noticeBanner {
-            position: absolute;
-            top: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(192, 57, 43, 0.9);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 16px;
-            display: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            pointer-events: none;
-            z-index: 10;
-        }
-        #controlsPanel {
-            background: #243342;
-            padding: 15px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            border-top: 2px solid #34495e;
-        }
-        .controlGroup {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-        label {
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #bdc3c7;
-        }
-        select, button {
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #455a64;
-            background: #34495e;
-            color: white;
-            font-size: 14px;
-            outline: none;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        select:hover, button:hover {
-            background: #455a64;
-        }
-        button:disabled, select:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        #castBtn {
-            background: #27ae60;
-            font-weight: bold;
-            font-size: 16px;
-            border: none;
-        }
-        #castBtn:hover:not(:disabled) {
-            background: #2ecc71;
-        }
-        #castBtn.active {
-            background: #e67e22;
-        }
-        #logPanel {
-            background: #1c2833;
-            padding: 10px 15px;
-            height: 80px;
-            overflow-y: auto;
-            font-size: 13px;
-            font-family: monospace;
-            color: #aab7b8;
-            border-top: 1px solid #2c3e50;
-        }
-        .logEntry {
-            margin-bottom: 3px;
-        }
-        .logHighlight {
-            color: #2ecc71;
-        }
-        .logWarn {
-            color: #e74c3c;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Flugfiskarens Ekosystem– Säveån Open World</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+body { font-family: 'Inter', sans-serif; touch-action: manipulation; }
+
+@keyframes fishSwimRush {
+0% { transform: translate(0px, 0px) rotate(0deg); }
+25% { transform: translate(-35px, 20px) rotate(-4deg); }
+50% { transform: translate(40px, -25px) rotate(5deg); }
+75% { transform: translate(-20px, -30px) rotate(-2deg); }
+100% { transform: translate(0px, 0px) rotate(0deg); }
+}
+.animate-fish-rush {
+animation: fishSwimRush 1.8s infinite ease-in-out;
+}
+
+@keyframes fadeOutNotice {
+0% { opacity: 1; }
+80% { opacity: 1; }
+100% { opacity: 0; display: none; }
+}
+.rotate-notice {
+animation: fadeOutNotice 5s forwards;
+}
+
+@media (orientation: landscape) and (max-width: 1024px) {
+#gameContainer {
+height: calc(120vh - 32px) !important;
+max-height: 720px;
+}
+}
+</style>
 </head>
-<body>
+<body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col select-none">
 
-<div id="gameContainer">
-    <div id="canvasContainer">
-        <canvas id="gameCanvas"></canvas>
-        
-        <div id="uiOverlay">
-            <div class="uiBox" id="zoneDisplay">Zon: -</div>
-            <div class="uiBox" id="flowDisplay">Vattenföring: 12 m³/s</div>
-        </div>
-
-        <div id="noticeBanner">FISKEFÖRBUD - FREDAT OMRÅDE</div>
-    </div>
-
-    <div id="controlsPanel">
-        <!-- Punkt 1: Snygg dropdown-meny för zonval -->
-        <div class="controlGroup">
-            <label for="zoneSelect">Välj Fiskesträcka</label>
-            <select id="zoneSelect">
-                <!-- Fylls i dynamiskt från JS -->
-            </select>
-        </div>
-
-        <!-- Punkt 3: Flugor utan parentesbeskrivningar -->
-        <div class="controlGroup">
-            <label for="flySelect">Välj Flugmönster</label>
-            <select id="flySelect">
-                <option value="pars_raka">Pärs räka</option>
-                <option value="strong_medicine">Strong medicine</option>
-                <option value="klinkhammer">Klinkhammer</option>
-                <option value="caddis">Caddis</option>
-                <option value="mickey_finn">Mickey Finn</option>
-                <option value="glodhack">Glödhäck</option>
-            </select>
-        </div>
-
-        <div class="controlGroup">
-            <label for="rodSelect">Utrustning</label>
-            <select id="rodSelect">
-                <option value="6">Klass #6 (Öring/Harr)</option>
-                <option value="8" selected>Klass #8 (Lax/Havsöring)</option>
-            </select>
-        </div>
-
-        <div class="controlGroup" style="justify-content: flex-end;">
-            <button id="castBtn">KASTA UT</button>
-        </div>
-    </div>
-
-    <div id="logPanel" id="gameLog">
-        <div class="logEntry">Välkommen till Säveån Open World. Välj zon och fluga för att börja.</div>
-    </div>
+<!-- Säkerhets- och Laddningsslöja med tidsspärr -->
+<div id="loadingOverlay" class="fixed inset-0 bg-stone-950/95 backdrop-blur-md flex flex-col items-center justify-center z-50 transition-opacity duration-500 p-4 text-center">
+<div class="flex flex-col items-center gap-3">
+<div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+<h3 id="loadingOverlayText" class="text-sm font-bold text-emerald-400">Ansluter till Säveåns moln och synkar data...</h3>
+<p class="text-[11px] text-stone-400">Vänta medan spelytan låses mot fusk och sidomladdningar.</p>
+</div>
 </div>
 
-<script>
-// --- ZONDATA (Inkluderar ändringarna 2, 4 och 5) ---
-const ZONES = {
-    ingvarssons: {
-        name: "Ingvarssons", // Punkt 4: Ändrat från Finngösagrundet
-        fishable: true,
-        flowDirection: 1, // Vänster till höger (standard)
-        description: "Klassisk sträcka med fin ström och ståndplatser för lax.",
-        bgColors: ["#1e3c72", "#2a5298"]
-    },
-    mannered: {
-        name: "Mannered (Sandbanken)", // Punkt 2: Sanden vid Mannered tillagd
-        fishable: true,
-        flowDirection: 1,
-        description: "Långgrund sandbank. Utmärkt ståplats för vadfiske.",
-        bgColors: ["#134e5e", "#71b280"]
-    },
-    jonsered_kraftverk: {
-        name: "Jonsereds Kraftverk", // Punkt 5: Illustrerad sträcka med fiskeförbud
-        fishable: false,
-        flowDirection: -1, // Vattnet flyter tvärtom: Höger till Vänster
-        description: "Fredat område nedanför kraftverket och laxtrappan. Fiskeförbud råder.",
-        bgColors: ["#2c3e50", "#000000"]
-    }
+<!-- Modal: Start / Låst Namnregistrering -->
+<div id="nameModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
+<div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
+<h3 class="text-base font-bold text-emerald-400">🎣 Säveån Open World</h3>
+<p class="text-xs text-stone-300 leading-relaxed">
+Ange ditt fiskarnamn. Din poäng och dina kast är molnsäkrade mot fusk, och ekosystemet delas gemensamt!
+</p>
+<input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
+<button onclick="saveInitialAnglerName()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-semibold shadow transition">Starta Fisket</button>
+</div>
+</div>
+
+<!-- Modal: Spelarprofil & Personliga Rekord (PB) -->
+<div id="playerProfileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+<div class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3">
+<div class="flex justify-between items-center border-b border-stone-800 pb-2">
+<h3 id="profilePlayerName" class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+<span>👤</span> Spelarprofil
+</h3>
+<button onclick="closePlayerProfileModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+</div>
+<div class="flex flex-col gap-2 text-xs">
+<span class="font-bold text-emerald-400 text-[11px]">🏆 Personliga Rekord (PB):</span>
+<div id="profilePbList" class="bg-stone-950 p-3 rounded-xl border border-stone-800 space-y-1.5 text-[11px]">
+<p class="text-stone-500 italic text-center">Laddar rekord...</p>
+</div>
+</div>
+<button onclick="closePlayerProfileModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 py-2 rounded-xl text-xs font-semibold">Stäng</button>
+</div>
+</div>
+
+<!-- Modal: Universal Meddelanderuta -->
+<div id="customAlertModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+<div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3.5 text-center">
+<h3 id="customAlertTitle" class="text-sm font-bold text-emerald-400 flex items-center justify-center gap-1.5">
+<span>💬</span> Meddelande
+</h3>
+<p id="customAlertText" class="text-xs text-stone-300 leading-relaxed"></p>
+<button onclick="closeCustomAlert()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl text-xs font-semibold transition">OK</button>
+</div>
+</div>
+
+<!-- Modal: Utrustningsmeny -->
+<div id="equipmentModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+<div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-3">
+<div class="flex justify-between items-center border-b border-stone-800 pb-2">
+<h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+<span>🎣</span> Välj Utrustning
+</h3>
+<button onclick="closeEquipmentModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+</div>
+<div class="flex flex-col gap-2 text-xs">
+<div>
+<label class="text-stone-400 text-[10px] block mb-1">Tillverkare:</label>
+<select id="eqBrand" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-stone-200 text-xs">
+<option value="Hardy">Hardy</option>
+<option value="G.Loomis">G.Loomis</option>
+<option value="Guideline">Guideline</option>
+<option value="Daiwa">Daiwa</option>
+<option value="Sage">Sage</option>
+<option value="Loop">Loop</option>
+</select>
+</div>
+<div>
+<label class="text-stone-400 text-[10px] block mb-1">Spölängd & Klass:</label>
+<select id="eqRodSpec" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-stone-200 text-xs">
+<option value="9 fot #6 (Enhands)">9 fot #6 (Enhands - Lätt)</option>
+<option value="10 fot #7 (Enhands)">10 fot #7 (Enhands - Medel)</option>
+<option value="10 fot #8 (Enhands)">10 fot #8 (Enhands - Kraftig)</option>
+<option value="11 fot #8 (Switch)">11 fot #8 (Switch)</option>
+<option value="13 fot #9/10 (Tvåhands)">13 fot #9/10 (Tvåhands)</option>
+<option value="14 fot #10/11 (Tvåhands)">14 fot #10/11 (Tvåhands)</option>
+</select>
+</div>
+</div>
+<button onclick="saveEquipment()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl text-xs font-semibold shadow transition mt-1">Spara Utrustning</button>
+</div>
+</div>
+
+<!-- Modal: Infotavla för Beståndet -->
+<div id="populationModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+<div class="bg-stone-900 border border-amber-600/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
+<div class="flex justify-between items-center border-b border-stone-800 pb-2">
+<h3 class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+<span>🪧</span> Fiskevårdsrådets Info-Tavla
+</h3>
+<button onclick="closePopulationModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+</div>
+<div class="text-xs text-stone-300 space-y-2 leading-relaxed">
+<p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, fiskepress och hemtag av fisk.</p>
+<div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
+<strong>Tips för storfiske:</strong>
+<ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
+<li>Lax kräver spö klass #7 eller grövre (#8 enhands, switch eller tvåhands)</li>
+<li>Lax hugger på lax/tubflugor i strömdrag (ej torrflugor)</li>
+<li>Vid högt flöde (≥ 20 m³/s) rör sig fin mellanlax och storfisk i ån</li>
+</ul>
+</div>
+</div>
+<button onclick="closePopulationModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-200 py-2.5 rounded-xl text-xs font-semibold transition">Stäng tavlan</button>
+</div>
+</div>
+
+<!-- Modal: Hemlig Game Master Admin -->
+<div id="adminModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
+<div class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 max-h-[90vh] overflow-y-auto">
+<div class="flex justify-between items-center border-b border-stone-800 pb-2">
+<h3 class="text-sm font-bold text-amber-400 flex items-center gap-1">
+<span>🔐</span> Game Master Adminpanel
+</h3>
+<button onclick="closeAdminModal()" class="text-stone-400 hover:text-stone-100 text-xs font-bold px-2 py-1">✕</button>
+</div>
+
+<div id="adminLoginView" class="flex flex-col gap-2 text-xs">
+<p class="text-stone-300">Ange GM-lösenord för att låsa upp verktygen:</p>
+<input type="password" id="adminPasswordInput" placeholder="Lösenord..." class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-xs text-amber-400 focus:outline-none focus:border-amber-500 text-center">
+<button onclick="verifyAdminPassword()" class="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold py-2.5 rounded-xl text-xs shadow">Logga in</button>
+</div>
+
+<div id="adminToolsView" class="hidden flex flex-col gap-3 text-xs">
+<div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
+<span class="font-bold text-emerald-400">Återställ kastvecka (Dag 1 & 5 kast):</span>
+<input type="text" id="targetPlayerInput" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
+<button onclick="adminResetPlayerWeek()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2 rounded-xl font-semibold">Återställ kastvecka</button>
+</div>
+
+<div class="bg-stone-950 p-3 rounded-xl border border-stone-800 flex flex-col gap-1.5">
+<span class="font-bold text-amber-400">Dela ut / Justera naturvårdspoäng:</span>
+<input type="text" id="adminPointsPlayer" placeholder="Spelarens namn..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
+<input type="text" id="adminPointsAmount" placeholder="Antal poäng (t.ex. 300)..." class="w-full bg-stone-900 border border-stone-800 rounded-xl px-3 py-2 text-xs text-stone-200">
+<button onclick="adminGrantPoints()" class="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold py-2 rounded-xl">Uppdatera poäng</button>
+</div>
+
+<div class="bg-stone-950 p-3 rounded-xl border border-rose-400/50 flex flex-col gap-1.5">
+<span class="font-bold text-rose-400">Nollställ vandringshinder:</span>
+<button onclick="adminResetDamProgress()" class="w-full bg-rose-700 hover:bg-rose-600 text-white py-2 rounded-xl font-semibold">Återställ damm till 0 p</button>
+</div>
+
+<div class="bg-stone-950 p-3 rounded-xl border border-rose-400/50 flex flex-col gap-1.5">
+<span class="font-bold text-rose-400">Nollställ biotop på aktiv sträcka:</span>
+<button onclick="adminClearCurrentZoneBiotope()" class="w-full bg-rose-700 hover:bg-rose-600 text-white py-2 rounded-xl font-semibold">Rensa allt lekgrus/stenar här</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Header -->
+<header class="bg-stone-900 border-b border-stone-800 py-3 px-4 shadow-md flex flex-wrap justify-between items-center gap-3">
+<div>
+<h1 id="mainTitleHeader" class="text-xl md:text-2xl font-bold text-emerald-400 flex items-center gap-1.5 cursor-pointer select-none" title="Klicka 3 gånger för Admin">
+<span>🌍</span> Säveån Open World
+</h1>
+<p id="headerAnglerDisplay" class="text-[11px] text-stone-400">Fiskar som: <strong class="text-emerald-300 cursor-pointer underline" id="currentAnglerLabel" onclick="openPlayerProfile(lockedAnglerName)">-</strong></p>
+</div>
+
+<div class="flex items-center gap-2 text-xs">
+<button onclick="openEquipmentModal()" class="bg-stone-950 hover:bg-stone-800 text-stone-200 px-3 py-1.5 rounded-xl border border-stone-800 text-left transition flex items-center gap-1.5">
+<span>🎣</span>
+<div>
+<span class="text-stone-400 text-[9px] block">Utrustning</span>
+<span id="hudEqLabel" class="font-bold text-emerald-400 text-xs">Hardy 9' #6</span>
+</div>
+</button>
+
+<div class="bg-stone-950 px-3 py-1.5 rounded-xl border border-stone-800 text-center">
+<span class="text-stone-400 text-[9px] block">Naturvårdspoäng</span>
+<span id="conservationPoints" class="font-bold text-emerald-400 text-sm">700 p</span>
+</div>
+
+<button id="nextDayBtn" onclick="nextDay()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold transition shadow flex items-center gap-1">
+<span>🔄</span> <span id="dayCounter">Dag 1/7</span>
+</button>
+</div>
+</header>
+
+<!-- Main Layout -->
+<main class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
+
+<div class="lg:col-span-2 flex flex-col gap-2.5">
+
+<!-- Interaktiv Karta -->
+<div class="bg-stone-900 p-2.5 rounded-2xl border border-stone-800 flex flex-col gap-1.5">
+<div class="flex justify-between items-center text-xs">
+<span class="font-bold text-emerald-400 flex items-center gap-1">
+<span>🗺️</span> Välj Fiskeplats (Sträcka):
+</span>
+</div>
+<div id="riverMap" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-1.5 text-xs">
+<button onclick="selectZone('dickson', 'Dickson')" id="zone-dickson" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+<span class="block font-bold text-stone-300">Dickson</span>
+</button>
+<button onclick="selectZone('mannered', 'Mannered')" id="zone-mannered" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+<span class="block font-bold text-stone-300">Mannered</span>
+</button>
+<button onclick="selectZone('edbergsrakan', 'Edbergsrakan')" id="zone-edbergsrakan" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+<span class="block font-bold text-stone-300">Edbergsrakan</span>
+</button>
+<button onclick="selectZone('kahogsforsen', 'Kåhögsforsen')" id="zone-kahogsforsen" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+<span class="block font-bold text-stone-300">Kåhögsforsen</span>
+</button>
+<button onclick="selectZone('brittamaja', 'Britta-Maja')" id="zone-brittamaja" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+<span class="block font-bold text-stone-300">Britta-Maja</span>
+</button>
+<button onclick="selectZone('lortholjan', 'Lorthöljan')" id="zone-lortholjan" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+<span class="block font-bold text-stone-300">Lorthöljan</span>
+</button>
+<button onclick="selectZone('finngosagrundet', 'Finngösagrundet')" id="zone-finngosagrundet" class="p-2 rounded-xl bg-stone-950 border border-stone-800 text-left transition">
+<span class="block font-bold text-stone-300">Finngösagrundet</span>
+</button>
+</div>
+</div>
+
+<!-- Canvas Spelyta -->
+<div id="gameContainer" class="relative bg-stone-950 rounded-2xl overflow-hidden border border-stone-800 shadow-inner flex flex-col items-center justify-center aspect-[4/5] md:aspect-[32/9]">
+<canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
+
+<div class="absolute top-2 left-1/2 -translate-x-1/2 bg-amber-500/90 text-stone-950 px-3 py-1 rounded-full font-bold text-[10px] shadow-lg z-30 rotate-notice pointer-events-none">
+📱 Lägg gärna skärmen ner för optimal fiskevy!
+</div>
+
+<!-- Canvas HUD -->
+<div class="absolute top-10 md:top-2 left-2 right-2 bg-stone-900/90 backdrop-blur px-3 py-1.5 rounded-xl border border-stone-800 text-[10px] md:text-[11px] flex flex-wrap justify-between items-center gap-2 z-20 shadow-lg">
+<div class="flex items-center gap-2.5">
+<span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Fireball</strong></span>
+<span onclick="openPopulationModal()" class="cursor-pointer hover:text-amber-300 transition" title="Klicka för infotavla">Bestånd: <strong id="hudPopulation" class="text-amber-400 underline">210</strong> st 🪧</span>
+<span>Kast: <strong id="castsLeft" class="text-amber-400">5 / 5</strong></span>
+</div>
+<div class="flex items-center gap-2.5 border-t md:border-t-0 border-stone-800 pt-1 md:pt-0">
+<span>Väder: <strong id="wCondition" class="text-stone-200">-</strong></span>
+<span>Temp: <strong class="text-emerald-400"><span id="wTemp">-</span>°C / <span id="wWaterTemp">-</span>°C</strong></span>
+<span>Vatten: <strong id="wFlow" class="text-blue-400">- m³/s</strong></span>
+</div>
+</div>
+
+<!-- Notis / Hugg-status -->
+<div id="canvasNotification" class="hidden absolute top-20 left-1/2 -translate-x-1/2 bg-stone-900/95 border border-amber-500/80 px-4 py-2.5 rounded-xl text-xs font-bold text-amber-400 shadow-2xl text-center z-30 max-w-xs animate-pulse"></div>
+
+<!-- Störningsbanner -->
+<div id="wildlifeAlert" class="hidden absolute top-20 left-1/2 -translate-x-1/2 bg-amber-600/90 text-stone-950 px-3.5 py-2 rounded-xl font-bold text-xs shadow-xl animate-pulse text-center border border-amber-400 z-30">
+🦫 <span id="wildlifeText">En bäver plaskar vid nacken!</span>
+</div>
+
+<div id="modeBanner" class="hidden absolute top-16 right-2 bg-amber-500 text-stone-950 px-3 py-1 rounded-lg font-bold text-[10px] shadow-lg animate-bounce z-25">
+Aktivt läge: Klicka i vattnet!
+</div>
+
+<!-- Overlay för Tafsstress -->
+<div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/60 backdrop-blur-xs flex flex-col items-center justify-center p-4 z-40 pointer-events-none">
+<div id="fightCard" class="bg-stone-900/95 border border-amber-500/60 p-5 rounded-2xl max-w-xs w-full text-center flex flex-col gap-3 shadow-2xl animate-fish-rush transition-all duration-75">
+<span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">Drillning – Håll inne fingret!</span>
+<div class="flex justify-between text-[11px] text-stone-300 font-semibold">
+<span>Tafsstress:</span>
+<span id="stressValueText">0%</span>
+</div>
+<div class="w-full bg-stone-950 h-3.5 rounded-full overflow-hidden border border-stone-800 p-0.5">
+<div id="stressBar" class="bg-emerald-500 h-full w-0% rounded-full transition-all duration-75"></div>
+</div>
+<div class="flex justify-between text-[10px] text-stone-400">
+<span>Tid kvar: <strong id="fightTimeText" class="text-emerald-400">5.0s</strong></span>
+<span>Släpp om mätaren blir röd!</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Kontroller -->
+<div class="bg-stone-900 p-2.5 rounded-2xl border border-stone-800 flex flex-col gap-2">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+<button onclick="changeFlyModal()" class="h-10 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow border border-stone-700">
+<span>🪰</span> Byt Fluga
+</button>
+<button onclick="openBiotopModal()" class="h-10 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow border border-emerald-600">
+<span>🌱</span> Biotopvård
+</button>
+<button onclick="openHighscoreModal()" class="h-10 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow border border-amber-500">
+<span>🏆</span> Highscore
+</button>
+<button onclick="startMoveRod()" class="h-10 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow border border-stone-700">
+<span>📍</span> Flytta Ståplats
+</button>
+</div>
+
+<div id="castStatus" class="text-[11px] font-medium text-stone-300 text-center bg-stone-950 py-1.5 rounded-xl border border-stone-800">
+Redo för kast. Klicka för kast, klicka på gröna gubben för Hemtagning!
+</div>
+</div>
+
+<!-- Ekosystemstatus -->
+<div class="bg-stone-900 p-3 rounded-2xl border border-stone-800">
+<h3 class="text-xs font-bold text-stone-200 mb-2 flex items-center gap-1.5">
+<span>📊</span> Biotopstatus för aktuell sträcka
+</h3>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-2 text-[10px]">
+<div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
+<span class="text-stone-400 block">Lekgrus</span>
+<span id="statGravel" class="font-bold text-stone-100">0 st</span>
+</div>
+<div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
+<span class="text-stone-400 block">Ståndstenar</span>
+<span id="statBoulders" class="font-bold text-stone-100">0 st</span>
+</div>
+<div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
+<span class="text-stone-400 block">Uppväxtplatser</span>
+<span id="statNursery" class="font-bold text-stone-100">0 st</span>
+</div>
+<div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
+<span class="text-stone-400 block">Kantträd & Buskar</span>
+<span id="statTrees" class="font-bold text-stone-100">2 st</span>
+</div>
+<div class="bg-stone-950 p-2 rounded-xl border border-stone-800">
+<span class="text-stone-400 block">Vandringshinder</span>
+<span id="statLadders" class="font-bold text-stone-100">Ej åtgärdat</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Höger Kolonn -->
+<div class="flex flex-col gap-2.5">
+
+<!-- Global räknare & Firebase Biotoploggbok -->
+<div class="bg-stone-900 p-3.5 rounded-2xl border border-stone-800 flex flex-col gap-2">
+<h3 class="text-xs font-bold text-emerald-400 flex items-center justify-between">
+<span>🌱 Fiskevårdens Moln-Loggbok</span>
+<span id="globalBiotopeDisplay" class="text-[10px] bg-stone-950 px-2 py-0.5 rounded-lg text-amber-400 border border-stone-800">Laddar...</span>
+</h3>
+<div id="biotopeCloudLog" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 max-h-36 overflow-y-auto text-[10px] space-y-1 font-mono">
+<p class="text-stone-500 italic">Laddar molnloggbok...</p>
+</div>
+</div>
+
+<!-- Fångstdagbok -->
+<div class="bg-stone-900 p-3.5 rounded-2xl border border-stone-800 flex flex-col">
+<h3 class="text-xs font-bold text-stone-200 mb-2 flex items-center gap-1.5">
+<span>📖</span> Fångstdagbok
+</h3>
+<div id="catchLog" class="bg-stone-950 rounded-xl p-2.5 border border-stone-800 overflow-y-auto max-h-40 text-[11px] space-y-1.5">
+<p class="text-stone-500 italic">Inga fångster än. Gör ett kast!</p>
+</div>
+</div>
+
+<!-- Gästbok ("Vilka har besökt Säveån") -->
+<div class="bg-stone-900 p-3.5 rounded-2xl border border-stone-800 flex-1 flex flex-col">
+<h3 class="text-xs font-bold text-amber-400 mb-2 flex items-center gap-1.5">
+<span>📔</span> Gästbok – Vilka har besökt Säveån
+</h3>
+<div id="guestbookList" class="flex-1 bg-stone-950 rounded-xl p-2.5 border border-stone-800 overflow-y-auto max-h-40 text-[11px] space-y-1.5">
+<p class="text-stone-500 italic">Laddar besökare...</p>
+</div>
+</div>
+
+</div>
+</main>
+
+<!-- Modal: Biotopvård Meny -->
+<div id="biotopModal" onclick="checkOutsideBiotopeModal(event)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+<div id="biotopModalCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5">
+<div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
+<h3 class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+<span>🌱</span> Biotopvård på sträckan
+</h3>
+<button onclick="closeBiotopModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-1.5 py-0.5">✕</button>
+</div>
+
+<div class="flex flex-col gap-1.5 text-[11px]">
+<div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
+<div><span class="font-bold text-stone-200">Placera Lekgrus</span></div>
+<button onclick="startPlacement('gravel', 150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">150 p</button>
+</div>
+
+<div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
+<div><span class="font-bold text-stone-200">Placera Ståndsten</span></div>
+<button onclick="startPlacement('boulder', 400)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">400 p</button>
+</div>
+
+<div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
+<div><span class="font-bold text-stone-200">Skapa Uppväxtplats</span></div>
+<button onclick="startPlacement('nursery', 250)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">250 p</button>
+</div>
+
+<div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
+<div><span class="font-bold text-stone-200">Plantera Kantträd</span></div>
+<button onclick="doTreePlanting(200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">200 p</button>
+</div>
+
+<div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
+<div><span class="font-bold text-stone-200">Plantera Buske</span></div>
+<button onclick="doBushPlanting(150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">150 p</button>
+</div>
+
+<div class="bg-stone-950 p-2 rounded-xl border border-rose-900/40 flex justify-between items-center">
+<div><span class="font-bold text-rose-400">Ta bort senaste egna</span></div>
+<button onclick="removeMyLatestBiotope()" class="bg-rose-700 hover:bg-rose-600 text-white px-2.5 py-1 rounded-lg text-[10px]">Ångra</button>
+</div>
+
+<div class="bg-stone-950 p-2 rounded-xl border border-amber-500/30 flex flex-col gap-1.5">
+<div class="flex justify-between items-center">
+<div>
+<span class="font-bold text-amber-300 text-[11px] block">Riv Vandringshinder</span>
+<span class="text-[9px] text-stone-400" id="damProgressText">0 / 10000 p</span>
+</div>
+<button onclick="contributeToDam()" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1 rounded-lg text-[10px]">Bidra 500p</button>
+</div>
+<div class="w-full bg-stone-900 h-1.5 rounded-full overflow-hidden border border-stone-800">
+<div id="damProgressBar" class="bg-amber-500 h-full w-0%"></div>
+</div>
+</div>
+</div>
+
+<button onclick="closeBiotopModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-200 py-2 rounded-xl text-xs font-semibold mt-0.5">Stäng</button>
+</div>
+</div>
+
+<!-- Modal: Highscore Topplista -->
+<div id="highscoreModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+<div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-2xl w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[85vh] overflow-y-auto">
+<div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
+<h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+<span>🏆</span> Veckans Highscore & Hall of Fame
+</h3>
+<button onclick="closeHighscoreModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-1.5 py-0.5">✕</button>
+</div>
+
+<div id="hallOfFameSection" class="bg-stone-950 p-2.5 rounded-xl border border-amber-600/30 text-xs flex flex-col gap-1">
+<span class="font-bold text-amber-300 flex items-center gap-1">⭐ Förra Veckans Mästare & Legendarer (Hall of Fame)</span>
+<div id="hallOfFameContent" class="text-stone-300 text-[11px]">Laddar mästare...</div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+<!-- Lax-tavla -->
+<div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 flex flex-col gap-1.5">
+<span class="text-xs font-bold text-emerald-400 flex items-center gap-1">🐟 Veckans Största Laxar (Top 10)</span>
+<div id="highscoreSalmonList" class="flex flex-col gap-1 max-h-40 overflow-y-auto text-xs">
+<p class="text-stone-500 italic text-center py-2">Laddar laxar...</p>
+</div>
+</div>
+<!-- Öring-tavla -->
+<div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 flex flex-col gap-1.5">
+<span class="text-xs font-bold text-amber-400 flex items-center gap-1">🐠 Veckans Största Öringar (Top 10)</span>
+<div id="highscoreTroutList" class="flex flex-col gap-1 max-h-40 overflow-y-auto text-xs">
+<p class="text-stone-500 italic text-center py-2">Laddar öringar...</p>
+</div>
+</div>
+</div>
+
+<button onclick="closeHighscoreModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-200 py-2 rounded-xl text-xs font-semibold mt-1">Stäng</button>
+</div>
+</div>
+
+<!-- Modal: C&R Välfärd -->
+<div id="welfareModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+<div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3.5">
+<div class="flex justify-between items-center border-b border-stone-800 pb-2">
+<h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
+<span>🏆</span> Fisk Landad!
+</h3>
+<button onclick="closeWelfareModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+</div>
+<p id="caughtFishDetails" class="text-xs text-stone-300 leading-relaxed"></p>
+
+<div class="flex flex-col gap-2.5 text-xs bg-stone-950 p-3 rounded-xl border border-stone-800">
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-stone-300">Blötte du händerna?</span>
+<input type="checkbox" id="chkWetHands" class="w-4 h-4 accent-emerald-600 rounded">
+</label>
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-stone-300">Skonsam håv?</span>
+<input type="checkbox" id="chkNet" class="w-4 h-4 accent-emerald-600 rounded" checked>
+</label>
+<div class="flex flex-col gap-1">
+<span class="text-stone-300">Tid ovan vatten: <span id="lblAirTime" class="font-bold text-emerald-400">15</span>s</span>
+<input type="range" id="sliderAirTime" min="5" max="45" value="15" class="accent-emerald-600" oninput="document.getElementById('lblAirTime').innerText = this.value">
+</div>
+</div>
+
+<div class="flex gap-2">
+<button onclick="releaseFish()" class="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-semibold shadow transition">
+Varsam C&R
+</button>
+<button onclick="keepFish()" class="bg-stone-800 hover:bg-stone-700 text-stone-300 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition">
+Behåll / Avliva
+</button>
+</div>
+</div>
+</div>
+
+<!-- Modal: Byt Fluga -->
+<div id="flyModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+<div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3">
+<div class="flex justify-between items-center border-b border-stone-800 pb-2">
+<h3 class="text-sm font-bold text-stone-200 flex items-center gap-1.5">
+<span>🪰</span> Välj Fluga
+</h3>
+<button onclick="closeFlyModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+</div>
+<div id="flyList" class="flex flex-col gap-1.5 max-h-60 overflow-y-auto"></div>
+<button onclick="closeFlyModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 py-2.5 rounded-xl text-xs font-semibold mt-1">Stäng</button>
+</div>
+</div>
+
+<!-- Firebase SDK Modules -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyCu_wYB1IljSf3PB1aAqC4hPlmTREslSA0",
+authDomain: "flugfiske-savean.firebaseapp.com",
+projectId: "flugfiske-savean",
+storageBucket: "flugfiske-savean.firebasestorage.app",
+messagingSenderId: "585947103415",
+appId: "1:585947103415:web:5d8a63d5b79d3c8b2e8d32"
 };
 
-// Game State
-let currentZoneKey = "ingvarssons";
-let isCasting = false;
-let waterFlow = 12.5; // m³/s
-let particles = [];
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// DOM Elements
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
-const zoneSelect = document.getElementById("zoneSelect");
-const flySelect = document.getElementById("flySelect");
-const rodSelect = document.getElementById("rodSelect");
-const castBtn = document.getElementById("castBtn");
-const zoneDisplay = document.getElementById("zoneDisplay");
-const flowDisplay = document.getElementById("flowDisplay");
-const noticeBanner = document.getElementById("noticeBanner");
-const logPanel = document.getElementById("logPanel");
-
-// Initiera canvas-storlek
-function resizeCanvas() {
-    canvas.width = canvas.parentElement.clientWidth;
-    canvas.height = canvas.parentElement.clientHeight;
-    initParticles();
-}
-window.addEventListener("resize", resizeCanvas);
-
-// Initiera Dropdown för Zoner (Punkt 1)
-function initZoneDropdown() {
-    zoneSelect.innerHTML = "";
-    Object.keys(ZONES).forEach(key => {
-        const opt = document.createElement("option");
-        opt.value = key;
-        opt.textContent = ZONES[key].name;
-        zoneSelect.appendChild(opt);
-    });
-    zoneSelect.value = currentZoneKey;
+function getCurrentWeekKey() {
+const now = new Date();
+const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+const dayNum = d.getUTCDay() || 7;
+d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+return ${d.getUTCFullYear()}-W${weekNo};
 }
 
-// Byt Zon
-function changeZone(zoneKey) {
-    currentZoneKey = zoneKey;
-    const zone = ZONES[zoneKey];
-    
-    zoneDisplay.textContent = `Zon: ${zone.name}`;
-    addLog(`Bytte zon till ${zone.name}.`);
+window.saveCatchToFirebase = async function(anglerName, species, size, fly, zoneName, equipment) {
+try {
+const currentWeek = getCurrentWeekKey();
+await addDoc(collection(db, "highscores"), {
+angler: anglerName || "Fiskare",
+species: species,
+size: size,
+fly: fly,
+equipment: equipment || "Standard",
+zone: zoneName,
+week: currentWeek,
+timestamp: new Date().toISOString()
+});
+} catch (e) {
+console.error("Fel vid sparande till Firebase:", e);
+}
+};
 
-    if (!zone.fishable) {
-        // Hantering av fredat område (Punkt 5)
-        noticeBanner.style.display = "block";
-        castBtn.disabled = true;
-        castBtn.textContent = "FISKEFÖRBUD";
-        if (isCasting) stopCast();
-        addLog(`VARNING: ${zone.description}`, "logWarn");
-    } else {
-        noticeBanner.style.display = "none";
-        castBtn.disabled = false;
-        castBtn.textContent = "KASTA UT";
-    }
+window.fetchHighscores = async function() {
+const salmonListEl = document.getElementById('highscoreSalmonList');
+const troutListEl = document.getElementById('highscoreTroutList');
+const hofEl = document.getElementById('hallOfFameContent');
 
-    initParticles();
+salmonListEl.innerHTML = <p class="text-stone-400 italic text-center py-2"&gt;Laddar laxar...&lt;/p>;
+troutListEl.innerHTML = <p class="text-stone-400 italic text-center py-2"&gt;Laddar öringar...&lt;/p>;
+hofEl.innerHTML = Laddar förra veckans mästare...;
+
+try {
+const currentWeek = getCurrentWeekKey();
+const allSnap = await getDocs(collection(db, "highscores"));
+let allCatches = [];
+allSnap.forEach(d => allCatches.push(d.data()));
+
+let currentWeekCatches = allCatches.filter(c => c.week === currentWeek);
+
+let salmonCatches = currentWeekCatches.filter(c => c.species && c.species.includes("Lax")).sort((a, b) => b.size - a.size);
+let troutCatches = currentWeekCatches.filter(c => c.species && c.species.includes("Öring")).sort((a, b) => b.size - a.size);
+
+let salmonHtml = "";
+let rank = 1;
+if (salmonCatches.length === 0) {
+salmonListEl.innerHTML = <p class="text-stone-500 italic text-center py-2"&gt;Inga laxar denna vecka.&lt;/p>;
+} else {
+salmonCatches.slice(0, 10).forEach((data) => {
+let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : ${rank}.)); salmonHtml +=
+<div class="bg-stone-900 p-1.5 rounded-xl border border-stone-800 flex justify-between items-center text-[11px]">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-amber-400 w-5">${medal}&lt;/span&gt; &lt;div&gt; &lt;span class="font-bold text-stone-200 block cursor-pointer hover:text-amber-300 underline" onclick="openPlayerProfile('${data.angler}')">${data.angler} &lt;span class="text-[9px] text-stone-400"&gt;(${data.equipment})</span></span>
+<span class="text-[9px] text-stone-400 block">${data.zone}&lt;/span&gt; &lt;/div&gt; &lt;/div&gt; &lt;span class="font-bold text-emerald-400"&gt;${data.size} cm</span>
+</div>
+`;
+rank++;
+});
+salmonListEl.innerHTML = salmonHtml;
 }
 
-// Loggsystem
-function addLog(msg, type = "") {
-    const div = document.createElement("div");
-    div.className = `logEntry ${type}`;
-    div.textContent = `> ${msg}`;
-    logPanel.appendChild(div);
-    logPanel.scrollTop = logPanel.scrollHeight;
+let troutHtml = "";
+rank = 1;
+if (troutCatches.length === 0) {
+troutListEl.innerHTML = <p class="text-stone-500 italic text-center py-2"&gt;Inga öringar denna vecka.&lt;/p>;
+} else {
+troutCatches.slice(0, 10).forEach((data) => {
+let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : ``${rank}.)); troutHtml +=
+<div class="bg-stone-900 p-1.5 rounded-xl border border-stone-800 flex justify-between items-center text-[11px]">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-amber-400 w-5"> {data.angler}')"> {data.equipment})</span></span>
+<span class="text-[9px] text-stone-400 block"> {data.size} cm</span>
+</div>
+`;
+rank++;
+});
+troutListEl.innerHTML = troutHtml;
 }
 
-// Partikelsystem för vattenströmning
-function initParticles() {
-    particles = [];
-    const numParticles = 60;
-    for (let i = 0; i < numParticles; i++) {
-        particles.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            speed: (1 + Math.random() * 2) * (waterFlow / 10),
-            length: 10 + Math.random() * 20
-        });
-    }
+let pastWeeks = [...new Set(allCatches.map(c => c.week))].filter(w => w && w !== currentWeek).sort().reverse();
+let hofHtml = "";
+
+if (pastWeeks.length > 0) {
+let lastWeekKey = pastWeeks[0];
+let lastWeekCatches = allCatches.filter(c => c.week === lastWeekKey);
+
+let bestSalmon = lastWeekCatches.filter(c => c.species && c.species.includes("Lax")).sort((a,b) => b.size - a.size)[0];
+let bestTrout = lastWeekCatches.filter(c => c.species && c.species.includes("Öring")).sort((a,b) => b.size - a.size)[0];
+
+hofHtml += bestSalmon ? <div&gt;🐟 &lt;strong&gt;Största Lax (${lastWeekKey}):</strong> <span class="cursor-pointer underline font-bold text-amber-300" onclick="openPlayerProfile('${bestSalmon.angler}')"&gt;${bestSalmon.angler}</span> (${bestSalmon.size} cm)&lt;/div> : ; hofHtml += bestTrout ? `<div&gt;🐠 &lt;strong&gt;Största Öring ($`{lastWeekKey}):&lt;/strong&gt; &lt;span class="cursor-pointer underline font-bold text-amber-300" onclick="openPlayerProfile('`${bestTrout.angler}')"&gt;$`{bestTrout.angler}&lt;/span&gt; (`${bestTrout.size} cm)&lt;/div>` :;
 }
 
-function updateParticles() {
-    const zone = ZONES[currentZoneKey];
-    const dir = zone.flowDirection; // 1 = Höger, -1 = Vänster (Punkt 5)
+hofEl.innerHTML = hofHtml || Inga Hall of Fame-poster än. Bli den förste!;
 
-    particles.forEach(p => {
-        p.x += p.speed * dir;
+} catch (e) {
+console.error("Fel vid hämtning av highscores:", e);
+salmonListEl.innerHTML = <p class="text-rose-400 italic text-center py-2"&gt;Kunde inte ladda.&lt;/p>;
+}
+};
 
-        if (dir === 1 && p.x > canvas.width) {
-            p.x = -p.length;
-            p.y = Math.random() * canvas.height;
-        } else if (dir === -1 && p.x < -p.length) {
-            p.x = canvas.width + p.length;
-            p.y = Math.random() * canvas.height;
-        }
-    });
+window.fetchPlayerPbRecords = async function(anglerName) {
+try {
+const allSnap = await getDocs(collection(db, "highscores"));
+let pbs = {};
+allSnap.forEach(d => {
+let data = d.data();
+if (data.angler && data.angler.toLowerCase() === anglerName.toLowerCase()) {
+let cleanSpecies = data.species ? data.species.split(' ')[0] : "Okänd";
+if (!pbs[cleanSpecies] || data.size > pbs[cleanSpecies]) {
+pbs[cleanSpecies] = data.size;
+}
+}
+});
+return pbs;
+} catch (e) {
+console.error("Fel vid PB-hämtning:", e);
+return {};
+}
+};
+
+window.savePlayerStateToFirebase = async function(anglerName, stateData) {
+try {
+await setDoc(doc(db, "players", anglerName), {
+name: anglerName,
+lastActive: new Date().toISOString(),
+...stateData
+}, { merge: true });
+window.fetchGuestbook();
+} catch (e) {
+console.error("Fel vid molnsynk:", e);
+}
+};
+
+window.updatePlayerPointsAtomic = async function(anglerName, deltaPoints) {
+try {
+const playerRef = doc(db, "players", anglerName);
+await updateDoc(playerRef, {
+points: increment(deltaPoints),
+lastActive: new Date().toISOString()
+});
+} catch (e) {
+console.error("Fel vid atomär poänguppdatering:", e);
+}
+};
+
+window.consumeCastAtomic = async function(anglerName) {
+try {
+const playerRef = doc(db, "players", anglerName);
+await updateDoc(playerRef, {
+castsRemaining: increment(-1),
+lastActive: new Date().toISOString()
+});
+} catch (e) {
+console.error("Fel vid atomärt kast:", e);
+}
+};
+
+window.restoreCastAtomic = async function(anglerName) {
+try {
+const playerRef = doc(db, "players", anglerName);
+await updateDoc(playerRef, {
+castsRemaining: increment(1),
+lastActive: new Date().toISOString()
+});
+} catch (e) {
+console.error("Fel vid atomär kaståterställning:", e);
+}
+};
+
+window.loadPlayerStateFromFirebase = async function(anglerName) {
+try {
+const docSnap = await getDoc(doc(db, "players", anglerName));
+if (docSnap.exists()) return docSnap.data();
+} catch (e) {
+console.error("Fel vid hämtning:", e);
+}
+return null;
+};
+
+window.fetchGuestbook = async function() {
+try {
+const querySnapshot = await getDocs(collection(db, "players"));
+const guestbookEl = document.getElementById('guestbookList');
+if (querySnapshot.empty) {
+guestbookEl.innerHTML = <p class="text-stone-500 italic"&gt;Inga besökare än.&lt;/p>;
+return;
+}
+let visitors = [];
+querySnapshot.forEach(doc => {
+let data = doc.data();
+if (data.name && data.name.trim() !== "" && data.name.toLowerCase() !== "anonym") {
+visitors.push(data);
+}
+});
+visitors.sort((a, b) => new Date(b.lastActive || 0) - new Date(a.lastActive || 0));
+
+if (visitors.length === 0) {
+guestbookEl.innerHTML = <p class="text-stone-500 italic"&gt;Inga registrerade besökare än.&lt;/p>;
+return;
 }
 
-function draw() {
-    const zone = ZONES[currentZoneKey];
-
-    // Bakgrunds-gradient
-    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    grad.addColorStop(0, zone.bgColors[0]);
-    grad.addColorStop(1, zone.bgColors[1]);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Rita vattenströmning
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-    ctx.lineWidth = 2;
-    particles.forEach(p => {
-        ctx.beginPath();
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(p.x + (p.length * zone.flowDirection), p.y);
-        ctx.stroke();
-    });
-
-    // Specialgrafik för Kraftverket (Illustrations-indikation)
-    if (currentZoneKey === "jonsered_kraftverk") {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-        ctx.fillRect(0, 0, 180, canvas.height);
-        
-        ctx.fillStyle = "#7f8c8d";
-        ctx.font = "14px sans-serif";
-        ctx.fillText("Kraftverksdamm & Laxtrappa", 10, 30);
-        
-        // Rita enkel Laxtrappa-illustration
-        ctx.strokeStyle = "#95a5a6";
-        ctx.lineWidth = 3;
-        for (let i = 0; i < 5; i++) {
-            ctx.strokeRect(20, 60 + (i * 35), 60, 25);
-        }
-    }
-
-    // Rita kastlina om aktiverat
-    if (isCasting && zone.fishable) {
-        ctx.strokeStyle = "#f1c40f";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(canvas.width / 2, canvas.height);
-        ctx.quadraticCurveTo(canvas.width / 2 + 50, canvas.height / 2, canvas.width / 2 + 100, canvas.height / 3);
-        ctx.stroke();
-
-        // Flugan
-        ctx.fillStyle = "#e74c3c";
-        ctx.beginPath();
-        ctx.arc(canvas.width / 2 + 100, canvas.height / 3, 5, 0, Math.PI * 2);
-        ctx.fill();
-    }
+let html = "";
+visitors.forEach(v => {
+let dateStr = v.lastActive ? new Date(v.lastActive).toLocaleDateString() : "Okänt datum";
+html += &lt;div class="border-b border-stone-900 pb-1 flex justify-between items-center text-[11px]"&gt; &lt;span class="font-bold text-amber-300 cursor-pointer hover:underline" onclick="openPlayerProfile('${v.name}')">🎣 ${v.name}&lt;/span&gt; &lt;span class="text-stone-500 text-[9px]"&gt;${dateStr}</span>
+</div>
+`;
+});
+guestbookEl.innerHTML = html;
+} catch (e) {
+console.error("Fel vid hämtning av gästbok:", e);
 }
+};
 
-function gameLoop() {
-    updateParticles();
-    draw();
-    requestAnimationFrame(gameLoop);
-}
-
-// Kastmekanik
-function toggleCast() {
-    const zone = ZONES[currentZoneKey];
-    if (!zone.fishable) return;
-
-    if (!isCasting) {
-        isCasting = true;
-        castBtn.textContent = "VEVA IN";
-        castBtn.classList.add("active");
-        const selectedFly = flySelect.options[flySelect.selectedIndex].text;
-        addLog(`Kastade ut med ${selectedFly}.`, "logHighlight");
-    } else {
-        stopCast();
-        addLog("Vevade in linan.");
-    }
-}
-
-function stopCast() {
-    isCasting = false;
-    castBtn.textContent = "KASTA UT";
-    castBtn.classList.remove("active");
-}
-
-// Event Listeners
-zoneSelect.addEventListener("change", (e) => changeZone(e.target.value));
-castBtn.addEventListener("click", toggleCast);
-
-// Initiering
-resizeCanvas();
-initZoneDropdown();
-changeZone(currentZoneKey);
-gameLoop();
-</script>
-
-</body>
-</html>
+window.l
