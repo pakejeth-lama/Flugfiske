@@ -556,6 +556,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        window.dbRef = db; // Tillgänglig för GM-admin
 
         function getCurrentWeekKey() {
             const now = new Date();
@@ -1110,16 +1111,26 @@
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
             
             try {
-                let forcedState = {
-                    name: targetPlayer,
-                    points: 700,
-                    castsRemaining: 5,
-                    dayOfSeason: 1,
-                    lastPlayedDate: todayStr,
-                    equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" }
-                };
-
-                await window.savePlayerStateFromFirebase(targetPlayer, forcedState);
+                // Använd direkt Firestore-import om tillgänglig via window.dbRef för att garantera skrivning
+                if (window.dbRef) {
+                    const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+                    await setDoc(doc(window.dbRef, "players", targetPlayer), {
+                        name: targetPlayer,
+                        points: 700,
+                        castsRemaining: 5,
+                        dayOfSeason: 1,
+                        lastPlayedDate: todayStr,
+                        lastActive: new Date().toISOString()
+                    }, { merge: true });
+                } else {
+                    await window.savePlayerStateFromFirebase(targetPlayer, {
+                        name: targetPlayer,
+                        points: 700,
+                        castsRemaining: 5,
+                        dayOfSeason: 1,
+                        lastPlayedDate: todayStr
+                    });
+                }
 
                 if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
                     gameWorld.castsRemaining = 5;
@@ -1132,7 +1143,7 @@
                 showCustomAlert(`Kastveckan har återställts för ${targetPlayer} i molnet (5 kast & Dag 1/7)!`, "GM Admin");
             } catch (e) {
                 console.error("Kunde inte nollställa via GM:", e);
-                showCustomAlert("Kunde inte nå molnet för att nollställa spelaren.", "Fel");
+                showCustomAlert("Kunde inte nå molnet för att nollställa spelaren: " + e.message, "Fel");
             }
         }
 
