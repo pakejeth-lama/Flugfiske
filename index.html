@@ -228,15 +228,14 @@
         
         <div class="lg:col-span-2 flex flex-col gap-2.5">
             
-            <!-- Dropdown-meny för zonval (Jonsereds Kraftverk först) -->
+            <!-- Dropdown-meny för zonval (med samma stil som övriga menyer) -->
             <div class="bg-stone-900 p-3 rounded-2xl border border-stone-800 flex flex-col gap-1.5">
                 <label for="zoneSelectDropdown" class="text-xs font-bold text-emerald-400 flex items-center gap-1">
                     <span>🗺️</span> Välj Fiskeplats (Sträcka):
                 </label>
-                <select id="zoneSelectDropdown" onchange="onZoneDropdownChange(this.value)" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-300 font-semibold focus:outline-none focus:border-emerald-500">
-                    <option value="jonsered_kraftverk">Jonsereds Kraftverk (Fredat område / Fiskeförbud)</option>
+                <select id="zoneSelectDropdown" onchange="onZoneDropdownChange(this.value)" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-stone-200 font-semibold focus:outline-none focus:border-emerald-500">
                     <option value="dickson">Dickson</option>
-                    <option value="mannered">Mannered (Sandbanken)</option>
+                    <option value="mannered">Mannered</option>
                     <option value="edbergsrakan">Edbergsrakan</option>
                     <option value="kahogsforsen">Kåhögsforsen</option>
                     <option value="brittamaja">Britta-Maja</option>
@@ -884,7 +883,6 @@
             castsRemaining: 5,
             equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" },
             zones: {
-                jonsered_kraftverk: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] }, // Första zon
                 dickson: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
                 mannered: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
                 edbergsrakan: { playerPos: { x: null, y: null }, log: [], gravels: [], boulders: [], nurseries: [] },
@@ -903,7 +901,7 @@
             }
         };
 
-        let currentZoneKey = 'jonsered_kraftverk'; // Startar på kraftverket
+        let currentZoneKey = 'dickson';
         let weatherData = { temp: 11, waterTemp: 10, flow: 18, condition: "Molnigt" };
         
         let placementMode = null; 
@@ -912,9 +910,8 @@
         let isActionLocked = false;
 
         const saveanZones = {
-            jonsered_kraftverk: { name: "Jonsereds Kraftverk (Fredat område)", lat: 57.745, lon: 12.205, baseTemp: 11, fishable: false },
             dickson: { name: "Säveån – Dickson", lat: 57.742, lon: 12.195, baseTemp: 11 },
-            mannered: { name: "Säveån – Mannered (Sandbanken)", lat: 57.738, lon: 12.180, baseTemp: 11 },
+            mannered: { name: "Säveån – Mannered", lat: 57.738, lon: 12.180, baseTemp: 11 },
             edbergsrakan: { name: "Säveån – Edbergsrakan", lat: 57.739, lon: 12.184, baseTemp: 11 },
             kahogsforsen: { name: "Säveån – Kåhögsforsen", lat: 57.740, lon: 12.188, baseTemp: 11 },
             brittamaja: { name: "Säveån – Britta-Maja", lat: 57.736, lon: 12.175, baseTemp: 11 },
@@ -922,18 +919,19 @@
             ingvarssons: { name: "Säveån – Ingvarssons", lat: 57.730, lon: 12.155, baseTemp: 11 }
         };
 
+        // Endast kategori (Laxfluga, Torrfluga, Nymf)
         const flies = [
-            { name: "Fireball", category: "salmon" },
-            { name: "Strong Medicine", category: "salmon" },
-            { name: "Mysen", category: "salmon" },
-            { name: "Ullsock", category: "salmon" },
-            { name: "Sunray Shadow", category: "salmon" },
-            { name: "Pärs räka", category: "salmon" },
-            { name: "Klinkhammer", category: "dry" },
-            { name: "Caddis", category: "dry" },
-            { name: "Europa 12", category: "dry" },
-            { name: "Haröra", category: "nymph" },
-            { name: "Den Vanliga", category: "allround" }
+            { name: "Fireball", category: "Laxfluga" },
+            { name: "Strong Medicine", category: "Laxfluga" },
+            { name: "Mysen", category: "Laxfluga" },
+            { name: "Ullsock", category: "Laxfluga" },
+            { name: "Sunray Shadow", category: "Laxfluga" },
+            { name: "Pärs räka", category: "Laxfluga" },
+            { name: "Klinkhammer", category: "Torrfluga" },
+            { name: "Caddis", category: "Torrfluga" },
+            { name: "Europa 12", category: "Torrfluga" },
+            { name: "Haröra", category: "Nymf" },
+            { name: "Den Vanliga", category: "Allroundfluga" }
         ];
 
         let activeFly = flies[0];
@@ -1245,7 +1243,7 @@
                 console.error("Fel vid molnsynk under initiering:", e);
             }
 
-            await selectZone('jonsered_kraftverk', 'Jonsereds Kraftverk');
+            await selectZone('dickson', 'Säveån – Dickson');
             hideLoadingOverlay();
         }
 
@@ -1391,8 +1389,7 @@
                 }
             } catch(e) { console.error("Kunde inte ladda zondata", e); }
 
-            const isFishable = saveanZones[key].fishable !== false;
-            wildlifeDisturbance = isFishable && (Math.random() < 0.25);
+            wildlifeDisturbance = (Math.random() < 0.25);
             const alertBox = document.getElementById('wildlifeAlert');
             if (wildlifeDisturbance) {
                 let events = [
@@ -1410,7 +1407,7 @@
             fetchWeather(key);
             initRises();
             initDriftLog();
-            document.getElementById('castStatus').innerText = isFishable ? `Flyttade till ${name} (Säveån).` : `Visar ${name} (Fiskeförbud).`;
+            document.getElementById('castStatus').innerText = `Flyttade till ${name} (Säveån).`;
             updateUI();
         }
 
@@ -1531,9 +1528,6 @@
         }
 
         function startPlacement(type, cost) {
-            if (!saveanZones[currentZoneKey].fishable) {
-                return showCustomAlert("Det är fiskeförbud här! Du kan inte utföra biotopvård i fredat område.", "Fiskeförbud");
-            }
             if(gameWorld.points < cost) return showCustomAlert("Inte tillräckligt med poäng!", "Poäng saknas");
             placementMode = type;
             placementCost = cost;
@@ -1544,9 +1538,6 @@
         }
 
         function startMoveRod() {
-            if (!saveanZones[currentZoneKey].fishable) {
-                return showCustomAlert("Inga ståplatser i det här fredade området.", "Fiskeförbud");
-            }
             placementMode = 'rod';
             const banner = document.getElementById('modeBanner');
             banner.innerText = `Placera ståplats: Klicka där du vill stå!`;
@@ -1684,15 +1675,7 @@
             let rodX = zState.playerPos && zState.playerPos.x !== null ? zState.playerPos.x : 40;
             let rodY = zState.playerPos && zState.playerPos.y !== null ? zState.playerPos.y : canvas.height - 40;
 
-            // Bakgrund: Jonsereds Kraftverk har nu en ljusblå bakgrund
-            if (currentZoneKey === 'jonsered_kraftverk') {
-                let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                bgGrad.addColorStop(0, '#7dd3fc');
-                bgGrad.addColorStop(0.5, '#38bdf8');
-                bgGrad.addColorStop(1, '#0284c7');
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            } else if (currentZoneKey === 'mannered') {
+            if (currentZoneKey === 'mannered') {
                 let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
                 bgGrad.addColorStop(0, '#0369a1');
                 bgGrad.addColorStop(0.5, '#0284c7');
@@ -1720,71 +1703,6 @@
                 ctx.strokeStyle = '#38bdf8';
                 ctx.lineWidth = 1.5;
                 ctx.strokeRect(0, 24, canvas.width, 130);
-            }
-
-            // Jonsereds Kraftverk: Större, centrerat kraftverk + brun laxtrappa med vattenflum uppe till vänster
-            if (currentZoneKey === 'jonsered_kraftverk') {
-                let centerX = canvas.width / 2;
-                
-                // Kraftverksbyggnad (större och centrerad)
-                ctx.fillStyle = '#44403c';
-                ctx.fillRect(centerX - 130, 25, 260, 90);
-                ctx.strokeStyle = '#292524';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(centerX - 130, 25, 260, 90);
-
-                // Fönster på kraftverket
-                ctx.fillStyle = '#b91c1c';
-                for(let fx = centerX - 100; fx <= centerX + 70; fx += 35) {
-                    ctx.fillRect(fx, 40, 20, 35);
-                }
-
-                ctx.fillStyle = '#fde047';
-                ctx.font = 'bold 12px Inter';
-                ctx.fillText("Jonsereds Kraftverk", centerX - 55, 15);
-
-                // Brun laxtrappa uppe till vänster med vattenflum
-                ctx.fillStyle = '#78350f'; // Brun laxtrappa
-                ctx.fillRect(20, 45, 90, 75);
-                ctx.strokeStyle = '#451a03';
-                ctx.lineWidth = 2;
-                ctx.strokeRect(20, 45, 90, 75);
-
-                // Steg i laxtrappa
-                ctx.fillStyle = '#92400e';
-                for(let i = 0; i < 4; i++) {
-                    ctx.fillRect(25 + (i * 20), 55 + (i * 14), 16, 10);
-                }
-
-                // Vattenflum / skum i laxtrappa
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-                ctx.beginPath();
-                ctx.arc(35, 110, 12, 0, Math.PI * 2);
-                ctx.arc(55, 95, 10, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.fillStyle = '#fef08a';
-                ctx.font = '10px Inter';
-                ctx.fillText("Laxtrappa", 25, 40);
-            }
-
-            // Hela botten ner till vänster har illustrerat grus (grunt område)
-            ctx.fillStyle = 'rgba(217, 185, 133, 0.55)';
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height);
-            ctx.lineTo(0, canvas.height - 120);
-            ctx.quadraticCurveTo(canvas.width * 0.25, canvas.height - 70, canvas.width * 0.45, canvas.height);
-            ctx.closePath();
-            ctx.fill();
-
-            // Grusdetaljer i det grunda hörnet
-            ctx.fillStyle = 'rgba(120, 100, 70, 0.75)';
-            for(let gx = 20; gx < canvas.width * 0.4; gx += 22) {
-                let gy = canvas.height - 30 - (Math.sin(gx) * 25);
-                ctx.beginPath();
-                ctx.arc(gx, gy, 4, 0, Math.PI * 2);
-                ctx.arc(gx + 8, gy + 6, 3, 0, Math.PI * 2);
-                ctx.fill();
             }
 
             let dicksonBlockX = canvas.width / 3;
@@ -1877,9 +1795,7 @@
 
             let currentFlow = parseFloat(weatherData.flow);
             let flowMultiplier = currentFlow > 14 ? 2.5 : 1.0;
-            
-            // Vattnet flyter från höger till vänster (-1) i Jonsereds Kraftverk
-            let flowDirection = (currentZoneKey === 'jonsered_kraftverk') ? -1 : 1;
+            let flowDirection = 1;
 
             if (!paused) {
                 flowOffset += (1.5 + (currentFlow * 0.05)) * flowMultiplier * flowDirection;
@@ -1977,7 +1893,7 @@
 
                 let bobbing = Math.sin(Date.now() * 0.015) * 3;
 
-                ctx.fillStyle = activeFly.category === 'dry' ? '#f59e0b' : '#c2410c';
+                ctx.fillStyle = activeFly.category === 'Torrfluga' ? '#f59e0b' : '#c2410c';
                 ctx.beginPath();
                 ctx.arc(castLine.x, castLine.y + bobbing, 3.5, 0, Math.PI * 2);
                 ctx.fill();
@@ -2007,8 +1923,7 @@
                     if(castLine && (castLine.x > canvas.width || castLine.x < 0)) castLine = null;
 
                     let biteChance = currentFlow > 14 ? 0.00014 : 0.00008;
-                    let isFishableZone = saveanZones[currentZoneKey].fishable !== false;
-                    if(castLine && isFishableZone && !wildlifeDisturbance && Math.random() < biteChance && !currentFish) {
+                    if(castLine && !wildlifeDisturbance && Math.random() < biteChance && !currentFish) {
                         triggerBite(false);
                     }
                 }
@@ -2027,10 +1942,6 @@
 
         canvas.addEventListener('click', async (e) => {
             if(isFighting || isAnyModalOpen()) return;
-            
-            if (saveanZones[currentZoneKey].fishable === false) {
-                return showCustomAlert("Det är fiskeförbud och fredat område här vid Jonsereds Kraftverk! Du kan endast titta på laxtrappan och njuta av utsikten.", "Fiskeförbud");
-            }
 
             if(wildlifeDisturbance) return showCustomAlert("Djur skrämmer fisken! Byt sträcka.", "Störning");
 
@@ -2144,7 +2055,7 @@
             let rodSpecStr = gameWorld.equipment.spec;
             let isTooLightRodForSalmon = rodSpecStr.includes("#6");
 
-            let canCatchSalmon = (activeFly.category !== 'dry') && !isTooLightRodForSalmon;
+            let canCatchSalmon = (activeFly.category !== 'Torrfluga') && !isTooLightRodForSalmon;
             
             let species = "Öring";
             let gender = "";
@@ -2386,7 +2297,7 @@
                     }
                 }
 
-                if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name, eqString);
+                if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.category, saveanZones[currentZoneKey].name, eqString);
             } else {
                 s.population = Math.max(10, s.population - 1);
                 alertMsg += "Fisken klarade inte hanteringen.";
@@ -2420,7 +2331,7 @@
                 alertMsg = currentFish.size === 125 ? "Du tog upp trofén! En historisk fångst sparad till Hall of Fame. (Det gemensamma beståndet minskade)." : "Fisk hemtagen. Det gemensamma fiskbeståndet i Säveån har minskat något.";
             }
 
-            if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.name, saveanZones[currentZoneKey].name, eqString);
+            if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.category, saveanZones[currentZoneKey].name, eqString);
 
             let zStateLog = gameWorld.zones[currentZoneKey];
             zStateLog.log = zStateLog.log || [];
@@ -2441,8 +2352,9 @@
             if(isFighting) return;
             const list = document.getElementById('flyList');
             list.innerHTML = flies.map(f => `
-                <div onclick="activeFly = flies.find(x => x.name === '${f.name}'); updateUI(); closeFlyModal();" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 hover:border-emerald-500 cursor-pointer flex justify-between text-xs transition">
+                <div onclick="activeFly = flies.find(x => x.name === '${f.name}'); updateUI(); closeFlyModal();" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 hover:border-emerald-500 cursor-pointer flex justify-between items-center text-xs transition">
                     <span class="font-bold text-stone-200">${f.name}</span>
+                    <span class="text-[10px] bg-stone-900 px-2 py-0.5 rounded-lg text-emerald-400 border border-stone-800">${f.category}</span>
                 </div>
             `).join('');
             document.getElementById('flyModal').classList.remove('hidden');
