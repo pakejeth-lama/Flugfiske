@@ -1109,26 +1109,8 @@
             let targetPlayer = document.getElementById('targetPlayerInput').value.trim();
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
             
-            // Hämta spelarens dokument från molnet och tvinga en återställning av kast och dag
-            let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
-            if(cloudState) {
-                cloudState.castsRemaining = 5;
-                cloudState.dayOfSeason = 1;
-                cloudState.lastPlayedDate = todayStr;
-                await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
-
-                // Om det är du själv som återställs, uppdatera det aktiva spelläget omedelbart
-                if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
-                    gameWorld.castsRemaining = 5;
-                    gameWorld.dayOfSeason = 1;
-                    gameWorld.lastPlayedDate = todayStr;
-                    updateUI();
-                }
-
-                showCustomAlert(`Kastveckan har återställts för ${targetPlayer} i molnet (5 kast & Dag 1/7)!`, "GM Admin");
-            } else {
-                // Om spelaren inte fanns i molnet sedan tidigare men nollställs
-                let newState = {
+            try {
+                let forcedState = {
                     name: targetPlayer,
                     points: 700,
                     castsRemaining: 5,
@@ -1136,7 +1118,8 @@
                     lastPlayedDate: todayStr,
                     equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" }
                 };
-                await window.savePlayerStateFromFirebase(targetPlayer, newState);
+
+                await window.savePlayerStateFromFirebase(targetPlayer, forcedState);
 
                 if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
                     gameWorld.castsRemaining = 5;
@@ -1146,7 +1129,10 @@
                     updateUI();
                 }
 
-                showCustomAlert(`Skapade och återställde kastveckan för ${targetPlayer} (5 kast & Dag 1/7)!`, "GM Admin");
+                showCustomAlert(`Kastveckan har återställts för ${targetPlayer} i molnet (5 kast & Dag 1/7)!`, "GM Admin");
+            } catch (e) {
+                console.error("Kunde inte nollställa via GM:", e);
+                showCustomAlert("Kunde inte nå molnet för att nollställa spelaren.", "Fel");
             }
         }
 
@@ -1258,19 +1244,16 @@
                     }
                 }
 
-                // MOLNET SOM SANNINGENS KÄLLA: Hämta alltid molntillståndet och låt det skriva över det lokala
                 let cloudState = await window.loadPlayerStateFromFirebase(lockedAnglerName);
                 if (cloudState) {
                     if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
                     gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
                     
-                    // Kolla om datumet i molnet är dagens datum
                     if (cloudState.lastPlayedDate === todayStr) {
                         gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
                         gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
                         gameWorld.lastPlayedDate = todayStr;
                     } else {
-                        // Ny dag i molnet -> uppdatera molnet och tvinga fram nya värden
                         gameWorld.lastPlayedDate = todayStr;
                         gameWorld.castsRemaining = 5;
                         gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
@@ -1286,7 +1269,6 @@
                         await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
                     }
                 } else {
-                    // Första gången spelaren skapas
                     gameWorld.lastPlayedDate = todayStr;
                     gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = 1;
@@ -2080,11 +2062,6 @@
             const rect = canvas.getBoundingClientRect();
             let clickX = e.clientX - rect.left;
             let clickY = e.clientY - rect.top;
-
-            if (currentZoneKey === 'mannered' && clickY < canvas.height * 0.4) {
-                showCustomAlert("Det är land här! Du kan inte kasta in på strandkanten på Mannered.", "Landzon");
-                return;
-            }
 
             const zState = gameWorld.zones[currentZoneKey];
             let rodX = zState.playerPos && zState.playerPos.x !== null ? zState.playerPos.x : 40;
