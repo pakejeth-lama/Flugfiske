@@ -228,20 +228,28 @@
         
         <div class="lg:col-span-2 flex flex-col gap-2.5">
             
-            <!-- Dropdown-meny för zonval (Grön text matchar övriga menyer) -->
-            <div class="bg-stone-900 p-3 rounded-2xl border border-stone-800 flex flex-col gap-1.5">
-                <label for="zoneSelectDropdown" class="text-xs font-bold text-emerald-400 flex items-center gap-1">
+            <!-- Anpassad Fiskeplats-meny med matchande grön rullmeny -->
+            <div class="bg-stone-900 p-3 rounded-2xl border border-stone-800 flex flex-col gap-1.5 relative">
+                <label class="text-xs font-bold text-emerald-400 flex items-center gap-1">
                     <span>🗺️</span> Välj Fiskeplats (Sträcka):
                 </label>
-                <select id="zoneSelectDropdown" onchange="onZoneDropdownChange(this.value)" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 font-bold focus:outline-none focus:border-emerald-500">
-                    <option value="dickson">Dickson</option>
-                    <option value="mannered">Mannered</option>
-                    <option value="edbergsrakan">Edbergsrakan</option>
-                    <option value="kahogsforsen">Kåhögsforsen</option>
-                    <option value="brittamaja">Britta-Maja</option>
-                    <option value="lortholjan">Lorthöljan</option>
-                    <option value="ingvarssons">Ingvarssons</option>
-                </select>
+                
+                <!-- Knappen som visar aktivt val -->
+                <button onclick="toggleCustomDropdown()" id="customDropdownBtn" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 font-bold flex justify-between items-center focus:outline-none focus:border-emerald-500 transition">
+                    <span id="selectedZoneLabel">Säveån – Dickson</span>
+                    <span class="text-emerald-500">▼</span>
+                </button>
+
+                <!-- Den poppande listan med samma snygga tema -->
+                <div id="customDropdownList" class="hidden absolute top-full left-3 right-3 mt-1 bg-stone-950 border border-stone-700 rounded-xl shadow-2xl z-40 overflow-hidden text-xs">
+                    <div onclick="selectCustomZone('dickson', 'Säveån – Dickson')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Dickson</div>
+                    <div onclick="selectCustomZone('mannered', 'Säveån – Mannered')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Mannered</div>
+                    <div onclick="selectCustomZone('edbergsrakan', 'Säveån – Edbergsrakan')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Edbergsrakan</div>
+                    <div onclick="selectCustomZone('kahogsforsen', 'Säveån – Kåhögsforsen')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Kåhögsforsen</div>
+                    <div onclick="selectCustomZone('brittamaja', 'Säveån – Britta-Maja')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Britta-Maja</div>
+                    <div onclick="selectCustomZone('lortholjan', 'Säveån – Lorthöljan')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Lorthöljan</div>
+                    <div onclick="selectCustomZone('ingvarssons', 'Säveån – Ingvarssons')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer transition">Ingvarssons</div>
+                </div>
             </div>
 
             <!-- Canvas Spelyta -->
@@ -979,6 +987,27 @@
                    !document.getElementById('flyModal').classList.contains('hidden');
         }
 
+        // Funktioner för anpassad dropdown-meny
+        function toggleCustomDropdown() {
+            const list = document.getElementById('customDropdownList');
+            list.classList.toggle('hidden');
+        }
+
+        function selectCustomZone(key, name) {
+            document.getElementById('selectedZoneLabel').innerText = name;
+            document.getElementById('customDropdownList').classList.add('hidden');
+            selectZone(key, name);
+        }
+
+        // Stäng dropdown om man klickar utanför
+        window.addEventListener('click', function(e) {
+            const dropdownBtn = document.getElementById('customDropdownBtn');
+            const dropdownList = document.getElementById('customDropdownList');
+            if (dropdownBtn && dropdownList && !dropdownBtn.contains(e.target) && !dropdownList.contains(e.target)) {
+                dropdownList.classList.add('hidden');
+            }
+        });
+
         async function openPlayerProfile(anglerName) {
             if (!anglerName || anglerName === "NATUREN" || anglerName === "Fiskare") return;
             document.getElementById('profilePlayerName').innerHTML = `<span>👤</span> ${anglerName}`;
@@ -1366,16 +1395,9 @@
             updateUI();
         }
 
-        function onZoneDropdownChange(key) {
-            selectZone(key, saveanZones[key].name);
-        }
-
         async function selectZone(key, name) {
             currentZoneKey = key;
-            const dropdown = document.getElementById('zoneSelectDropdown');
-            if (dropdown && dropdown.value !== key) {
-                dropdown.value = key;
-            }
+            document.getElementById('selectedZoneLabel').innerText = name;
 
             try {
                 if (window.loadSharedWorld) {
