@@ -945,6 +945,8 @@
         let currentFish = null;
         let rises = [];
         let singleDriftLog = null;
+        let aquaticPlants = [];
+        let raindrops = [];
 
         let isFighting = false;
         let isPressingScreen = false;
@@ -987,7 +989,6 @@
                    !document.getElementById('flyModal').classList.contains('hidden');
         }
 
-        // Funktioner för anpassad dropdown-meny
         function toggleCustomDropdown() {
             const list = document.getElementById('customDropdownList');
             list.classList.toggle('hidden');
@@ -999,7 +1000,6 @@
             selectZone(key, name);
         }
 
-        // Stäng dropdown om man klickar utanför
         window.addEventListener('click', function(e) {
             const dropdownBtn = document.getElementById('customDropdownBtn');
             const dropdownList = document.getElementById('customDropdownList');
@@ -1304,17 +1304,19 @@
             canvas.height = canvas.parentElement.clientHeight;
             initRises();
             initDriftLog();
+            initAquaticPlants();
+            initRaindrops();
         }
         window.addEventListener('resize', resizeCanvas);
 
         function initRises() {
             rises = [];
-            for(let i=0; i<5; i++) {
+            for(let i=0; i<6; i++) {
                 rises.push({
                     x: 60 + Math.random() * (canvas.width - 120),
                     y: 70 + Math.random() * (canvas.height - 140),
                     radius: 2,
-                    maxRadius: 20 + Math.random() * 10,
+                    maxRadius: 22 + Math.random() * 12,
                     alpha: 1.0,
                     timer: Math.random() * 100
                 });
@@ -1329,6 +1331,31 @@
                 height: 10,
                 speed: 0.8
             };
+        }
+
+        function initAquaticPlants() {
+            aquaticPlants = [];
+            for(let i = 0; i < 14; i++) {
+                aquaticPlants.push({
+                    x: Math.random() * canvas.width,
+                    y: canvas.height - 35 - Math.random() * 40,
+                    height: 18 + Math.random() * 25,
+                    swaySpeed: 0.02 + Math.random() * 0.03,
+                    offset: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function initRaindrops() {
+            raindrops = [];
+            for(let i = 0; i < 35; i++) {
+                raindrops.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    speed: 4 + Math.random() * 3,
+                    length: 8 + Math.random() * 10
+                });
+            }
         }
 
         async function fetchWeather(key) {
@@ -1428,6 +1455,8 @@
             fetchWeather(key);
             initRises();
             initDriftLog();
+            initAquaticPlants();
+            initRaindrops();
             document.getElementById('castStatus').innerText = `Flyttade till ${name} (Säveån).`;
             updateUI();
         }
@@ -1696,30 +1725,37 @@
             let rodX = zState.playerPos && zState.playerPos.x !== null ? zState.playerPos.x : 40;
             let rodY = zState.playerPos && zState.playerPos.y !== null ? zState.playerPos.y : canvas.height - 40;
 
+            // Finstämd, djup och naturnära bakgrund med atmosfär
+            let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
             if (currentZoneKey === 'mannered') {
-                let bgGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-                bgGrad.addColorStop(0, '#0369a1');
-                bgGrad.addColorStop(0.5, '#0284c7');
-                bgGrad.addColorStop(1, '#075985');
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                bgGrad.addColorStop(0, '#02456e');
+                bgGrad.addColorStop(0.5, '#026f9e');
+                bgGrad.addColorStop(1, '#043859');
             } else if (currentZoneKey === 'lortholjan') {
-                let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                bgGrad.addColorStop(0, '#011627');
-                bgGrad.addColorStop(0.5, '#032b52');
-                bgGrad.addColorStop(1, '#011627');
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                bgGrad.addColorStop(0, '#01111c');
+                bgGrad.addColorStop(0.5, '#02233f');
+                bgGrad.addColorStop(1, '#01111c');
             } else {
-                let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-                bgGrad.addColorStop(0, '#0284c7');
-                bgGrad.addColorStop(1, '#0369a1');
-                ctx.fillStyle = bgGrad;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                bgGrad.addColorStop(0, '#026294');
+                bgGrad.addColorStop(0.5, '#027fa8');
+                bgGrad.addColorStop(1, '#014f73');
+            }
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Dynamiska ljusblänk (caustics/reflexer) på vattenytan
+            let time = Date.now() * 0.002;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+            for (let i = 0; i < 4; i++) {
+                let bx = (canvas.width * 0.25 * i) + Math.sin(time + i) * 60;
+                let by = (canvas.height * 0.3 * i) + Math.cos(time * 0.7) * 40;
+                ctx.beginPath();
+                ctx.ellipse(bx, by, 90, 35, 0.3, 0, Math.PI * 2);
+                ctx.fill();
             }
 
             if (currentZoneKey === 'edbergsrakan') {
-                ctx.fillStyle = '#032845';
+                ctx.fillStyle = '#02243d';
                 ctx.fillRect(0, 24, canvas.width, 130);
                 ctx.strokeStyle = '#38bdf8';
                 ctx.lineWidth = 1.5;
@@ -1737,12 +1773,40 @@
                 ctx.stroke();
             }
 
+            // Organiska, mjuka strandkanter med skuggning
             ctx.fillStyle = '#1c1917';
             ctx.fillRect(0, 0, canvas.width, 36);
             ctx.fillRect(0, canvas.height - 24, canvas.width, 24);
+            
             ctx.fillStyle = '#14532d';
             ctx.fillRect(0, 0, canvas.width, 14);
             ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
+
+            // Mjuk strandövergång (gradientkant mot vattnet)
+            let shoreGradTop = ctx.createLinearGradient(0, 14, 0, 32);
+            shoreGradTop.addColorStop(0, 'rgba(20, 83, 45, 0.9)');
+            shoreGradTop.addColorStop(1, 'rgba(2, 98, 148, 0)');
+            ctx.fillStyle = shoreGradTop;
+            ctx.fillRect(0, 14, canvas.width, 18);
+
+            let shoreGradBot = ctx.createLinearGradient(0, canvas.height - 24, 0, canvas.height - 10);
+            shoreGradBot.addColorStop(0, 'rgba(2, 98, 148, 0)');
+            shoreGradBot.addColorStop(1, 'rgba(20, 83, 45, 0.9)');
+            ctx.fillStyle = shoreGradBot;
+            ctx.fillRect(0, canvas.height - 24, canvas.width, 14);
+
+            // Vajande vattenväxter vid kanterna
+            let plantSway = Math.sin(time * 2) * 6;
+            ctx.strokeStyle = 'rgba(21, 128, 61, 0.65)';
+            ctx.lineWidth = 2.5;
+            aquaticPlants.forEach((p, idx) => {
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y + 20);
+                let tipX = p.x + Math.sin(time * p.swaySpeed + p.offset) * 12;
+                let tipY = p.y - p.height;
+                ctx.quadraticCurveTo(p.x + 5, p.y - p.height * 0.5, tipX, tipY);
+                ctx.stroke();
+            });
 
             for (let i = 0; i < (s.trees || 2); i++) {
                 let tx = 50 + (i * 130) % (canvas.width - 80);
@@ -1786,10 +1850,11 @@
             });
 
             (zState.boulders || []).forEach(b => {
-                ctx.fillStyle = 'rgba(30, 41, 59, 0.65)';
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.75)';
                 ctx.beginPath();
                 ctx.ellipse(b.x, b.y, 25, 13, 0.1, 0, Math.PI*2);
                 ctx.fill();
+                // Subtil skugga/strömvirvel runt stenarna
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
@@ -1824,6 +1889,7 @@
                 if(flowOffset < -40) flowOffset = 0;
             }
             
+            // Ström-linjer med mjukare krusningar
             ctx.strokeStyle = currentFlow > 14 ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.2)';
             ctx.lineWidth = currentFlow > 14 ? 1.5 : 1;
             for(let y = 45; y < canvas.height - 25; y += 35) {
@@ -1832,6 +1898,26 @@
                     ctx.lineTo(x + flowOffset, y + Math.sin((x + flowOffset) * 0.05) * 4);
                 }
                 ctx.stroke();
+            }
+
+            // Regneffekter om det regnar
+            if (weatherData.condition.includes("Regn")) {
+                ctx.strokeStyle = 'rgba(186, 230, 253, 0.45)';
+                ctx.lineWidth = 1;
+                raindrops.forEach(drop => {
+                    if (!paused) {
+                        drop.y += drop.speed;
+                        drop.x -= 1;
+                        if (drop.y > canvas.height) {
+                            drop.y = -10;
+                            drop.x = Math.random() * canvas.width;
+                        }
+                    }
+                    ctx.beginPath();
+                    ctx.moveTo(drop.x, drop.y);
+                    ctx.lineTo(drop.x - 1, drop.y + drop.length);
+                    ctx.stroke();
+                });
             }
 
             let kahogRocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
@@ -1872,11 +1958,12 @@
                 ctx.stroke();
             }
 
+            // Vackra, realistiska vakande ringar med flera lager
             rises.forEach(r => {
                 if (!paused) {
                     r.timer++;
                     if(r.timer > 150) {
-                        r.radius += 0.4;
+                        r.radius += 0.45;
                         r.alpha = Math.max(0, 1 - (r.radius / r.maxRadius));
                         if(r.radius > r.maxRadius) {
                             r.radius = 2; r.alpha = 1.0; r.timer = 0;
@@ -1885,11 +1972,19 @@
                         }
                     }
                 }
-                ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.6})`;
-                ctx.lineWidth = 1;
+                ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.7})`;
+                ctx.lineWidth = 1.2;
                 ctx.beginPath();
                 ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
                 ctx.stroke();
+
+                // Sekundär inre vågring för extra djup
+                if (r.radius > 6) {
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.35})`;
+                    ctx.beginPath();
+                    ctx.arc(r.x, r.y, r.radius - 5, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
             });
 
             ctx.fillStyle = '#14532d';
