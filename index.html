@@ -1343,16 +1343,16 @@
 
         function initDriftLog() {
             singleDriftLog = {
-                x: -90,
+                x: -70,
                 y: canvas.height * 0.35 + Math.random() * 80,
-                width: 70,
-                height: 12,
+                width: 45,
+                height: 8,
                 angle: 0.1
             };
             floatingBushe = {
-                x: -120,
+                x: -140,
                 y: canvas.height * 0.2 + Math.random() * 100,
-                radius: 16,
+                radius: 12,
                 timer: 0
             };
         }
@@ -1749,32 +1749,34 @@
             let rodX = zState.playerPos && zState.playerPos.x !== null ? zState.playerPos.x : 40;
             let rodY = zState.playerPos && zState.playerPos.y !== null ? zState.playerPos.y : canvas.height - 40;
 
-            // Dynamiska färgskiftningar baserat på tid och vattenflöde
-            let timePulse = Math.sin(Date.now() * 0.001) * 8;
+            // Ännu kraftigare dynamisk färgskiftning i vattnets gradienter
+            let timePulse = Math.sin(Date.now() * 0.0012) * 14;
             let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
             if (currentZoneKey === 'mannered') {
-                bgGrad.addColorStop(0, `rgb(${2 + Math.floor(timePulse/2)}, ${69 + Math.floor(timePulse)}, 110)`);
-                bgGrad.addColorStop(0.5, '#026f9e');
-                bgGrad.addColorStop(1, '#043859');
+                bgGrad.addColorStop(0, `rgb(${4 + Math.floor(timePulse/1.5)}, ${75 + Math.floor(timePulse)}, ${125 + Math.floor(timePulse)})`);
+                bgGrad.addColorStop(0.5, '#027bb0');
+                bgGrad.addColorStop(1, '#032c44');
             } else if (currentZoneKey === 'lortholjan') {
-                bgGrad.addColorStop(0, '#01111c');
-                bgGrad.addColorStop(0.5, '#02233f');
+                bgGrad.addColorStop(0, '#02182b');
+                bgGrad.addColorStop(0.5, '#03335c');
                 bgGrad.addColorStop(1, '#01111c');
             } else {
-                bgGrad.addColorStop(0, `rgb(${2 + Math.floor(timePulse)}, ${98 + Math.floor(timePulse)}, 148)`);
-                bgGrad.addColorStop(0.5, '#027fa8');
-                bgGrad.addColorStop(1, '#014f73');
+                bgGrad.addColorStop(0, `rgb(${3 + Math.floor(timePulse)}, ${105 + Math.floor(timePulse*1.2)}, ${165 + Math.floor(timePulse)})`);
+                bgGrad.addColorStop(0.5, '#028dc2');
+                bgGrad.addColorStop(1, '#013a57');
             }
             ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             let time = Date.now() * 0.002;
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
-            for (let i = 0; i < 4; i++) {
-                let bx = (canvas.width * 0.25 * i) + Math.sin(time + i) * 60;
-                let by = (canvas.height * 0.3 * i) + Math.cos(time * 0.7) * 40;
+            
+            // Ljusblänk som glider över ytan
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.09)';
+            for (let i = 0; i < 5; i++) {
+                let bx = (canvas.width * 0.22 * i) + Math.sin(time * 0.8 + i) * 80;
+                let by = (canvas.height * 0.25 * i) + Math.cos(time * 0.6) * 50;
                 ctx.beginPath();
-                ctx.ellipse(bx, by, 90, 35, 0.3, 0, Math.PI * 2);
+                ctx.ellipse(bx, by, 110, 42, 0.35, 0, Math.PI * 2);
                 ctx.fill();
             }
 
@@ -1806,18 +1808,18 @@
             ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
 
             let shoreGradTop = ctx.createLinearGradient(0, 14, 0, 32);
-            shoreGradTop.addColorStop(0, 'rgba(20, 83, 45, 0.9)');
+            shoreGradTop.addColorStop(0, 'rgba(20, 83, 45, 0.95)');
             shoreGradTop.addColorStop(1, 'rgba(2, 98, 148, 0)');
             ctx.fillStyle = shoreGradTop;
             ctx.fillRect(0, 14, canvas.width, 18);
 
             let shoreGradBot = ctx.createLinearGradient(0, canvas.height - 24, 0, canvas.height - 10);
             shoreGradBot.addColorStop(0, 'rgba(2, 98, 148, 0)');
-            shoreGradBot.addColorStop(1, 'rgba(20, 83, 45, 0.9)');
+            shoreGradBot.addColorStop(1, 'rgba(20, 83, 45, 0.95)');
             ctx.fillStyle = shoreGradBot;
             ctx.fillRect(0, canvas.height - 24, canvas.width, 14);
 
-            ctx.strokeStyle = 'rgba(21, 128, 61, 0.7)';
+            ctx.strokeStyle = 'rgba(34, 197, 94, 0.75)';
             ctx.lineWidth = 2.5;
             aquaticPlants.forEach((p) => {
                 ctx.beginPath();
@@ -1852,12 +1854,12 @@
             }
 
             (zState.gravels || []).forEach(g => {
-                ctx.fillStyle = 'rgba(253, 224, 71, 0.45)';
+                ctx.fillStyle = 'rgba(253, 224, 71, 0.5)';
                 ctx.beginPath();
                 ctx.arc(g.x, g.y, 22, 0, Math.PI*2);
                 ctx.fill();
 
-                ctx.fillStyle = 'rgba(80, 70, 50, 0.7)';
+                ctx.fillStyle = 'rgba(70, 60, 40, 0.75)';
                 let dotOffsets = [
                     {dx: -8, dy: -5}, {dx: 6, dy: -10}, {dx: -3, dy: 8}, 
                     {dx: 10, dy: 4}, {dx: -12, dy: 2}, {dx: 2, dy: -2}
@@ -1870,25 +1872,25 @@
             });
 
             (zState.boulders || []).forEach(b => {
-                ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
                 ctx.beginPath();
                 ctx.ellipse(b.x, b.y, 25, 13, 0.1, 0, Math.PI*2);
                 ctx.fill();
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
             });
 
             (zState.nurseries || []).forEach(n => {
-                ctx.fillStyle = 'rgba(21, 128, 61, 0.55)';
+                ctx.fillStyle = 'rgba(21, 128, 61, 0.6)';
                 ctx.beginPath();
                 ctx.ellipse(n.x, n.y, 36, 18, 0.1, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.strokeStyle = 'rgba(74, 222, 128, 0.8)';
+                ctx.strokeStyle = 'rgba(74, 222, 128, 0.9)';
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
 
-                ctx.fillStyle = 'rgba(100, 116, 139, 0.85)';
+                ctx.fillStyle = 'rgba(100, 116, 139, 0.9)';
                 ctx.beginPath();
                 ctx.arc(n.x - 10, n.y - 3, 3.5, 0, Math.PI * 2);
                 ctx.arc(n.x + 10, n.y + 3, 4, 0, Math.PI * 2);
@@ -1906,69 +1908,69 @@
                 if(flowOffset > 40) flowOffset = 0;
                 if(flowOffset < -40) flowOffset = 0;
 
-                // Animirera drivved
-                if (singleDriftLog) {
+                // Drivved visas endast vid flöde >= 18 m3/s
+                if (currentFlow >= 18 && singleDriftLog) {
                     singleDriftLog.x += (0.6 + currentFlow * 0.03);
-                    if (singleDriftLog.x > canvas.width + 100) {
-                        singleDriftLog.x = -100;
+                    if (singleDriftLog.x > canvas.width + 80) {
+                        singleDriftLog.x = -80;
                         singleDriftLog.y = canvas.height * 0.3 + Math.random() * (canvas.height * 0.4);
                     }
                 }
 
-                // Animirera flytande buskar (kommer mer sällan)
-                if (floatingBushe) {
-                    floatingBushe.x += (0.4 + currentFlow * 0.02);
-                    if (floatingBushe.x > canvas.width + 150) {
-                        floatingBushe.x = -150;
+                // Flytande buskar visas endast vid flöde >= 26 m3/s och mer sällan
+                if (currentFlow >= 26 && floatingBushe) {
+                    floatingBushe.x += (0.35 + currentFlow * 0.02);
+                    if (floatingBushe.x > canvas.width + 180) {
+                        floatingBushe.x = -250;
                         floatingBushe.y = canvas.height * 0.2 + Math.random() * (canvas.height * 0.5);
                     }
                 }
             }
             
-            // Strömlinjer med skiftande reflexer
-            ctx.strokeStyle = currentFlow > 14 ? 'rgba(255, 255, 255, 0.4)' : 'rgba(255, 255, 255, 0.22)';
+            // Kraftigare strömlinjer med dynamiskt sken
+            ctx.strokeStyle = currentFlow > 14 ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.28)';
             ctx.lineWidth = currentFlow > 14 ? 1.5 : 1;
             for(let y = 45; y < canvas.height - 25; y += 35) {
                 ctx.beginPath();
                 for(let x = -40; x < canvas.width + 40; x += 35) {
-                    ctx.lineTo(x + flowOffset, y + Math.sin((x + flowOffset + time*20) * 0.05) * 4);
+                    ctx.lineTo(x + flowOffset, y + Math.sin((x + flowOffset + time*25) * 0.055) * 4.5);
                 }
                 ctx.stroke();
             }
 
-            // Rita ut drivved om den finns
-            if (singleDriftLog) {
+            // Rita ut mindre, fin drivved (endast vid flöde >= 18)
+            if (currentFlow >= 18 && singleDriftLog) {
                 ctx.save();
                 ctx.translate(singleDriftLog.x, singleDriftLog.y);
-                ctx.rotate(0.05 * Math.sin(time));
-                ctx.fillStyle = '#5c4033';
+                ctx.rotate(0.04 * Math.sin(time));
+                ctx.fillStyle = '#4a3525';
                 ctx.beginPath();
                 ctx.ellipse(0, 0, singleDriftLog.width, singleDriftLog.height, 0, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.strokeStyle = '#3e2723';
-                ctx.lineWidth = 1.5;
+                ctx.strokeStyle = '#2c1e14';
+                ctx.lineWidth = 1.2;
                 ctx.stroke();
                 ctx.restore();
             }
 
-            // Rita ut flytande buske om den finns
-            if (floatingBushe) {
+            // Rita ut flytande buske (endast vid flöde >= 26)
+            if (currentFlow >= 26 && floatingBushe) {
                 ctx.save();
                 ctx.translate(floatingBushe.x, floatingBushe.y);
-                ctx.fillStyle = '#166534';
+                ctx.fillStyle = '#15803d';
                 ctx.beginPath();
                 ctx.arc(0, 0, floatingBushe.radius, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.fillStyle = '#15803d';
+                ctx.fillStyle = '#166534';
                 ctx.beginPath();
-                ctx.arc(-5, -3, floatingBushe.radius * 0.7, 0, Math.PI * 2);
-                ctx.arc(6, 2, floatingBushe.radius * 0.6, 0, Math.PI * 2);
+                ctx.arc(-4, -2, floatingBushe.radius * 0.7, 0, Math.PI * 2);
+                ctx.arc(5, 2, floatingBushe.radius * 0.6, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.restore();
             }
 
             if (weatherData.condition.includes("Regn")) {
-                ctx.strokeStyle = 'rgba(186, 230, 253, 0.5)';
+                ctx.strokeStyle = 'rgba(186, 230, 253, 0.55)';
                 ctx.lineWidth = 1;
                 raindrops.forEach(drop => {
                     if (!paused) {
@@ -1988,12 +1990,12 @@
 
             let kahogRocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
             if (currentZoneKey === 'kahogsforsen') {
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
                 kahogRocks.forEach(r => {
                     ctx.beginPath();
                     ctx.ellipse(r.x, r.y, 35, 18, 0, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.strokeStyle = 'rgba(226, 232, 240, 0.4)';
+                    ctx.strokeStyle = 'rgba(226, 232, 240, 0.5)';
                     ctx.lineWidth = 2;
                     ctx.stroke();
                 });
@@ -2037,14 +2039,14 @@
                         }
                     }
                 }
-                ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.8})`;
-                ctx.lineWidth = 1.2;
+                ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.9})`;
+                ctx.lineWidth = 1.3;
                 ctx.beginPath();
                 ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
                 ctx.stroke();
 
                 if (r.radius > 6) {
-                    ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.4})`;
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.45})`;
                     ctx.beginPath();
                     ctx.arc(r.x, r.y, r.radius - 5, 0, Math.PI * 2);
                     ctx.stroke();
