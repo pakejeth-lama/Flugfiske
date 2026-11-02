@@ -102,7 +102,7 @@
             <div class="flex flex-col gap-2 text-xs">
                 <div>
                     <label class="text-stone-400 text-[10px] block mb-1">Tillverkare:</label>
-                    <select id="eqBrand" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-stone-200 text-xs">
+                    <select id="eqBrand" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-emerald-400 font-bold text-xs focus:outline-none focus:border-emerald-500">
                         <option value="Hardy">Hardy</option>
                         <option value="G.Loomis">G.Loomis</option>
                         <option value="Guideline">Guideline</option>
@@ -113,7 +113,7 @@
                 </div>
                 <div>
                     <label class="text-stone-400 text-[10px] block mb-1">Spölängd & Klass:</label>
-                    <select id="eqRodSpec" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-stone-200 text-xs">
+                    <select id="eqRodSpec" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2 text-emerald-400 font-bold text-xs focus:outline-none focus:border-emerald-500">
                         <option value="9 fot #6 (Enhands)">9 fot #6 (Enhands - Lätt)</option>
                         <option value="10 fot #7 (Enhands)">10 fot #7 (Enhands - Medel)</option>
                         <option value="10 fot #8 (Enhands)">10 fot #8 (Enhands - Kraftig)</option>
@@ -228,12 +228,12 @@
         
         <div class="lg:col-span-2 flex flex-col gap-2.5">
             
-            <!-- Dropdown-meny för zonval (med samma stil som övriga menyer) -->
+            <!-- Dropdown-meny för zonval (Grön text matchar övriga menyer) -->
             <div class="bg-stone-900 p-3 rounded-2xl border border-stone-800 flex flex-col gap-1.5">
                 <label for="zoneSelectDropdown" class="text-xs font-bold text-emerald-400 flex items-center gap-1">
                     <span>🗺️</span> Välj Fiskeplats (Sträcka):
                 </label>
-                <select id="zoneSelectDropdown" onchange="onZoneDropdownChange(this.value)" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-stone-200 font-semibold focus:outline-none focus:border-emerald-500">
+                <select id="zoneSelectDropdown" onchange="onZoneDropdownChange(this.value)" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 font-bold focus:outline-none focus:border-emerald-500">
                     <option value="dickson">Dickson</option>
                     <option value="mannered">Mannered</option>
                     <option value="edbergsrakan">Edbergsrakan</option>
@@ -919,7 +919,6 @@
             ingvarssons: { name: "Säveån – Ingvarssons", lat: 57.730, lon: 12.155, baseTemp: 11 }
         };
 
-        // Endast kategori (Laxfluga, Torrfluga, Nymf)
         const flies = [
             { name: "Fireball", category: "Laxfluga" },
             { name: "Strong Medicine", category: "Laxfluga" },
