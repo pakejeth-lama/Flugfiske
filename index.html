@@ -229,26 +229,26 @@
         <div class="lg:col-span-2 flex flex-col gap-2.5">
             
             <!-- Anpassad Fiskeplats-meny med matchande grön rullmeny -->
-            <div class="bg-stone-900 p-3 rounded-2xl border border-stone-800 flex flex-col gap-1.5 relative">
+            <div class="bg-stone-900 p-3 rounded-2xl border border-stone-800 flex flex-col gap-1.5 relative items-start">
                 <label class="text-xs font-bold text-emerald-400 flex items-center gap-1">
                     <span>🗺️</span> Välj Fiskeplats (Sträcka):
                 </label>
                 
                 <!-- Knappen som visar aktivt val -->
-                <button onclick="toggleCustomDropdown()" id="customDropdownBtn" class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 font-bold flex justify-between items-center focus:outline-none focus:border-emerald-500 transition">
+                <button onclick="toggleCustomDropdown()" id="customDropdownBtn" class="bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 font-bold flex items-center gap-4 focus:outline-none focus:border-emerald-500 transition">
                     <span id="selectedZoneLabel">Säveån – Dickson</span>
                     <span class="text-emerald-500">▼</span>
                 </button>
 
-                <!-- Den poppande listan med samma snygga tema -->
-                <div id="customDropdownList" class="hidden absolute top-full left-3 right-3 mt-1 bg-stone-950 border border-stone-700 rounded-xl shadow-2xl z-40 overflow-hidden text-xs">
-                    <div onclick="selectCustomZone('dickson', 'Säveån – Dickson')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Dickson</div>
-                    <div onclick="selectCustomZone('mannered', 'Säveån – Mannered')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Mannered</div>
-                    <div onclick="selectCustomZone('edbergsrakan', 'Säveån – Edbergsrakan')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Edbergsrakan</div>
-                    <div onclick="selectCustomZone('kahogsforsen', 'Säveån – Kåhögsforsen')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Kåhögsforsen</div>
-                    <div onclick="selectCustomZone('brittamaja', 'Säveån – Britta-Maja')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Britta-Maja</div>
-                    <div onclick="selectCustomZone('lortholjan', 'Säveån – Lorthöljan')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition">Lorthöljan</div>
-                    <div onclick="selectCustomZone('ingvarssons', 'Säveån – Ingvarssons')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer transition">Ingvarssons</div>
+                <!-- Den poppande listan anpassad efter textens bredd -->
+                <div id="customDropdownList" class="hidden absolute top-full left-0 mt-1 bg-stone-950 border border-stone-700 rounded-xl shadow-2xl z-40 overflow-hidden text-xs w-fit min-w-[180px]">
+                    <div onclick="selectCustomZone('dickson', 'Säveån – Dickson')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition whitespace-nowrap">Säveån – Dickson</div>
+                    <div onclick="selectCustomZone('mannered', 'Säveån – Mannered')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition whitespace-nowrap">Säveån – Mannered</div>
+                    <div onclick="selectCustomZone('edbergsrakan', 'Säveån – Edbergsrakan')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition whitespace-nowrap">Säveån – Edbergsrakan</div>
+                    <div onclick="selectCustomZone('kahogsforsen', 'Säveån – Kåhögsforsen')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition whitespace-nowrap">Säveån – Kåhögsforsen</div>
+                    <div onclick="selectCustomZone('brittamaja', 'Säveån – Britta-Maja')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition whitespace-nowrap">Säveån – Britta-Maja</div>
+                    <div onclick="selectCustomZone('lortholjan', 'Säveån – Lorthöljan')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer border-b border-stone-900 transition whitespace-nowrap">Säveån – Lorthöljan</div>
+                    <div onclick="selectCustomZone('ingvarssons', 'Säveån – Ingvarssons')" class="px-3 py-2.5 text-emerald-400 font-bold hover:bg-emerald-950/60 cursor-pointer transition whitespace-nowrap">Säveån – Ingvarssons</div>
                 </div>
             </div>
 
@@ -1725,7 +1725,6 @@
             let rodX = zState.playerPos && zState.playerPos.x !== null ? zState.playerPos.x : 40;
             let rodY = zState.playerPos && zState.playerPos.y !== null ? zState.playerPos.y : canvas.height - 40;
 
-            // Finstämd, djup och naturnära bakgrund med atmosfär
             let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
             if (currentZoneKey === 'mannered') {
                 bgGrad.addColorStop(0, '#02456e');
@@ -1743,7 +1742,6 @@
             ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Dynamiska ljusblänk (caustics/reflexer) på vattenytan
             let time = Date.now() * 0.002;
             ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
             for (let i = 0; i < 4; i++) {
@@ -1773,7 +1771,6 @@
                 ctx.stroke();
             }
 
-            // Organiska, mjuka strandkanter med skuggning
             ctx.fillStyle = '#1c1917';
             ctx.fillRect(0, 0, canvas.width, 36);
             ctx.fillRect(0, canvas.height - 24, canvas.width, 24);
@@ -1782,7 +1779,6 @@
             ctx.fillRect(0, 0, canvas.width, 14);
             ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
 
-            // Mjuk strandövergång (gradientkant mot vattnet)
             let shoreGradTop = ctx.createLinearGradient(0, 14, 0, 32);
             shoreGradTop.addColorStop(0, 'rgba(20, 83, 45, 0.9)');
             shoreGradTop.addColorStop(1, 'rgba(2, 98, 148, 0)');
@@ -1795,7 +1791,6 @@
             ctx.fillStyle = shoreGradBot;
             ctx.fillRect(0, canvas.height - 24, canvas.width, 14);
 
-            // Vajande vattenväxter vid kanterna
             let plantSway = Math.sin(time * 2) * 6;
             ctx.strokeStyle = 'rgba(21, 128, 61, 0.65)';
             ctx.lineWidth = 2.5;
@@ -1854,7 +1849,6 @@
                 ctx.beginPath();
                 ctx.ellipse(b.x, b.y, 25, 13, 0.1, 0, Math.PI*2);
                 ctx.fill();
-                // Subtil skugga/strömvirvel runt stenarna
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
@@ -1889,7 +1883,6 @@
                 if(flowOffset < -40) flowOffset = 0;
             }
             
-            // Ström-linjer med mjukare krusningar
             ctx.strokeStyle = currentFlow > 14 ? 'rgba(255, 255, 255, 0.35)' : 'rgba(255, 255, 255, 0.2)';
             ctx.lineWidth = currentFlow > 14 ? 1.5 : 1;
             for(let y = 45; y < canvas.height - 25; y += 35) {
@@ -1900,7 +1893,6 @@
                 ctx.stroke();
             }
 
-            // Regneffekter om det regnar
             if (weatherData.condition.includes("Regn")) {
                 ctx.strokeStyle = 'rgba(186, 230, 253, 0.45)';
                 ctx.lineWidth = 1;
@@ -1958,7 +1950,6 @@
                 ctx.stroke();
             }
 
-            // Vackra, realistiska vakande ringar med flera lager
             rises.forEach(r => {
                 if (!paused) {
                     r.timer++;
@@ -1978,7 +1969,6 @@
                 ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Sekundär inre vågring för extra djup
                 if (r.radius > 6) {
                     ctx.strokeStyle = `rgba(255, 255, 255, ${r.alpha * 0.35})`;
                     ctx.beginPath();
