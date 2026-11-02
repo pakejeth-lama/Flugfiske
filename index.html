@@ -44,7 +44,7 @@
         <div class="flex flex-col items-center gap-3">
             <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
             <h3 id="loadingOverlayText" class="text-sm font-bold text-emerald-400">Ansluter till Säveåns moln och synkar data...</h3>
-            <p class="text-[11px] text-stone-400">Vänta medan spelytan låses mot fusk och sidomladdningar.</p>
+            <p class="text-[11px] text-stone-400">Vänta medan spelytan låses mot fusk och molndata synkas.</p>
         </div>
     </div>
 
@@ -1109,27 +1109,44 @@
             let targetPlayer = document.getElementById('targetPlayerInput').value.trim();
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
             
-            if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
-                gameWorld.castsRemaining = 5;
-                gameWorld.dayOfSeason = 1;
-                gameWorld.lastPlayedDate = todayStr;
-                updateUI();
-            }
-
+            // Hämta spelarens dokument från molnet och tvinga en återställning av kast och dag
             let cloudState = await window.loadPlayerStateFromFirebase(targetPlayer);
             if(cloudState) {
                 cloudState.castsRemaining = 5;
                 cloudState.dayOfSeason = 1;
                 cloudState.lastPlayedDate = todayStr;
                 await window.savePlayerStateFromFirebase(targetPlayer, cloudState);
-                showCustomAlert(`Kastveckan har återställts för ${targetPlayer} (5 kast & Dag 1/7)!`, "GM Admin");
-            } else {
+
+                // Om det är du själv som återställs, uppdatera det aktiva spelläget omedelbart
                 if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
-                    await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
-                    showCustomAlert(`Kastveckan har återställts för ${targetPlayer} (5 kast & Dag 1/7)!`, "GM Admin");
-                } else {
-                    showCustomAlert(`Hittade inte spelaren "${targetPlayer}" i molnet.`, "Fel");
+                    gameWorld.castsRemaining = 5;
+                    gameWorld.dayOfSeason = 1;
+                    gameWorld.lastPlayedDate = todayStr;
+                    updateUI();
                 }
+
+                showCustomAlert(`Kastveckan har återställts för ${targetPlayer} i molnet (5 kast & Dag 1/7)!`, "GM Admin");
+            } else {
+                // Om spelaren inte fanns i molnet sedan tidigare men nollställs
+                let newState = {
+                    name: targetPlayer,
+                    points: 700,
+                    castsRemaining: 5,
+                    dayOfSeason: 1,
+                    lastPlayedDate: todayStr,
+                    equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" }
+                };
+                await window.savePlayerStateFromFirebase(targetPlayer, newState);
+
+                if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
+                    gameWorld.castsRemaining = 5;
+                    gameWorld.dayOfSeason = 1;
+                    gameWorld.points = 700;
+                    gameWorld.lastPlayedDate = todayStr;
+                    updateUI();
+                }
+
+                showCustomAlert(`Skapade och återställde kastveckan för ${targetPlayer} (5 kast & Dag 1/7)!`, "GM Admin");
             }
         }
 
@@ -1139,7 +1156,7 @@
             let amount = parseInt(amountStr);
             if(!targetPlayer || isNaN(amount)) return showCustomAlert("Ange giltigt spelarnamn och poängantal!", "Fel");
 
-            if (targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
+            if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
                 gameWorld.points = Math.max(0, gameWorld.points + amount);
                 updateUI();
                 if (window.updatePlayerPointsAtomic) {
@@ -1241,21 +1258,25 @@
                     }
                 }
 
+                // MOLNET SOM SANNINGENS KÄLLA: Hämta alltid molntillståndet och låt det skriva över det lokala
                 let cloudState = await window.loadPlayerStateFromFirebase(lockedAnglerName);
                 if (cloudState) {
                     if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
+                    gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
                     
+                    // Kolla om datumet i molnet är dagens datum
                     if (cloudState.lastPlayedDate === todayStr) {
-                        gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
                         gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
                         gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
+                        gameWorld.lastPlayedDate = todayStr;
                     } else {
-                        gameWorld.points = (cloudState.points !== undefined ? cloudState.points : 700) + 100;
+                        // Ny dag i molnet -> uppdatera molnet och tvinga fram nya värden
                         gameWorld.lastPlayedDate = todayStr;
                         gameWorld.castsRemaining = 5;
                         gameWorld.dayOfSeason = (cloudState.dayOfSeason || 1) + 1;
                         if (gameWorld.dayOfSeason > 7) gameWorld.dayOfSeason = 1;
                         
+                        gameWorld.points += 100;
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 8);
                         
                         let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
@@ -1265,6 +1286,10 @@
                         await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
                     }
                 } else {
+                    // Första gången spelaren skapas
+                    gameWorld.lastPlayedDate = todayStr;
+                    gameWorld.castsRemaining = 5;
+                    gameWorld.dayOfSeason = 1;
                     await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
                 }
             } catch (e) {
@@ -1383,7 +1408,7 @@
                         showCustomAlert(`☀️ EXTREM TORKA!\n\nEn extrem värmebölja har drabbat Säveån! Vattennivåerna har sjunkit kraftigt och syrebrist har slagit ut hälften av fiskbeståndet (${removedFish} st).`, "Naturkatastrof");
                     }
 
-                    // Toning ner extremt högflöde: Sänkt från 3% (0.03) till 1% (0.01)
+                    // Toning ner extremt högflöde till 1 % (0.01)
                     let extremeFlood = Math.random() < 0.01;
                     if (extremeFlood) {
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 300);
