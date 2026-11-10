@@ -29,6 +29,15 @@
             animation: fadeOutNotice 5s forwards;
         }
 
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
         @media (orientation: landscape) and (max-width: 1024px) {
             #gameContainer {
                 height: calc(120vh - 32px) !important;
@@ -139,12 +148,13 @@
             <div class="text-xs text-stone-300 space-y-2 leading-relaxed">
                 <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, fiskepress och hemtag av fisk.</p>
                 <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
-                    <strong>Tips för storfiske:</strong>
+                    <strong>Tips för storfiske & viltvård:</strong>
                     <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
-                        <li>Lax kräver spö klass #7 eller grövre (#8 enhands, switch eller tvåhands)</li>
-                        <li>Lax hugger på lax/tubflugor i strömdrag (ej torrflugor)</li>
-                        <li>Vid högt flöde (≥ 20 m³/s) rör sig fin mellanlax och skygg storöring (upp till 77 cm) i ån</li>
-                        <li>Vid flöden över 14 m³/s flyter stockar med strömmen – undvik att träffa dem med flugan!</li>
+                        <li>Lax kräver spö klass #7 eller grövre</li>
+                        <li>Lax hugger på lax/tubflugor i strömdrag</li>
+                        <li><strong>Gös</strong> är en skadlig inkräktare som dyker upp vid flöden under 14 m³/s. Avliva den för poäng (+250p), släpp inte tillbaka (-100p)!</li>
+                        <li><strong>Biotopbalans:</strong> Lekgrus kräver ståndstenar (boulders) för full synergi och skydd vid högflöde.</li>
+                        <li>Träd och buskar ger viktig skugga som skyddar mot extrem torka!</li>
                     </ul>
                 </div>
             </div>
@@ -486,7 +496,7 @@
         </div>
     </div>
 
-    <!-- Dynamic C&R Welfare Modal (Förenklad med 1 slumpad fråga + skjutreglage) -->
+    <!-- Dynamic C&R Welfare Modal -->
     <div id="welfareModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
@@ -509,7 +519,6 @@
                         <span id="lblAirTime" class="font-bold text-emerald-400">15s</span>
                     </div>
                     <input type="range" id="sliderAirTime" min="5" max="45" value="15" class="accent-emerald-600" oninput="document.getElementById('lblAirTime').innerText = this.value + 's'">
-                    <span class="text-[9px] text-stone-500">Minska tiden för högre hanteringspoäng.</span>
                 </div>
             </div>
 
@@ -757,6 +766,8 @@
             return null;
         };
 
+        // Live-banner för anslutna fiskare i snygg spelstil
+        let lastSeenActiveAnglers = {};
         window.fetchGuestbook = async function() {
             try {
                 const querySnapshot = await getDocs(collection(db, "players"));
@@ -766,10 +777,25 @@
                     return;
                 }
                 let visitors = [];
-                querySnapshot.forEach(doc => {
-                    let data = doc.data();
+                let nowTime = Date.now();
+                querySnapshot.forEach(docSnap => {
+                    let data = docSnap.data();
                     if (data.name && data.name.trim() !== "" && data.name.toLowerCase() !== "anonym") {
                         visitors.push(data);
+                        
+                        // Kolla om en ny spelare har blivit aktiv nyligen (inom senaste 40 sekunderna)
+                        if (data.lastActive) {
+                            let activeTime = new Date(data.lastActive).getTime();
+                            let diffSec = (nowTime - activeTime) / 1000;
+                            let localName = localStorage.getItem('savean_angler_name');
+                            
+                            if (diffSec < 40 && data.name !== localName) {
+                                if (!lastSeenActiveAnglers[data.name] || (activeTime > lastSeenActiveAnglers[data.name])) {
+                                    lastSeenActiveAnglers[data.name] = activeTime;
+                                    showLiveAnglerBanner(data.name);
+                                }
+                            }
+                        }
                     }
                 });
                 visitors.sort((a, b) => new Date(b.lastActive || 0) - new Date(a.lastActive || 0));
@@ -973,6 +999,29 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         let castLine = null;
+
+        // Live-banner funktion i stil med spelet
+        function showLiveAnglerBanner(anglerName) {
+            let existing = document.getElementById('liveAnglerBanner');
+            if (existing) existing.remove();
+
+            let banner = document.createElement('div');
+            banner.id = 'liveAnglerBanner';
+            banner.style.cssText = `
+                position: fixed; top: 20px; right: 20px; z-index: 9999;
+                background: rgba(15, 23, 42, 0.95); border: 1px solid #10b981;
+                color: #e2e8f0; padding: 12px 20px; border-radius: 8px;
+                font-family: inherit; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                display: flex; align-items: center; gap: 10px; animation: slideInRight 0.4s ease-out;
+            `;
+            banner.innerHTML = `<span style="font-size: 18px;">🎣</span> <div><b>${anglerName}</b> har anlänt till vattnet!</div>`;
+            document.body.appendChild(banner);
+
+            setTimeout(() => {
+                banner.style.animation = 'slideOutRight 0.4s ease-in forwards';
+                setTimeout(() => banner.remove(), 400);
+            }, 5000);
+        }
 
         let isOverlayHidden = false;
         function hideLoadingOverlay() {
@@ -1257,6 +1306,8 @@
                             sharedWorldData.laddersFixed = false;
                             sharedWorldData.population = 210;
                             sharedWorldData.maxPop = 380;
+                            sharedWorldData.trees = 0; // Träd nollställs nu vid säsongsreset
+                            sharedWorldData.bushes = 0; // Buskar nollställs nu vid säsongsreset
                             sharedWorldData.lastBiotopeResetWeek = currentWeekKey;
                             
                             for (let zKey in gameWorld.zones) {
@@ -1267,8 +1318,8 @@
                             sharedWorldData.zones = {};
                             
                             if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
-                            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `🔄 SÄSONGSRESET (Vecka ${weekNum}): Biotop & Vandringshinder nollställt!`, "Säveån");
-                            showCustomAlert(`🌿 NY SÄSONG (Vecka ${weekNum})!\n\nEftersom detta är en jämn vecka har Säveåns ekosystem återställts för en ny säsong. Vandringshindret är uppbyggt igen och alla biotoper har nollställts för ny gemensam uppbyggnad!`, "Säsongsstart");
+                            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `🔄 SÄSONGSRESET (Vecka ${weekNum}): Biotop, träd, buskar & vandringshinder nollställt!`, "Säveån");
+                            showCustomAlert(`🌿 NY SÄSONG (Vecka ${weekNum})!\n\nEftersom detta är en jämn vecka har Säveåns ekosystem återställts för en ny säsong. Vandringshindret, kantträd/buskar samt alla biotoper har nollställts för ny gemensam uppbyggnad!`, "Säsongsstart");
                         }
 
                         gameWorld.shared.population = sharedWorldData.population !== undefined ? sharedWorldData.population : gameWorld.shared.population;
@@ -1431,43 +1482,56 @@
                     
                     let extremeDrought = Math.random() < 0.01;
                     if (extremeDrought) {
-                        let removedFish = Math.floor(gameWorld.shared.population * 0.5);
-                        gameWorld.shared.population = Math.max(30, gameWorld.shared.population - removedFish);
-                        gameWorld.shared.maxPop = Math.max(150, gameWorld.shared.maxPop - 40);
-                        
-                        let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-                        sharedWorldData.population = gameWorld.shared.population;
-                        sharedWorldData.maxPop = gameWorld.shared.maxPop;
-                        if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+                        let totalShade = gameWorld.shared.trees + gameWorld.shared.bushes;
+                        if (totalShade > 4) {
+                            showCustomAlert("☀️ EXTREM TORKA!\n\nVattnet värms upp, men dina utplacerade kantträd och buskar ger viktig skugga som skyddar fiskbeståndet från värmestress!", "Väderlarm");
+                        } else {
+                            let removedFish = Math.floor(gameWorld.shared.population * 0.4);
+                            gameWorld.shared.population = Math.max(30, gameWorld.shared.population - removedFish);
+                            gameWorld.shared.maxPop = Math.max(150, gameWorld.shared.maxPop - 30);
+                            
+                            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                            sharedWorldData.population = gameWorld.shared.population;
+                            sharedWorldData.maxPop = gameWorld.shared.maxPop;
+                            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                        if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `☀️ EXTREM TORKA! Halverat fiskbestånd!`, saveanZones[key].name);
-                        showCustomAlert(`☀️ EXTREM TORKA!\n\nEn extrem värmebölja har drabbat Säveån! Vattennivåerna har sjunkit kraftigt och syrebrist har slagit ut hälften av fiskbeståndet (${removedFish} st).`, "Naturkatastrof");
+                            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `☀️ EXTREM TORKA! Minskat bestånd pga brist på skugga!`, saveanZones[key].name);
+                            showCustomAlert(`☀️ EXTREM TORKA!\n\nEn extrem värmebölja har drabbat Säveån! Bristen på skuggande kantträd och buskar har slagit ut ${removedFish} fiskar.`, "Naturkatastrof");
+                        }
                     }
 
                     let extremeFlood = Math.random() < 0.01;
                     if (extremeFlood) {
-                        gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 300);
-                        gameWorld.shared.maxPop = Math.max(150, gameWorld.shared.maxPop - 50);
-                        for (let zKey in gameWorld.zones) {
-                            let gravels = gameWorld.zones[zKey].gravels || [];
-                            if (gravels.length > 0) {
-                                let keepCount = Math.ceil(gravels.length * (2/3));
-                                gameWorld.zones[zKey].gravels = gravels.slice(0, keepCount);
-                            }
+                        // Högflöde interagerar med ståndstenar (boulders) som skyddar lekgrus
+                        let gravelsLost = 0;
+                        let bCount = (zState.boulders || []).length;
+                        let gCount = (zState.gravels || []).length;
+                        
+                        if (bCount < gCount && gCount > 0) {
+                            let lost = Math.ceil((gCount - bCount) * 0.5);
+                            zState.gravels.splice(0, lost);
+                            gravelsLost = lost;
                         }
+
+                        gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 200);
                         let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
                         sharedWorldData.population = gameWorld.shared.population;
-                        sharedWorldData.maxPop = gameWorld.shared.maxPop;
                         sharedWorldData.zones = gameWorld.zones;
                         if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                        if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", "⚠️ EXTREMT HÖGFLÖDE! Kraftigt minskat fiskbestånd!", saveanZones[key].name);
-                        showCustomAlert("⚠️ EXTREMT HÖGFLÖDE!\n\nEtt historiskt oväder drog fram över Säveån! -300 fiskar sköljdes bort och en tredjedel av allt utlagt lekgrus spolades väck med strömmen.", "Naturkatastrof");
+                        if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `⚠️ EXTREMT HÖGFLÖDE! ${gravelsLost} oskyddade lekgruspartier spolades bort.`, saveanZones[key].name);
+                        showCustomAlert(`⚠️ EXTREMT HÖGFLÖDE!\n\nEtt kraftigt oväder drog fram! Oskyddat lekgrus saknade tillräckligt med ståndstenar som brytare och ${gravelsLost} partier spolades bort av strömmen.`, "Naturkatastrof");
                     }
 
-                    let biotopeFlowBonus = ((zState.gravels || []).length * 0.8) + ((zState.boulders || []).length * 1.2);
-                    let floodExtra = extremeFlood ? 35 : 0;
-                    let droughtExtra = extremeDrought ? -6 : 0;
+                    // Biotopbalans & Synergi: Lekgrus kräver ståndstenar (boulders) för full effekt
+                    let gCount = (zState.gravels || []).length;
+                    let bCount = (zState.boulders || []).length;
+                    let synergyMultiplier = gCount === 0 ? 0.2 : Math.min(1.0, bCount / Math.max(1, gCount));
+                    let effectiveGravelBenefit = gCount * (0.3 + (0.7 * synergyMultiplier)) * 0.8;
+                    let biotopeFlowBonus = effectiveGravelBenefit + (bCount * 1.2);
+
+                    let floodExtra = extremeFlood ? 30 : 0;
+                    let droughtExtra = extremeDrought ? -5 : 0;
                     let flowMod = (Math.sin(gameWorld.dayOfSeason * 1.5) * 8) + (Math.random() * 5 - 2.5) + biotopeFlowBonus + floodExtra + droughtExtra;
                     weatherData.flow = Math.max(2, (z.baseTemp + (data.current.precipitation * 12) + flowMod)).toFixed(1);
                     
@@ -1579,12 +1643,15 @@
                     const s = gameWorld.shared;
                     let totalGravels = 0, totalBoulders = 0, totalNurseries = 0;
                     Object.values(gameWorld.zones).forEach(z => {
-                        totalGravels += (z.gravels || []).length;
-                        totalBoulders += (z.boulders || []).length;
+                        let gCount = (z.gravels || []).length;
+                        let bCount = (z.boulders || []).length;
+                        let synergy = gCount === 0 ? 0.2 : Math.min(1.0, bCount / Math.max(1, gCount));
+                        totalGravels += gCount * synergy;
+                        totalBoulders += bCount;
                         totalNurseries += (z.nurseries || []).length;
                     });
                     
-                    let breedBoost = Math.floor((totalGravels * 2) + (totalBoulders * 1.5) + (totalNurseries * 3) + (gameWorld.laddersFixed ? 8 : 0));
+                    let breedBoost = Math.floor((totalGravels * 2.5) + (totalBoulders * 1.5) + (totalNurseries * 3) + (gameWorld.laddersFixed ? 8 : 0));
                     s.population = Math.min(s.maxPop, s.population + breedBoost + 1);
                     gameWorld.points += 100;
                     
@@ -1788,7 +1855,13 @@
 
             let timePulse = Math.sin(Date.now() * 0.0012) * 14;
             let bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-            if (currentZoneKey === 'mannered') {
+            
+            // Edbergsrakan: Mjuk, tonad övergång mellan mörkblått djup och ljust grunt vatten
+            if (currentZoneKey === 'edbergsrakan') {
+                bgGrad.addColorStop(0.0, '#06263f'); // Djupt mörkblått
+                bgGrad.addColorStop(0.5, '#1b4965'); // Vackert mellandjup
+                bgGrad.addColorStop(1.0, '#62b6cb'); // Ljust grunt vatten
+            } else if (currentZoneKey === 'mannered') {
                 bgGrad.addColorStop(0, `rgb(${4 + Math.floor(timePulse/1.5)}, ${75 + Math.floor(timePulse)}, ${125 + Math.floor(timePulse)})`);
                 bgGrad.addColorStop(0.5, '#027bb0');
                 bgGrad.addColorStop(1, '#032c44');
@@ -1813,14 +1886,6 @@
                 ctx.beginPath();
                 ctx.ellipse(bx, by, 110, 42, 0.35, 0, Math.PI * 2);
                 ctx.fill();
-            }
-
-            if (currentZoneKey === 'edbergsrakan') {
-                ctx.fillStyle = '#02243d';
-                ctx.fillRect(0, 24, canvas.width, 130);
-                ctx.strokeStyle = '#38bdf8';
-                ctx.lineWidth = 1.5;
-                ctx.strokeRect(0, 24, canvas.width, 130);
             }
 
             let dicksonBlockX = canvas.width / 3;
@@ -1943,7 +2008,6 @@
                 if(flowOffset > 40) flowOffset = 0;
                 if(flowOffset < -40) flowOffset = 0;
 
-                // Stockar/drivved vid flöde över 14 m3
                 if (currentFlow >= 14 && singleDriftLog) {
                     singleDriftLog.x += (0.7 + currentFlow * 0.035);
                     if (singleDriftLog.x > canvas.width + 90) {
@@ -1971,18 +2035,30 @@
                 ctx.stroke();
             }
 
-            // Rita ut drivved/stock om flödet är över 14 m3
+            // Realistisk stock med bark, struktur och kapad ändyta i höga flöden (≥ 14 m³/s)
             if (currentFlow >= 14 && singleDriftLog) {
                 ctx.save();
                 ctx.translate(singleDriftLog.x, singleDriftLog.y);
                 ctx.rotate(0.04 * Math.sin(time));
-                ctx.fillStyle = '#4a3525';
+                
+                ctx.fillStyle = '#3d2817';
                 ctx.beginPath();
-                ctx.ellipse(0, 0, singleDriftLog.width, singleDriftLog.height, 0, 0, Math.PI * 2);
+                ctx.roundRect(-40, -8, 80, 16, 4);
                 ctx.fill();
-                ctx.strokeStyle = '#2c1e14';
-                ctx.lineWidth = 1.5;
+
+                ctx.strokeStyle = '#27180e';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-35, -3); ctx.lineTo(35, -3);
+                ctx.moveTo(-25, 4); ctx.lineTo(20, 4);
                 ctx.stroke();
+
+                ctx.fillStyle = '#8d5b3c';
+                ctx.beginPath();
+                ctx.ellipse(40, 0, 3, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
                 ctx.restore();
             }
 
@@ -2117,7 +2193,6 @@
                     let driftSpeed = (currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed) * flowDirection;
                     castLine.x += driftSpeed;
 
-                    // Kontrollera om flugan träffar stocken när flödet är >= 14 m3
                     if (currentFlow >= 14 && singleDriftLog && castLine) {
                         let hitLog = Math.hypot(castLine.x - singleDriftLog.x, (castLine.y + bobbing) - singleDriftLog.y) < 32;
                         if (hitLog) {
@@ -2280,7 +2355,12 @@
             let gender = "";
             let rand = Math.random();
 
-            if (canCatchSalmon && (currentFlowVal >= 16 || boulderBonus > 0) && rand < 0.45) {
+            // Gös-logik: Inkräktare som endast nappar under 14 m³/s
+            let isIntruderGoser = (currentFlowVal < 14 && Math.random() < 0.15);
+
+            if (isIntruderGoser) {
+                species = "Gös";
+            } else if (canCatchSalmon && (currentFlowVal >= 16 || boulderBonus > 0) && rand < 0.45) {
                 species = "Lax";
             } else if (rand < 0.75) {
                 species = "Öring";
@@ -2297,7 +2377,9 @@
             }
 
             let size = 30;
-            if (species === "Abborre") {
+            if (species === "Gös") {
+                size = Math.random() < 0.05 ? 75 : Math.floor(Math.random() * 25) + 40; // Upp till 65cm normalt, sällsynt 75cm
+            } else if (species === "Abborre") {
                 let abRand = Math.random();
                 if (abRand < 0.75) size = Math.floor(25 + Math.random() * 10);
                 else if (abRand < 0.97) size = Math.floor(35 + Math.random() * 6);
@@ -2310,7 +2392,8 @@
                 size = Math.floor(35 + Math.random() * 25);
             } else {
                 let baseSize = species === "Lax" ? 75 : (species === "Gädda" ? 70 : (species === "Öring" ? 40 : 30));
-                let rawBiotopeBonus = (gravelBonus * 0.4) + (boulderBonus * 0.6) + (gameWorld.laddersFixed ? 6 : 0) + (gameWorld.dayOfSeason * 0.6);
+                let synergy = gravelBonus === 0 ? 0.2 : Math.min(1.0, boulderBonus / Math.max(1, gravelBonus));
+                let rawBiotopeBonus = (gravelBonus * synergy * 0.4) + (boulderBonus * 0.6) + (gameWorld.laddersFixed ? 6 : 0) + (gameWorld.dayOfSeason * 0.6);
                 let biotopeSizeBonus = Math.min(10, rawBiotopeBonus);
 
                 let highFlowBonus = (species === "Lax" && currentFlowVal >= 20.0) ? Math.floor(Math.random() * 14) : 0;
@@ -2344,9 +2427,9 @@
                 healthState = "sick";
             }
 
-            currentFish = { species, size, gender, healthState };
+            currentFish = { species, size, gender, healthState, intruder: species === "Gös" };
             
-            let feelDescription = size === 125 ? "MEGAGIGANTISK LUGN RUSH! ETT LIVSTIDSFÅNGST PÅ 125CM!" : (size >= 70 ? "HUGG! En jätte till fisk rusar ursinnigt i strömmen!" : (size > 60 ? "HUGG! Tung och stark fisk som pressar spöt hårt!" : "HUGG! Pigg fisk som kämpar i strömmen!"));
+            let feelDescription = currentFish.intruder ? "HUGG! En glesvuxen fisk hugger – det känns inte som en laxartad!" : (size === 125 ? "MEGAGIGANTISK LUGN RUSH! ETT LIVSTIDSFÅNGST PÅ 125CM!" : (size >= 70 ? "HUGG! En jätte till fisk rusar ursinnigt i strömmen!" : (size > 60 ? "HUGG! Tung och stark fisk som pressar spöt hårt!" : "HUGG! Pigg fisk som kämpar i strömmen!")));
 
             if ("vibrate" in navigator) {
                 navigator.vibrate(size >= 70 ? [700, 120, 600, 120, 900] : [350, 100, 350]);
@@ -2468,11 +2551,11 @@
             }
         }
 
-        // Förenklad C&R Modal-logik: Endast 1 slumpad fråga + skjutreglage
         let activeRandomQuestion = null;
         function openWelfareModal() {
             let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
-            document.getElementById('caughtFishDetails').innerText = `Du landade en ${currentFish.species}${genderStr} på ${currentFish.size} cm i ${saveanZones[currentZoneKey].name}.`;
+            let intruderText = currentFish.intruder ? `<strong class="text-rose-400">⚠️ Inkräktare: Gös hör inte hemma i Säveån!</strong><br>` : "";
+            document.getElementById('caughtFishDetails').innerHTML = `${intruderText}Du landade en ${currentFish.species}${genderStr} på ${currentFish.size} cm i ${saveanZones[currentZoneKey].name}.`;
             
             const healthBanner = document.getElementById('healthAlertBanner');
             const sampleBtn = document.getElementById('btnSampleFish');
@@ -2496,10 +2579,9 @@
                 { id: "qWet", text: "Blötte du händerna innan fisken vidrördes?", correct: true },
                 { id: "qNet", text: "Använde du skonsam knutlös gummihåv?", correct: true },
                 { id: "qAirLift", text: "Lyfte du upp fisken högt i luften för fotografering?", correct: false },
-                { id: "qSupport", text: "Stöttade du buken ordentligt vid avkrokning?", correct: true }
+                { id: "qSupport", text: "Undvek du dy vid avkrokningen för att skydda gälarna?", correct: true }
             ];
             
-            // Välj slumpmässigt EN enda fråga
             activeRandomQuestion = pool[Math.floor(Math.random() * pool.length)];
             
             const qContainer = document.getElementById('dynamicSingleQuestionContainer');
@@ -2523,34 +2605,32 @@
             let eqString = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
             let alertMsg = "";
 
-            let checked = document.getElementById(activeRandomQuestion.id).checked;
-            let answeredCorrectly = (checked === activeRandomQuestion.correct);
-            let air = parseInt(document.getElementById('sliderAirTime').value);
-
-            if (currentFish.healthState === 'bleeding') {
+            if (currentFish.intruder) {
+                gameWorld.points = Math.max(0, gameWorld.points - 100);
+                alertMsg = "❌ ETIKBROTT: Du släppte tillbaka en skadlig inkräktare (Gös) i Säveån! -100 poäng i straff.";
+            } else if (currentFish.healthState === 'bleeding') {
                 gameWorld.points = Math.max(0, gameWorld.points - 40);
                 gameWorld.shared.population = Math.max(10, gameWorld.shared.population - 1);
-                alertMsg = "❌ Du släppte tillbaka en svårt blödande fisk som dör i ån (-40 poäng). En blödande fisk ska avlivas och tas hem!";
+                alertMsg = "❌ Du släppte tillbaka en svårt blödande fisk som dör i ån (-40 poäng). En blödande fisk ska avlivas!";
             } else if (currentFish.healthState === 'sick') {
-                // Straff på 500 minuspoäng om man släpper tillbaka sjuk fisk
                 gameWorld.points = Math.max(0, gameWorld.points - 500);
-                alertMsg = "🦠 KRITISKT MISSTAG! Du släppte tillbaka en fisk med svamp/infektion i ån utan provtagning. Du sprider smitta och drabbas av 500 minuspoäng!";
-            } else if (answeredCorrectly && air <= 15) {
-                let rawPts = currentFish.size === 125 ? 500 : (currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 60 : 40));
-                let pts = Math.round(rawPts / 2);
-
-                if (currentFish.species === "Öring" && currentFish.size < 45) {
-                    gameWorld.castsRemaining++;
-                    gameWorld.points += pts;
-                    alertMsg = `Fisken var under minimimåttet (45 cm) och släpptes tillbaka varsamt. Rätt svar & bra air-time! (+${pts} p) och återställt kast!`;
-                } else {
-                    gameWorld.points += pts;
-                    alertMsg = `Klockren C&R-hantering! Rätt svar och snabb urvattning (+${pts} p).`;
-                }
-                if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.category, saveanZones[currentZoneKey].name, eqString);
+                alertMsg = "🦠 KRITISKT MISSTAG! Du släppte tillbaka en fisk med svamp/infektion i ån utan provtagning (-500 poäng).";
             } else {
-                gameWorld.points = Math.max(0, gameWorld.points - 20);
-                alertMsg = `Slarvig hantering (fel svar eller för lång air-time på ${air}s). Fisken tog stryk (-20 poäng).`;
+                let checked = document.getElementById(activeRandomQuestion.id).checked;
+                let answeredCorrectly = (checked === activeRandomQuestion.correct);
+                let air = parseInt(document.getElementById('sliderAirTime').value);
+
+                if (answeredCorrectly && air <= 15) {
+                    let rawPts = currentFish.size === 125 ? 500 : (currentFish.species === "Lax" ? 100 : (currentFish.species === "Öring" ? 60 : 40));
+                    let pts = Math.round(rawPts / 2);
+
+                    gameWorld.points += pts;
+                    alertMsg = `Klockren C&R-hantering! Rätt svar och skonsam urvattning (+${pts} p).`;
+                    if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.category, saveanZones[currentZoneKey].name, eqString);
+                } else {
+                    gameWorld.points = Math.max(0, gameWorld.points - 20);
+                    alertMsg = `Slarvig hantering (fel svar eller för lång air-time på ${air}s). Fisken tog stryk (-20 poäng).`;
+                }
             }
 
             let zStateLog = gameWorld.zones[currentZoneKey];
@@ -2569,22 +2649,23 @@
             let eqString = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
             let alertMsg = "";
 
-            if (currentFish.healthState === 'bleeding') {
+            if (currentFish.intruder) {
+                gameWorld.points += 250;
+                alertMsg = "🎣 FINT VILTVÅRDSARBETE! Du avlivade en oönskad gös som inte hör hemma i Säveån. +250 poäng!";
+            } else if (currentFish.healthState === 'bleeding') {
                 gameWorld.points += 50;
                 alertMsg = "✅ RÄTT BESLUT! Du avlivade en svårt blödande fisk skonsamt (+50 naturvårdspoäng).";
-            } else if ((currentFish.species === "Gädda" && currentFish.size < 80) || (currentFish.species === "Abborre" && currentFish.size < 38)) {
-                gameWorld.points += 15;
-                alertMsg = "Du tog bort en skadlig smårovfisk! (+15 naturvårdspoäng).";
             } else {
                 s.population = Math.max(10, s.population - 2);
                 let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
                 sharedWorldData.population = s.population;
                 if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                alertMsg = "Fisk hemtagen. Det gemensamma fiskbeståndet i Säveån har minskat något.";
+                gameWorld.points -= 50;
+                alertMsg = "Fisk hemtagen. Det gemensamma fiskbeståndet har minskat något (-50 poäng).";
             }
 
-            if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.category, saveanZones[currentZoneKey].name, eqString);
+            if (window.saveCatchToFirebase && !currentFish.intruder) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, activeFly.category, saveanZones[currentZoneKey].name, eqString);
 
             let zStateLog = gameWorld.zones[currentZoneKey];
             zStateLog.log = zStateLog.log || [];
@@ -2602,7 +2683,7 @@
             if (currentFish.healthState === 'sick') {
                 gameWorld.points += 50;
                 if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(anglerName, "Skickade sjuk fisk på provtagning", saveanZones[currentZoneKey].name);
-                alertMsg = "🧬 RÄTT BESLUT! Fisken skickades till forskningsinstitutet för provtagning (+50 naturvårdspoäng). Du hjälper till att skydda hela Säveåns ekosystem!";
+                alertMsg = "🧬 RÄTT BESLUT! Fisken skickades till forskningsinstitutet för provtagning (+50 naturvårdspoäng).";
             } else {
                 gameWorld.points = Math.max(0, gameWorld.points - 15);
                 alertMsg = "Fisken var helt frisk och behövde inte skickas på provtagning (-15 poäng).";
