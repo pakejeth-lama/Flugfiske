@@ -48,7 +48,7 @@
 </head>
 <body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col select-none">
 
-    <!-- Säkerhets- och Laddningsslöja med tidsspärr -->
+    <!-- Säkerhets- och Laddningsslöja -->
     <div id="loadingOverlay" class="fixed inset-0 bg-stone-950/95 backdrop-blur-md flex flex-col items-center justify-center z-50 transition-opacity duration-500 p-4 text-center">
         <div class="flex flex-col items-center gap-3">
             <div class="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
@@ -62,7 +62,7 @@
         <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
             <h3 class="text-base font-bold text-emerald-400">🎣 Säveån Open World</h3>
             <p class="text-xs text-stone-300 leading-relaxed">
-                Ange ditt fiskarnamn. Din poäng och dina kast är molnsäkrade mot fusk, och ekosystemet delas gemensamt!
+                Ange ditt fiskarnamn. Din poäng och dina kast är molnsäkrade mot fusk (5 kast per kalenderdatum), och ekosystemet delas gemensamt!
             </p>
             <input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
             <button onclick="saveInitialAnglerName()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-semibold shadow transition">Starta Fisket</button>
@@ -267,7 +267,7 @@
                     📱 Lägg gärna skärmen ner för optimal fiskevy!
                 </div>
 
-                <!-- Canvas HUD (Flyttad upp ~30px direkt i toppen) -->
+                <!-- Canvas HUD -->
                 <div class="absolute top-1 left-2 right-2 bg-stone-900/90 backdrop-blur px-2.5 py-1 rounded-xl border border-stone-800 text-[10px] md:text-[11px] flex flex-wrap justify-between items-center gap-2 z-20 shadow-lg">
                     <div class="flex items-center gap-2">
                         <span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Fireball (6#)</strong></span>
@@ -961,7 +961,7 @@
             ingvarssons: { name: "Ingvarssons", lat: 57.730, lon: 12.155, baseTemp: 11 }
         };
 
-        // Flugor med kategorier och vilka storlekar de har tillgång till
+        // Flugor med kategorier och storlekar
         const flies = [
             { name: "Fireball", category: "Laxfluga", sizes: ["4#", "6#", "8#", "10#"] },
             { name: "Strong Medicine", category: "Laxfluga", sizes: ["4#", "6#", "8#", "10#"] },
@@ -1276,6 +1276,7 @@
             }
         });
 
+        // SEKVENS PER DATUM (5x7 KAST) MED FUSKSPÄRR MOT F5
         async function initCloudSession() {
             if (!lockedAnglerName) return;
             
@@ -1314,17 +1315,7 @@
                         gameWorld.shared.damPoints = sharedWorldData.damPoints !== undefined ? sharedWorldData.damPoints : gameWorld.shared.damPoints;
                         gameWorld.shared.damTarget = sharedWorldData.damTarget !== undefined ? sharedWorldData.damTarget : gameWorld.shared.damTarget;
                         gameWorld.laddersFixed = sharedWorldData.laddersFixed !== undefined ? sharedWorldData.laddersFixed : gameWorld.laddersFixed;
-                        gameWorld.shared.lastBiotopeResetWeek = sharedWorldData.lastBiotopeResetWeek || "";
-                        
-                        if (sharedWorldData.zones) {
-                            for (let zKey in sharedWorldData.zones) {
-                                if (gameWorld.zones[zKey]) {
-                                    gameWorld.zones[zKey].gravels = sharedWorldData.zones[zKey].gravels || [];
-                                    gameWorld.zones[zKey].boulders = sharedWorldData.zones[zKey].boulders || [];
-                                    gameWorld.zones[zKey].nurseries = sharedWorldData.zones[zKey].nurseries || [];
-                                }
-                            }
-                        }
+                        gameWorld.shared.lastBiotopeResetWeek = sharedWorldData.shared?.lastBiotopeResetWeek || "";
                     }
                 }
 
@@ -1336,21 +1327,24 @@
                     let lastDate = cloudState.lastPlayedDate || todayStr;
                     
                     if (lastDate === todayStr) {
-                        gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? cloudState.castsRemaining : 5;
+                        // SAMMA DATUM: Läs in exakt vad som sparats i molnet (stoppar F5-fusk)
+                        gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? Math.max(0, cloudState.castsRemaining) : 5;
                         gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
+                        gameWorld.lastPlayedDate = todayStr;
                     } else {
+                        // NYTT DATUM (Ny sekvensdag per datum): 5 nya kast och framflyttad säsongsdag!
                         let d1 = new Date(lastDate);
                         let d2 = new Date(todayStr);
-                        let diffDays = Math.round(Math.abs((d2 - d1) / (1000 * 60 * 60 * 24))) || 1;
+                        let diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+                        if (isNaN(diffDays) || diffDays < 1) diffDays = 1;
 
                         gameWorld.lastPlayedDate = todayStr;
-                        gameWorld.castsRemaining = 5;
+                        gameWorld.castsRemaining = 5; // Exakt 5 nya kast för det nya datumet
                         
                         let newDay = (cloudState.dayOfSeason || 1) + diffDays;
                         if (newDay > 7) newDay = 1;
                         gameWorld.dayOfSeason = newDay;
                         
-                        gameWorld.points += 100 * diffDays;
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - (8 * diffDays));
                         
                         let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
@@ -1618,7 +1612,7 @@
         async function nextDay() {
             if (isActionLocked) return;
             if(gameWorld.castsRemaining > 0) {
-                showCustomAlert(`Du har fortfarande ${gameWorld.castsRemaining} kast kvar på Dag ${gameWorld.dayOfSeason}!`, "Kast kvar");
+                showCustomAlert(`Du har fortfarande ${gameWorld.castsRemaining} kast kvar idag! Det är 1 sekvens per datum (5 kast per dag).`, "Kast kvar");
                 return;
             }
 
@@ -1653,7 +1647,7 @@
                     fetchWeather(currentZoneKey);
                     document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
                 } else {
-                    showCustomAlert("Alla 7 dagar avklarade för idag! Kom tillbaka imorgon.", "Veckan slut");
+                    showCustomAlert("Alla 7 dagar avklarade för denna säsong!", "Veckan slut");
                 }
                 updateUI();
             } finally {
@@ -2209,11 +2203,11 @@
 
                     if(castLine && (castLine.x > canvas.width || castLine.x < 0)) castLine = null;
 
-                    // Storlek och flödespåverkan på huggchans
+                    // Flödespåverkan på små krokar
                     let isSmallHook = ["8#", "10#", "14#", "16#"].includes(activeFly.size);
                     let flowBonusMultiplier = 1.0;
                     if (currentFlow < 12.0 && isSmallHook) {
-                        flowBonusMultiplier = 1.4; // Små krokar ger bättre chans vid lågt vatten
+                        flowBonusMultiplier = 1.4;
                     } else if (currentFlow >= 20.0 && !isSmallHook) {
                         flowBonusMultiplier = 1.2;
                     }
@@ -2296,7 +2290,7 @@
             }
 
             if(gameWorld.castsRemaining <= 0) {
-                showCustomAlert("Slut på kast för idag! Dagens 5 kast är förbrukade.", "Slut på kast");
+                showCustomAlert("Slut på kast för idag! Det är 1 sekvens per datum (5 kast per dag).", "Slut på kast");
                 return;
             }
             
