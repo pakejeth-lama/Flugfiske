@@ -62,7 +62,7 @@
         <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
             <h3 class="text-base font-bold text-emerald-400">🎣 Säveån Open World</h3>
             <p class="text-xs text-stone-300 leading-relaxed">
-                Ange ditt fiskarnamn. Din poäng och dina kast är molnsäkrade mot fusk (5 kast per kalenderdatum), och ekosystemet delas gemensamt!
+                Ange ditt fiskarnamn. Din poäng och dina kast är molnsäkrade mot fusk (5 kast per dag), och ekosystemet delas gemensamt!
             </p>
             <input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
             <button onclick="saveInitialAnglerName()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-semibold shadow transition">Starta Fisket</button>
@@ -513,7 +513,7 @@
 
                 <div class="flex flex-col gap-1 border-t border-stone-900 pt-2">
                     <div class="flex justify-between items-center">
-                        <span class="text-stone-300">Tid ovan vatten (Air-time):</span>
+                        <span class="text-stone-300">Tid ovan ytan:</span>
                         <span id="lblAirTime" class="font-bold text-emerald-400">15s</span>
                     </div>
                     <input type="range" id="sliderAirTime" min="5" max="45" value="15" class="accent-emerald-600" oninput="document.getElementById('lblAirTime').innerText = this.value + 's'">
@@ -1188,7 +1188,7 @@
                     updateUI();
                 }
 
-                showCustomAlert(`Kastveckan har återställts för ${targetPlayer} i molnet (5 kast & Dag 1/7)!`, "GM Admin");
+                showCustomAlert(`Kastveckan har återställts för ${targetPlayer} i molnet (Dag 1 & 5 kast)!`, "GM Admin");
             } catch (e) {
                 console.error("Kunde inte nollställa via GM:", e);
                 showCustomAlert("Kunde inte nå molnet för att nollställa spelaren: " + e.message, "Fel");
@@ -1276,7 +1276,7 @@
             }
         });
 
-        // SEKVENS PER DATUM (5x7 KAST) MED FUSKSPÄRR MOT F5
+        // NYTT DATUM = ALLTID BÖRJA PÅ DAG 1 MED 5 KAST
         async function initCloudSession() {
             if (!lockedAnglerName) return;
             
@@ -1327,25 +1327,22 @@
                     let lastDate = cloudState.lastPlayedDate || todayStr;
                     
                     if (lastDate === todayStr) {
-                        // SAMMA DATUM: Läs in exakt vad som sparats i molnet (stoppar F5-fusk)
+                        // SAMMA DATUM: Läs in exakt vad som sparats för dagen (stoppar F5-fusk)
                         gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? Math.max(0, cloudState.castsRemaining) : 5;
                         gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
                         gameWorld.lastPlayedDate = todayStr;
                     } else {
-                        // NYTT DATUM (Ny sekvensdag per datum): 5 nya kast och framflyttad säsongsdag!
+                        // NYTT DATUM: Alltid börja på Dag 1 av 7 med 5 fräscha kast!
                         let d1 = new Date(lastDate);
                         let d2 = new Date(todayStr);
                         let diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
                         if (isNaN(diffDays) || diffDays < 1) diffDays = 1;
 
                         gameWorld.lastPlayedDate = todayStr;
-                        gameWorld.castsRemaining = 5; // Exakt 5 nya kast för det nya datumet
+                        gameWorld.castsRemaining = 5; 
+                        gameWorld.dayOfSeason = 1; // Alltid börja på Dag 1 vid nytt datum
                         
-                        let newDay = (cloudState.dayOfSeason || 1) + diffDays;
-                        if (newDay > 7) newDay = 1;
-                        gameWorld.dayOfSeason = newDay;
-                        
-                        gameWorld.shared.population = Math.max(30, gameWorld.shared.population - (8 * diffDays));
+                        gameWorld.shared.population = Math.max(30, gameWorld.shared.population - (2 * diffDays));
                         
                         let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
                         sharedWorldData.population = gameWorld.shared.population;
@@ -1612,7 +1609,7 @@
         async function nextDay() {
             if (isActionLocked) return;
             if(gameWorld.castsRemaining > 0) {
-                showCustomAlert(`Du har fortfarande ${gameWorld.castsRemaining} kast kvar idag! Det är 1 sekvens per datum (5 kast per dag).`, "Kast kvar");
+                showCustomAlert(`Du har fortfarande ${gameWorld.castsRemaining} kast kvar idag!`, "Kast kvar");
                 return;
             }
 
@@ -1647,7 +1644,7 @@
                     fetchWeather(currentZoneKey);
                     document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
                 } else {
-                    showCustomAlert("Alla 7 dagar avklarade för denna säsong!", "Veckan slut");
+                    showCustomAlert("Dina kast är slut, kom tillbaka imorgon", "Veckan slut");
                 }
                 updateUI();
             } finally {
@@ -2290,7 +2287,7 @@
             }
 
             if(gameWorld.castsRemaining <= 0) {
-                showCustomAlert("Slut på kast för idag! Det är 1 sekvens per datum (5 kast per dag).", "Slut på kast");
+                showCustomAlert("Slut på kast för idag!", "Slut på kast");
                 return;
             }
             
@@ -2619,7 +2616,7 @@
                     if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, eqString);
                 } else {
                     gameWorld.points = Math.max(0, gameWorld.points - 20);
-                    alertMsg = `Slarvig hantering (fel svar eller för lång air-time på ${air}s). Fisken tog stryk (-20 poäng).`;
+                    alertMsg = `Slarvig hantering (fel svar eller för lång tid ovan ytan på ${air}s). Fisken tog stryk (-20 poäng).`;
                 }
             }
 
