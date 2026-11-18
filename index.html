@@ -38,6 +38,16 @@
             to { transform: translateX(100%); opacity: 0; }
         }
 
+        @keyframes levelUpPopup {
+            0% { transform: scale(0.8) translateY(-20px); opacity: 0; }
+            20% { transform: scale(1.05) translateY(0); opacity: 1; }
+            80% { transform: scale(1) translateY(0); opacity: 1; }
+            100% { transform: scale(0.9) translateY(-20px); opacity: 0; }
+        }
+        .animate-level-up {
+            animation: levelUpPopup 4s ease-in-out forwards;
+        }
+
         @media (orientation: landscape) and (max-width: 1024px) {
             #gameContainer {
                 height: calc(120vh - 32px) !important;
@@ -66,6 +76,16 @@
             </p>
             <input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
             <button onclick="saveInitialAnglerName()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-semibold shadow transition">Starta Fisket</button>
+        </div>
+    </div>
+
+    <!-- Snygg Level Up Banner (Overlay) -->
+    <div id="levelUpBannerModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs hidden items-center justify-center z-[110] pointer-events-none p-4">
+        <div class="bg-stone-900 border-2 border-amber-400 rounded-3xl p-6 shadow-2xl flex flex-col items-center gap-3 text-center max-w-xs w-full animate-level-up">
+            <span class="text-3xl">⭐</span>
+            <h3 class="text-base font-extrabold text-amber-400 tracking-wide uppercase">Nivå Uppnådd!</h3>
+            <p id="levelUpBannerText" class="text-xs text-stone-200 leading-relaxed font-medium"></p>
+            <div class="bg-stone-950 px-3 py-1.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400 w-full" id="levelUpBonusText"></div>
         </div>
     </div>
 
@@ -414,28 +434,43 @@
             
             <div class="flex flex-col gap-1.5 text-[11px]">
                 <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
-                    <div><span class="font-bold text-stone-200">Placera Lekgrus</span></div>
-                    <button onclick="startPlacement('gravel', 150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">150 p</button>
+                    <div>
+                        <span class="font-bold text-stone-200 block">Placera Lekgrus</span>
+                        <span id="costGravelLabel" class="text-[9px] text-stone-400">150 p</span>
+                    </div>
+                    <button onclick="startPlacement('gravel', 150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]" id="btnGravel">Bygg</button>
                 </div>
 
                 <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
-                    <div><span class="font-bold text-stone-200">Placera Ståndsten</span></div>
-                    <button onclick="startPlacement('boulder', 400)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">400 p</button>
+                    <div>
+                        <span class="font-bold text-stone-200 block">Placera Ståndsten</span>
+                        <span id="costBoulderLabel" class="text-[9px] text-stone-400">400 p</span>
+                    </div>
+                    <button onclick="startPlacement('boulder', 400)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]" id="btnBoulder">Bygg</button>
                 </div>
 
                 <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
-                    <div><span class="font-bold text-stone-200">Skapa Uppväxtplats</span></div>
-                    <button onclick="startPlacement('nursery', 250)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">250 p</button>
+                    <div>
+                        <span class="font-bold text-stone-200 block">Skapa Uppväxtplats</span>
+                        <span id="costNurseryLabel" class="text-[9px] text-stone-400">250 p</span>
+                    </div>
+                    <button onclick="startPlacement('nursery', 250)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]" id="btnNursery">Bygg</button>
                 </div>
 
                 <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
-                    <div><span class="font-bold text-stone-200">Plantera Kantträd</span></div>
-                    <button onclick="doTreePlanting(200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">200 p</button>
+                    <div>
+                        <span class="font-bold text-stone-200 block">Plantera Kantträd</span>
+                        <span id="costTreeLabel" class="text-[9px] text-stone-400">200 p</span>
+                    </div>
+                    <button onclick="doTreePlanting(200)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]" id="btnTree">Plantera</button>
                 </div>
 
                 <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex justify-between items-center">
-                    <div><span class="font-bold text-stone-200">Plantera Buske</span></div>
-                    <button onclick="doBushPlanting(150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]">150 p</button>
+                    <div>
+                        <span class="font-bold text-stone-200 block">Plantera Buske</span>
+                        <span id="costBushLabel" class="text-[9px] text-stone-400">150 p</span>
+                    </div>
+                    <button onclick="doBushPlanting(150)" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1 rounded-lg text-[10px]" id="btnBush">Plantera</button>
                 </div>
 
                 <div class="bg-stone-950 p-2 rounded-xl border border-rose-900/40 flex justify-between items-center">
@@ -449,7 +484,7 @@
                             <span class="font-bold text-amber-300 text-[11px] block">Riv Vandringshinder</span>
                             <span class="text-[9px] text-stone-400" id="damProgressText">0 / 10000 p</span>
                         </div>
-                        <button onclick="contributeToDam()" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1 rounded-lg text-[10px]">Bidra 500p</button>
+                        <button onclick="contributeToDam()" class="bg-amber-600 hover:bg-amber-500 text-white px-2.5 py-1 rounded-lg text-[10px]" id="btnDam">Bidra</button>
                     </div>
                     <div class="w-full bg-stone-900 h-1.5 rounded-full overflow-hidden border border-stone-800">
                         <div id="damProgressBar" class="bg-amber-500 h-full w-0%"></div>
@@ -1005,33 +1040,57 @@
         const ctx = canvas.getContext('2d');
         let castLine = null;
 
+        function getTitleAndProgress(xp, prestige) {
+            if (prestige > 0 && xp === 0) {
+                return { title: "Säveå-Legendar", min: 1350, max: 1350, current: 1350, levelIndex: 7 };
+            }
+            if (xp < 150) return { title: "Strömentusiast", min: 0, max: 150, current: xp, levelIndex: 1 };
+            if (xp < 330) return { title: "Vattenkännare", min: 150, max: 330, current: xp, levelIndex: 2 };
+            if (xp < 540) return { title: "Strömvadare", min: 330, max: 540, current: xp, levelIndex: 3 };
+            if (xp < 780) return { title: "Knut- och tafsmästare", min: 540, max: 780, current: xp, levelIndex: 4 };
+            if (xp < 1050) return { title: "Fiskevårdare", min: 780, max: 1050, current: xp, levelIndex: 5 };
+            if (xp < 1350) return { title: "Å-veteran", min: 1050, max: 1350, current: xp, levelIndex: 6 };
+            return { title: "Säveå-Legendar", min: 1350, max: 1350, current: xp, levelIndex: 7 };
+        }
+
+        function showLevelUpBanner(title, bonusDesc) {
+            const banner = document.getElementById('levelUpBannerModal');
+            document.getElementById('levelUpBannerText').innerText = `Du har nått titeln: ${title}!`;
+            document.getElementById('levelUpBonusText').innerText = bonusDesc;
+            banner.classList.remove('hidden');
+            banner.classList.add('flex');
+            setTimeout(() => {
+                banner.classList.add('hidden');
+                banner.classList.remove('flex');
+            }, 4000);
+        }
+
         function addXp(amount) {
+            let oldTitleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
             gameWorld.xp += amount;
-            // Kolla om man nått max för legendar (1350)
+            
             if (gameWorld.xp >= 1350) {
                 gameWorld.prestige++;
-                gameWorld.xp = 0; // Börja om på nästa varv av legendar
-                showCustomAlert(`⭐ PRESTIGE UPPDATERAD!\n\nDu har fullbordat en livstidsresa och stigit till Säveå-Legendar${gameWorld.prestige > 1 ? '^' + gameWorld.prestige : ''}!`, "Prestige!");
+                gameWorld.xp = 0;
+                showLevelUpBanner(`Säveå-Legendar${gameWorld.prestige > 1 ? '^' + gameWorld.prestige : ''}`, "⭐ Livstidsvarv avklarat! En ny prestige-siffra har tänts i gästboken.");
+            } else {
+                let newTitleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+                if (newTitleObj.levelIndex > oldTitleObj.levelIndex) {
+                    let bonusText = "";
+                    if (newTitleObj.levelIndex === 4) bonusText = "🎁 Låst upp: Knut- och tafskontroll (+12% långsammare tafsstress)!";
+                    else if (newTitleObj.levelIndex === 5) bonusText = "🎁 Låst upp: Fiskevårdsrabatt (15% billigare biotopvård)!";
+                    else if (newTitleObj.levelIndex === 6) bonusText = "🎁 Låst upp: Å-veterans lokalkännedom (minskad risk för bottennapp & bättre vak-träffyta)!";
+                    else if (newTitleObj.levelIndex === 7) bonusText = "🎁 Mästarnivå nådd: Alla spelfördelar maximerade!";
+                    
+                    showLevelUpBanner(newTitleObj.title, bonusText);
+                }
             }
             updateUI();
         }
 
-        function getTitleAndProgress(xp, prestige) {
-            if (prestige > 0 && xp === 0) {
-                return { title: "Säveå-Legendar", min: 1350, max: 1350, current: 1350 };
-            }
-            if (xp < 150) return { title: "Strömentusiast", min: 0, max: 150, current: xp };
-            if (xp < 330) return { title: "Vattekännare", min: 150, max: 330, current: xp };
-            if (xp < 540) return { title: "Strömvadare", min: 330, max: 540, current: xp };
-            if (xp < 780) return { title: "Knut- och tafsmästare", min: 540, max: 780, current: xp };
-            if (xp < 1050) return { title: "Fiskevårdare", min: 780, max: 1050, current: xp };
-            if (xp < 1350) return { title: "Å-veteran", min: 1050, max: 1350, current: xp };
-            return { title: "Säveå-Legendar", min: 1350, max: 1350, current: 1350 };
-        }
-
         function getFavoriteFly() {
             let counts = gameWorld.flyCounts || {};
-            let topFly = "In ingen loggad";
+            let topFly = "Ingen loggad";
             let maxCount = 0;
             for (let fName in counts) {
                 if (counts[fName] > maxCount) {
@@ -1094,7 +1153,6 @@
                    !document.getElementById('flyModal').classList.contains('hidden');
         }
 
-        // Klick utanför stänger menyer
         function checkOutsideModal(e, modalId, closeFunc) {
             const cardId = modalId.replace('Modal', 'Card');
             const card = document.getElementById(cardId);
@@ -1416,7 +1474,6 @@
                         gameWorld.castsRemaining = 5; 
                         gameWorld.dayOfSeason = 1; 
                         
-                        // +80 XP för ny inloggad dag
                         addXp(80);
                         
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - (2 * diffDays));
@@ -1431,7 +1488,7 @@
                     gameWorld.lastPlayedDate = todayStr;
                     gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = 1;
-                    gameWorld.xp = 80; // Start-XP
+                    gameWorld.xp = 80;
                     await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
                 }
             } catch (e) {
@@ -1645,9 +1702,16 @@
             updateUI();
         }
 
+        function getDiscountMultiplier() {
+            let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+            // Fiskevårdare (Nivå 5) eller högre ger 15% rabatt
+            return titleObj.levelIndex >= 5 ? 0.85 : 1.0;
+        }
+
         function updateUI() {
             const s = gameWorld.shared;
             const zState = gameWorld.zones[currentZoneKey];
+            const discount = getDiscountMultiplier();
 
             document.getElementById('wCondition').innerText = weatherData.condition;
             document.getElementById('wTemp').innerText = weatherData.temp;
@@ -1661,10 +1725,34 @@
             document.getElementById('currentFlyName').innerText = `${activeFly.name} (${activeFly.size})`;
             document.getElementById('hudEqLabel').innerText = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
 
-            // Uppdaterad visning vid "Fiskar som:" med XP och titel
             let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
             let prestigeSup = gameWorld.prestige > 0 ? `<sup>${gameWorld.prestige}</sup>` : "";
             document.getElementById('currentAnglerLabel').innerHTML = `${lockedAnglerName || '-'} <span class="text-[10px] text-emerald-400 font-normal">(${titleObj.title}${prestigeSup} • ${gameWorld.xp}/${titleObj.max} XP)</span>`;
+
+            // Uppdatera priser i biotopmenyn med ev. rabatt
+            let gCost = Math.round(150 * discount);
+            let bCost = Math.round(400 * discount);
+            let nCost = Math.round(250 * discount);
+            let tCost = Math.round(200 * discount);
+            let buCost = Math.round(150 * discount);
+            let dCost = Math.round(500 * discount);
+
+            document.getElementById('costGravelLabel').innerText = `${gCost} p` + (discount < 1 ? " (-15%)" : "");
+            document.getElementById('btnGravel').setAttribute("onclick", `startPlacement('gravel', ${gCost})`);
+
+            document.getElementById('costBoulderLabel').innerText = `${bCost} p` + (discount < 1 ? " (-15%)" : "");
+            document.getElementById('btnBoulder').setAttribute("onclick", `startPlacement('boulder', ${bCost})`);
+
+            document.getElementById('costNurseryLabel').innerText = `${nCost} p` + (discount < 1 ? " (-15%)" : "");
+            document.getElementById('btnNursery').setAttribute("onclick", `startPlacement('nursery', ${nCost})`);
+
+            document.getElementById('costTreeLabel').innerText = `${tCost} p` + (discount < 1 ? " (-15%)" : "");
+            document.getElementById('btnTree').setAttribute("onclick", `doTreePlanting(${tCost})`);
+
+            document.getElementById('costBushLabel').innerText = `${buCost} p` + (discount < 1 ? " (-15%)" : "");
+            document.getElementById('btnBush').setAttribute("onclick", `doBushPlanting(${buCost})`);
+
+            document.getElementById('btnDam').setAttribute("onclick", `contributeToDam(${dCost})`);
 
             document.getElementById('statGravel').innerText = (zState.gravels || []).length + " st";
             document.getElementById('statBoulders').innerText = (zState.boulders || []).length + " st";
@@ -1817,26 +1905,28 @@
             let latest = allMyItems[0];
             let removedName = "";
 
+            let discount = getDiscountMultiplier();
+
             if (latest.type === 'gravel') {
                 zState.gravels.splice(latest.index, 1);
                 removedName = "Lekgrus";
-                gameWorld.points += 75;
+                gameWorld.points += Math.round(150 * discount * 0.5);
             } else if (latest.type === 'boulder') {
                 zState.boulders.splice(latest.index, 1);
                 gameWorld.shared.maxPop -= 15;
                 removedName = "Ståndsten";
-                gameWorld.points += 200;
+                gameWorld.points += Math.round(400 * discount * 0.5);
             } else if (latest.type === 'nursery') {
                 zState.nurseries.splice(latest.index, 1);
                 removedName = "Uppväxtplats";
-                gameWorld.points += 125;
+                gameWorld.points += Math.round(250 * discount * 0.5);
             }
             
             await saveCurrentZoneBiotopeToCloud();
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog bort ${removedName}`, saveanZones[currentZoneKey].name);
             updateUI();
             closeBiotopModal();
-            showCustomAlert(`Tog bort din senaste ${removedName}! Poäng återbetalade.`, "Åtgärd borttagen");
+            showCustomAlert(`Tog bort din senaste ${removedName}! Delvis poäng återbetalade.`, "Åtgärd borttagen");
         }
 
         async function doTreePlanting(cost) {
@@ -1846,7 +1936,7 @@
             s.trees += 1;
             s.maxPop += 12;
             
-            addXp(15); // +15 XP för fiskevård
+            addXp(15);
 
             let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
             sharedWorldData.trees = s.trees;
@@ -1865,7 +1955,7 @@
             s.bushes += 1;
             s.maxPop += 8;
             
-            addXp(15); // +15 XP för fiskevård
+            addXp(15);
 
             let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
             sharedWorldData.bushes = s.bushes;
@@ -1877,8 +1967,9 @@
             closeBiotopModal();
         }
 
-        async function contributeToDam() {
-            let contribution = 500;
+        async function contributeToDam(overrideCost) {
+            let discount = getDiscountMultiplier();
+            let contribution = overrideCost || Math.round(500 * discount);
             if(gameWorld.laddersFixed) return showCustomAlert("Vandringshindret är redan helt åtgärdat!", "Klart");
             if(gameWorld.points < contribution) return showCustomAlert(`Du behöver minst ${contribution} p för att bidra!`, "Poäng saknas");
             
@@ -1886,7 +1977,7 @@
             const s = gameWorld.shared;
             s.damPoints = (s.damPoints || 0) + contribution;
 
-            addXp(25); // +25 XP för damm-bidrag
+            addXp(25);
 
             let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
             sharedWorldData.damPoints = s.damPoints;
@@ -2258,8 +2349,11 @@
                     let driftSpeed = (currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed) * flowDirection;
                     castLine.x += driftSpeed;
 
+                    let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+                    let hasVeterancyBonus = titleObj.levelIndex >= 6; // Å-veteran / Legendar
+
                     if (currentFlow >= 14 && singleDriftLog && castLine) {
-                        let hitLog = Math.hypot(castLine.x - singleDriftLog.x, (castLine.y + bobbing) - singleDriftLog.y) < 32;
+                        let hitLog = Math.hypot(castLine.x - singleDriftLog.x, (castLine.y + bobbing) - singleDriftLog.y) < (hasVeterancyBonus ? 24 : 32);
                         if (hitLog) {
                             castLine = null;
                             if ("vibrate" in navigator) navigator.vibrate([400, 100, 400]);
@@ -2268,7 +2362,7 @@
                     }
 
                     if (currentZoneKey === 'dickson' && castLine) {
-                        if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 35) < 40) {
+                        if (Math.hypot(castLine.x - dicksonBlockX, castLine.y - 35) < (hasVeterancyBonus ? 30 : 40)) {
                             castLine = null;
                             if ("vibrate" in navigator) navigator.vibrate([400, 100, 400]);
                             showCustomAlert("💥 Flugan kroka fast i Dickson-blocket! Linan gick av.", "Bottennapp");
@@ -2276,7 +2370,7 @@
                     }
 
                     if (currentZoneKey === 'kahogsforsen' && castLine) {
-                        let hitKahogRock = kahogRocks.some(r => Math.hypot(castLine.x - r.x, castLine.y - r.y) < 32);
+                        let hitKahogRock = kahogRocks.some(r => Math.hypot(castLine.x - r.x, castLine.y - r.y) < (hasVeterancyBonus ? 24 : 32));
                         if (hitKahogRock) {
                             castLine = null;
                             if ("vibrate" in navigator) navigator.vibrate([400, 100, 400]);
@@ -2333,7 +2427,10 @@
                     
                     document.getElementById('castStatus').innerText = "Gör ett ryck i lina / hemtagning...";
 
-                    let hitRise = rises.some(r => Math.hypot(r.x - castLine.x, r.y - castLine.y) < 35);
+                    let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+                    let riseRadius = titleObj.levelIndex >= 6 ? 45 : 35; // Större träffyta för veteraner
+
+                    let hitRise = rises.some(r => Math.hypot(r.x - castLine.x, r.y - castLine.y) < riseRadius);
                     if (hitRise && Math.random() < 0.35 && !currentFish) {
                         triggerBite(true);
                     }
@@ -2379,7 +2476,6 @@
             castLine = { x: clickX, y: clickY };
             gameWorld.castsRemaining--;
             
-            // Logga använd fluga för statistik
             gameWorld.flyCounts = gameWorld.flyCounts || {};
             gameWorld.flyCounts[activeFly.name] = (gameWorld.flyCounts[activeFly.name] || 0) + 1;
 
@@ -2389,7 +2485,10 @@
                 await window.consumeCastAtomic(lockedAnglerName);
             }
 
-            let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < 35);
+            let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+            let riseRadius = titleObj.levelIndex >= 6 ? 45 : 35;
+
+            let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < riseRadius);
             if (hitRise && !wildlifeDisturbance && Math.random() < 0.45) {
                 setTimeout(() => { if (castLine && !currentFish) triggerBite(true); }, 1200);
             }
@@ -2559,8 +2658,11 @@
 
                 let pullForce = (Math.random() - 0.38) * weightFactor;
 
+                let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+                let stressDamping = titleObj.levelIndex >= 4 ? 0.88 : 1.0; // 12% långsammare stress för Knut- och tafsmästare+
+
                 if(isPressingScreen) {
-                    tippetStress += (currentFish.size > 70 ? 9.0 : 6.5) + pullForce;
+                    tippetStress += (((currentFish.size > 70 ? 9.0 : 6.5) + pullForce) * stressDamping);
                     fightTimeRemaining -= 0.1;
                     
                     if ("vibrate" in navigator && Math.random() < 0.55) {
@@ -2703,7 +2805,6 @@
 
                     gameWorld.points += pts;
                     
-                    // +10 XP för landad fisk + 25 extra om storfisk
                     let xpGain = 10 + (currentFish.size >= 65 ? 25 : 0);
                     addXp(xpGain);
 
