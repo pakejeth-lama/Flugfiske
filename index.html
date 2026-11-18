@@ -62,7 +62,7 @@
         <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-6 shadow-2xl flex flex-col gap-4 text-center">
             <h3 class="text-base font-bold text-emerald-400">🎣 Säveån Open World</h3>
             <p class="text-xs text-stone-300 leading-relaxed">
-                Ange ditt fiskarnamn. Din poäng och dina kast är molnsäkrade mot fusk (5 kast per dag), och ekosystemet delas gemensamt!
+                Ange ditt fiskarnamn. Din poäng, dina kast och din livstids-XP är molnsäkrade!
             </p>
             <input type="text" id="initialAnglerName" placeholder="Ditt fiskarnamn..." class="w-full bg-stone-950 border border-stone-800 rounded-xl px-3 py-2.5 text-xs text-emerald-400 focus:outline-none focus:border-emerald-500 font-semibold text-center">
             <button onclick="saveInitialAnglerName()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white py-2.5 rounded-xl text-xs font-semibold shadow transition">Starta Fisket</button>
@@ -70,8 +70,8 @@
     </div>
 
     <!-- Modal: Spelarprofil & Personliga Rekord (PB) -->
-    <div id="playerProfileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3">
+    <div id="playerProfileModal" onclick="checkOutsideModal(event, 'playerProfileModal', closePlayerProfileModal)" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div id="playerProfileCard" class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 id="profilePlayerName" class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
                     <span>👤</span> Spelarprofil
@@ -79,6 +79,7 @@
                 <button onclick="closePlayerProfileModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
             </div>
             <div class="flex flex-col gap-2 text-xs">
+                <div id="profileXpSummary" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400"></div>
                 <span class="font-bold text-emerald-400 text-[11px]">🏆 Personliga Rekord (PB):</span>
                 <div id="profilePbList" class="bg-stone-950 p-3 rounded-xl border border-stone-800 space-y-1.5 text-[11px]">
                     <p class="text-stone-500 italic text-center">Laddar rekord...</p>
@@ -88,9 +89,9 @@
         </div>
     </div>
 
-    <!-- Modal: Universal Meddelanderuta -->
-    <div id="customAlertModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3.5 text-center">
+    <!-- Modal: Universal Meddelanderuta (Högsta z-index) -->
+    <div id="customAlertModal" onclick="checkOutsideModal(event, 'customAlertModal', closeCustomAlert)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-[100] p-3">
+        <div id="customAlertCard" class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3.5 text-center">
             <h3 id="customAlertTitle" class="text-sm font-bold text-emerald-400 flex items-center justify-center gap-1.5">
                 <span>💬</span> Meddelande
             </h3>
@@ -100,8 +101,8 @@
     </div>
 
     <!-- Modal: Utrustningsmeny -->
-    <div id="equipmentModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-3">
+    <div id="equipmentModal" onclick="checkOutsideModal(event, 'equipmentModal', closeEquipmentModal)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div id="equipmentCard" class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
                     <span>🎣</span> Välj Utrustning
@@ -137,8 +138,8 @@
     </div>
 
     <!-- Modal: Infotavla för Beståndet -->
-    <div id="populationModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-amber-600/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
+    <div id="populationModal" onclick="checkOutsideModal(event, 'populationModal', closePopulationModal)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div id="populationCard" class="bg-stone-900 border border-amber-600/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
                     <span>🪧</span> Fiskevårdsrådets Info-Tavla
@@ -162,8 +163,8 @@
     </div>
 
     <!-- Modal: Hemlig Game Master Admin -->
-    <div id="adminModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 max-h-[90vh] overflow-y-auto">
+    <div id="adminModal" onclick="checkOutsideModal(event, 'adminModal', closeAdminModal)" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
+        <div id="adminCard" class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1">
                     <span>🔐</span> Game Master Adminpanel
@@ -209,7 +210,7 @@
         <h1 id="mainTitleHeader" class="text-base md:text-lg font-bold text-emerald-400 flex items-center gap-1.5 cursor-pointer select-none" title="Klicka 3 gånger för Admin">
             <span>🌍</span> Säveån Open World
         </h1>
-        <p id="headerAnglerDisplay" class="text-[11px] text-stone-400">Fiskar som: <strong class="text-emerald-300 cursor-pointer underline" id="currentAnglerLabel" onclick="openPlayerProfile(lockedAnglerName)">-</strong></p>
+        <p id="headerAnglerDisplay" class="text-[11px] text-stone-400 text-right">Fiskar som: <strong class="text-emerald-300 cursor-pointer underline" id="currentAnglerLabel" onclick="openPlayerProfile(lockedAnglerName)">-</strong></p>
     </header>
 
     <!-- Main Layout -->
@@ -401,9 +402,9 @@
         </div>
     </main>
 
-    <!-- Modal: Biotopvård Meny -->
-    <div id="biotopModal" onclick="checkOutsideBiotopeModal(event)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div id="biotopModalCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5">
+    <!-- Modal: Biotopvård Meny (Slimmad & Scrollbar) -->
+    <div id="biotopModal" onclick="checkOutsideModal(event, 'biotopModal', closeBiotopModal)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div id="biotopModalCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
                 <h3 class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                     <span>🌱</span> Biotopvård på sträckan
@@ -461,8 +462,8 @@
     </div>
 
     <!-- Modal: Highscore Topplista -->
-    <div id="highscoreModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-2xl w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[85vh] overflow-y-auto">
+    <div id="highscoreModal" onclick="checkOutsideModal(event, 'highscoreModal', closeHighscoreModal)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div id="highscoreCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-2xl w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
                 <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
                     <span>🏆</span> Veckans Highscore & Hall of Fame
@@ -495,8 +496,8 @@
     </div>
 
     <!-- Dynamic C&R Welfare Modal -->
-    <div id="welfareModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
+    <div id="welfareModal" onclick="checkOutsideModal(event, 'welfareModal', closeWelfareModal)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div id="welfareCard" class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
                     <span>🏆</span> Fisk Landad – Bedömning
@@ -535,8 +536,8 @@
     </div>
 
     <!-- Modal: Byt Fluga & Storlek -->
-    <div id="flyModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div class="bg-stone-900 border border-stone-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
+    <div id="flyModal" onclick="checkOutsideModal(event, 'flyModal', closeFlyModal)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
+        <div id="flyCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col gap-3">
             <div class="flex justify-between items-center border-b border-stone-800 pb-2">
                 <h3 class="text-sm font-bold text-stone-200 flex items-center gap-1.5">
                     <span>🪰</span> Välj Fluga & Storlek
@@ -801,11 +802,18 @@
 
                 let html = "";
                 visitors.forEach(v => {
-                    let dateStr = v.lastActive ? new Date(v.lastActive).toLocaleDateString() : "Okänt datum";
+                    let xp = v.xp || 0;
+                    let prestige = v.prestige || 0;
+                    let titleObj = getTitleAndProgress(xp, prestige);
+                    let titleDisplay = prestige > 0 ? `${titleObj.title}<sup>${prestige}</sup>` : titleObj.title;
+
                     html += `
                         <div class="border-b border-stone-900 pb-1 flex justify-between items-center text-[11px]">
-                            <span class="font-bold text-amber-300 cursor-pointer hover:underline" onclick="openPlayerProfile('${v.name}')">🎣 ${v.name}</span>
-                            <span class="text-stone-500 text-[9px]">${dateStr}</span>
+                            <div>
+                                <span class="font-bold text-amber-300 cursor-pointer hover:underline" onclick="openPlayerProfile('${v.name}')">🎣 ${v.name}</span>
+                                <span class="text-emerald-400 text-[9px] block">(${titleDisplay} • ${xp} XP)</span>
+                            </div>
+                            <span class="text-stone-500 text-[9px]">${v.lastActive ? new Date(v.lastActive).toLocaleDateString() : ""}</span>
                         </div>
                     `;
                 });
@@ -918,6 +926,9 @@
 
         let gameWorld = {
             points: 700,
+            xp: 0,
+            prestige: 0,
+            flyCounts: {},
             laddersFixed: false,
             lastPlayedDate: todayStr,
             dayOfSeason: 1,
@@ -961,7 +972,6 @@
             ingvarssons: { name: "Ingvarssons", lat: 57.730, lon: 12.155, baseTemp: 11 }
         };
 
-        // Flugor med kategorier och storlekar
         const flies = [
             { name: "Fireball", category: "Laxfluga", sizes: ["4#", "6#", "8#", "10#"] },
             { name: "Strong Medicine", category: "Laxfluga", sizes: ["4#", "6#", "8#", "10#"] },
@@ -994,6 +1004,43 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         let castLine = null;
+
+        function addXp(amount) {
+            gameWorld.xp += amount;
+            // Kolla om man nått max för legendar (1350)
+            if (gameWorld.xp >= 1350) {
+                gameWorld.prestige++;
+                gameWorld.xp = 0; // Börja om på nästa varv av legendar
+                showCustomAlert(`⭐ PRESTIGE UPPDATERAD!\n\nDu har fullbordat en livstidsresa och stigit till Säveå-Legendar${gameWorld.prestige > 1 ? '^' + gameWorld.prestige : ''}!`, "Prestige!");
+            }
+            updateUI();
+        }
+
+        function getTitleAndProgress(xp, prestige) {
+            if (prestige > 0 && xp === 0) {
+                return { title: "Säveå-Legendar", min: 1350, max: 1350, current: 1350 };
+            }
+            if (xp < 150) return { title: "Strömentusiast", min: 0, max: 150, current: xp };
+            if (xp < 330) return { title: "Vattekännare", min: 150, max: 330, current: xp };
+            if (xp < 540) return { title: "Strömvadare", min: 330, max: 540, current: xp };
+            if (xp < 780) return { title: "Knut- och tafsmästare", min: 540, max: 780, current: xp };
+            if (xp < 1050) return { title: "Fiskevårdare", min: 780, max: 1050, current: xp };
+            if (xp < 1350) return { title: "Å-veteran", min: 1050, max: 1350, current: xp };
+            return { title: "Säveå-Legendar", min: 1350, max: 1350, current: 1350 };
+        }
+
+        function getFavoriteFly() {
+            let counts = gameWorld.flyCounts || {};
+            let topFly = "In ingen loggad";
+            let maxCount = 0;
+            for (let fName in counts) {
+                if (counts[fName] > maxCount) {
+                    maxCount = counts[fName];
+                    topFly = fName;
+                }
+            }
+            return topFly;
+        }
 
         function showLiveAnglerBanner(anglerName) {
             let existing = document.getElementById('liveAnglerBanner');
@@ -1047,6 +1094,15 @@
                    !document.getElementById('flyModal').classList.contains('hidden');
         }
 
+        // Klick utanför stänger menyer
+        function checkOutsideModal(e, modalId, closeFunc) {
+            const cardId = modalId.replace('Modal', 'Card');
+            const card = document.getElementById(cardId);
+            if (card && !card.contains(e.target)) {
+                closeFunc();
+            }
+        }
+
         function toggleCustomDropdown() {
             const list = document.getElementById('customDropdownList');
             list.classList.toggle('hidden');
@@ -1068,7 +1124,26 @@
 
         async function openPlayerProfile(anglerName) {
             if (!anglerName || anglerName === "NATUREN" || anglerName === "Fiskare") return;
-            document.getElementById('profilePlayerName').innerHTML = `<span>👤</span> ${anglerName}`;
+            let targetPlayerState = gameWorld;
+            if (anglerName.toLowerCase() !== lockedAnglerName.toLowerCase()) {
+                let cloudSt = await window.loadPlayerStateFromFirebase(anglerName);
+                if (cloudSt) targetPlayerState = cloudSt;
+            }
+
+            let xp = targetPlayerState.xp || 0;
+            let prestige = targetPlayerState.prestige || 0;
+            let titleObj = getTitleAndProgress(xp, prestige);
+            let prestigeDisplay = prestige > 0 ? `<span>Legendar<sup>${prestige}</sup></span>` : "";
+            
+            document.getElementById('profilePlayerName').innerHTML = `<span>👤</span> ${anglerName} ${prestigeDisplay}`;
+            
+            const xpSummaryEl = document.getElementById('profileXpSummary');
+            xpSummaryEl.innerHTML = `
+                <div><strong>Nivå:</strong> ${titleObj.title}</div>
+                <div><strong>Livstids-XP:</strong> ${xp} XP</div>
+                <div><strong>Favoritfluga:</strong> ${getFavoriteFly()}</div>
+            `;
+
             const pbListEl = document.getElementById('profilePbList');
             pbListEl.innerHTML = `<p class="text-stone-400 italic text-center">Hämtar PB-rekord...</p>`;
             
@@ -1266,7 +1341,6 @@
                 document.getElementById('nameModal').classList.remove('hidden');
                 document.getElementById('nameModal').classList.add('flex');
             } else {
-                document.getElementById('currentAnglerLabel').innerText = lockedAnglerName;
                 try {
                     await initCloudSession();
                 } catch (e) {
@@ -1276,7 +1350,6 @@
             }
         });
 
-        // NYTT DATUM = ALLTID BÖRJA PÅ DAG 1 MED 5 KAST
         async function initCloudSession() {
             if (!lockedAnglerName) return;
             
@@ -1323,16 +1396,17 @@
                 if (cloudState) {
                     if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
                     gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
+                    gameWorld.xp = cloudState.xp !== undefined ? cloudState.xp : 0;
+                    gameWorld.prestige = cloudState.prestige !== undefined ? cloudState.prestige : 0;
+                    gameWorld.flyCounts = cloudState.flyCounts !== undefined ? cloudState.flyCounts : {};
                     
                     let lastDate = cloudState.lastPlayedDate || todayStr;
                     
                     if (lastDate === todayStr) {
-                        // SAMMA DATUM: Läs in exakt vad som sparats för dagen (stoppar F5-fusk)
                         gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? Math.max(0, cloudState.castsRemaining) : 5;
                         gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
                         gameWorld.lastPlayedDate = todayStr;
                     } else {
-                        // NYTT DATUM: Alltid börja på Dag 1 av 7 med 5 fräscha kast!
                         let d1 = new Date(lastDate);
                         let d2 = new Date(todayStr);
                         let diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
@@ -1340,7 +1414,10 @@
 
                         gameWorld.lastPlayedDate = todayStr;
                         gameWorld.castsRemaining = 5; 
-                        gameWorld.dayOfSeason = 1; // Alltid börja på Dag 1 vid nytt datum
+                        gameWorld.dayOfSeason = 1; 
+                        
+                        // +80 XP för ny inloggad dag
+                        addXp(80);
                         
                         gameWorld.shared.population = Math.max(30, gameWorld.shared.population - (2 * diffDays));
                         
@@ -1354,12 +1431,14 @@
                     gameWorld.lastPlayedDate = todayStr;
                     gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = 1;
+                    gameWorld.xp = 80; // Start-XP
                     await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
                 }
             } catch (e) {
                 console.error("Fel vid molnsynk under initiering:", e);
             }
 
+            updateUI();
             await selectZone('dickson', 'Dickson');
             hideLoadingOverlay();
         }
@@ -1372,7 +1451,6 @@
             }
             localStorage.setItem('savean_angler_name', nameInput);
             lockedAnglerName = nameInput;
-            document.getElementById('currentAnglerLabel').innerText = lockedAnglerName;
             document.getElementById('nameModal').classList.add('hidden');
             document.getElementById('nameModal').classList.remove('flex');
             
@@ -1583,6 +1661,11 @@
             document.getElementById('currentFlyName').innerText = `${activeFly.name} (${activeFly.size})`;
             document.getElementById('hudEqLabel').innerText = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
 
+            // Uppdaterad visning vid "Fiskar som:" med XP och titel
+            let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+            let prestigeSup = gameWorld.prestige > 0 ? `<sup>${gameWorld.prestige}</sup>` : "";
+            document.getElementById('currentAnglerLabel').innerHTML = `${lockedAnglerName || '-'} <span class="text-[10px] text-emerald-400 font-normal">(${titleObj.title}${prestigeSup} • ${gameWorld.xp}/${titleObj.max} XP)</span>`;
+
             document.getElementById('statGravel').innerText = (zState.gravels || []).length + " st";
             document.getElementById('statBoulders').innerText = (zState.boulders || []).length + " st";
             document.getElementById('statNursery').innerText = (zState.nurseries || []).length + " st";
@@ -1598,6 +1681,9 @@
             if (lockedAnglerName && window.savePlayerStateToFirebase) {
                 window.savePlayerStateToFirebase(lockedAnglerName, {
                     points: gameWorld.points,
+                    xp: gameWorld.xp,
+                    prestige: gameWorld.prestige,
+                    flyCounts: gameWorld.flyCounts,
                     castsRemaining: gameWorld.castsRemaining,
                     dayOfSeason: gameWorld.dayOfSeason,
                     equipment: gameWorld.equipment,
@@ -1663,12 +1749,6 @@
         function closeBiotopModal() {
             document.getElementById('biotopModal').classList.add('hidden');
             document.getElementById('biotopModal').classList.remove('flex');
-        }
-
-        function checkOutsideBiotopeModal(e) {
-            if (e.target.id === 'biotopModal') {
-                closeBiotopModal();
-            }
         }
 
         function openHighscoreModal() {
@@ -1766,6 +1846,8 @@
             s.trees += 1;
             s.maxPop += 12;
             
+            addXp(15); // +15 XP för fiskevård
+
             let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
             sharedWorldData.trees = s.trees;
             sharedWorldData.maxPop = s.maxPop;
@@ -1783,6 +1865,8 @@
             s.bushes += 1;
             s.maxPop += 8;
             
+            addXp(15); // +15 XP för fiskevård
+
             let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
             sharedWorldData.bushes = s.bushes;
             sharedWorldData.maxPop = s.maxPop;
@@ -1801,6 +1885,8 @@
             gameWorld.points -= contribution;
             const s = gameWorld.shared;
             s.damPoints = (s.damPoints || 0) + contribution;
+
+            addXp(25); // +25 XP för damm-bidrag
 
             let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
             sharedWorldData.damPoints = s.damPoints;
@@ -2200,7 +2286,6 @@
 
                     if(castLine && (castLine.x > canvas.width || castLine.x < 0)) castLine = null;
 
-                    // Flödespåverkan på små krokar
                     let isSmallHook = ["8#", "10#", "14#", "16#"].includes(activeFly.size);
                     let flowBonusMultiplier = 1.0;
                     if (currentFlow < 12.0 && isSmallHook) {
@@ -2268,9 +2353,9 @@
                     gameWorld.points -= placementCost;
                     let actionText = "";
                     let timeNow = Date.now();
-                    if(placementMode === 'gravel') { zState.gravels = zState.gravels || []; zState.gravels.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Lade Lekgrus"; }
-                    if(placementMode === 'boulder') { zState.boulders = zState.boulders || []; zState.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); gameWorld.shared.maxPop += 15; actionText = "Lade Ståndsten"; }
-                    if(placementMode === 'nursery') { zState.nurseries = zState.nurseries || []; zState.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Skapade Uppväxtplats"; }
+                    if(placementMode === 'gravel') { zState.gravels = zState.gravels || []; zState.gravels.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Lade Lekgrus"; addXp(15); }
+                    if(placementMode === 'boulder') { zState.boulders = zState.boulders || []; zState.boulders.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); gameWorld.shared.maxPop += 15; actionText = "Lade Ståndsten"; addXp(15); }
+                    if(placementMode === 'nursery') { zState.nurseries = zState.nurseries || []; zState.nurseries.push({ x: clickX, y: clickY, author: lockedAnglerName, timestamp: timeNow }); actionText = "Skapade Uppväxtplats"; addXp(15); }
                     
                     await saveCurrentZoneBiotopeToCloud();
                     if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, actionText, saveanZones[currentZoneKey].name);
@@ -2293,6 +2378,11 @@
             
             castLine = { x: clickX, y: clickY };
             gameWorld.castsRemaining--;
+            
+            // Logga använd fluga för statistik
+            gameWorld.flyCounts = gameWorld.flyCounts || {};
+            gameWorld.flyCounts[activeFly.name] = (gameWorld.flyCounts[activeFly.name] || 0) + 1;
+
             updateUI();
 
             if (window.consumeCastAtomic) {
@@ -2612,7 +2702,12 @@
                     let pts = Math.round(rawPts / 2);
 
                     gameWorld.points += pts;
-                    alertMsg = `Klockren C&R-hantering! Rätt svar och skonsam urvattning (+${pts} p).`;
+                    
+                    // +10 XP för landad fisk + 25 extra om storfisk
+                    let xpGain = 10 + (currentFish.size >= 65 ? 25 : 0);
+                    addXp(xpGain);
+
+                    alertMsg = `Klockren C&R-hantering! Rätt svar och skonsam urvattning (+${pts} p, +${xpGain} XP).`;
                     if (window.saveCatchToFirebase) window.saveCatchToFirebase(anglerName, `${currentFish.species}${genderStr}`, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, eqString);
                 } else {
                     gameWorld.points = Math.max(0, gameWorld.points - 20);
@@ -2643,20 +2738,24 @@
 
             if (currentFish.intruder) {
                 gameWorld.points += 250;
-                alertMsg = "🎣 FINT VILTVÅRDSARBETE! Du avlivade en oönskad gös. +250 poäng!";
+                addXp(20);
+                alertMsg = "🎣 FINT VILTVÅRDSARBETE! Du avlivade en oönskad gös. +250 poäng, +20 XP!";
             } else if (currentFish.healthState === 'bleeding') {
                 gameWorld.points += 50;
-                alertMsg = "✅ RÄTT BESLUT! Du avlivade en svårt blödande fisk skonsamt (+50 naturvårdspoäng).";
+                addXp(15);
+                alertMsg = "✅ RÄTT BESLUT! Du avlivade en svårt blödande fisk skonsamt (+50 naturvårdspoäng, +15 XP).";
             } else if (currentFish.species === "Abborre" || currentFish.species === "Gädda" || currentFish.species === "Mört" || currentFish.species === "Färna" || currentFish.species === "Id") {
                 gameWorld.points += 15;
-                alertMsg = `Bra insats! Du tog hem en ${currentFish.species} (${currentFish.size} cm) vilket lättar på konkurrensen i ån (+15 poäng).`;
+                addXp(10);
+                alertMsg = `Bra insats! Du tog hem en ${currentFish.species} (${currentFish.size} cm) vilket lättar på konkurrensen i ån (+15 poäng, +10 XP).`;
             } else {
                 s.population = Math.max(10, s.population - 2);
+                addXp(10);
                 let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
                 sharedWorldData.population = s.population;
                 if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                alertMsg = `Du tog hem en godkänd ${currentFish.species} (${currentFish.size} cm). Det gemensamma beståndet i Säveån har minskat med 2 fiskar.`;
+                alertMsg = `Du tog hem en godkänd ${currentFish.species} (${currentFish.size} cm). Det gemensamma beståndet i Säveån har minskat med 2 fiskar. (+10 XP)`;
             }
 
             if (window.saveCatchToFirebase && !currentFish.intruder) {
@@ -2679,8 +2778,9 @@
 
             if (currentFish.healthState === 'sick') {
                 gameWorld.points += 50;
+                addXp(30);
                 if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(anglerName, "Skickade sjuk fisk på provtagning", saveanZones[currentZoneKey].name);
-                alertMsg = "🧬 RÄTT BESLUT! Fisken skickades till forskningsinstitutet för provtagning (+50 naturvårdspoäng).";
+                alertMsg = "🧬 RÄTT BESLUT! Fisken skickades till forskningsinstitutet för provtagning (+50 naturvårdspoäng, +30 XP).";
             } else {
                 gameWorld.points = Math.max(0, gameWorld.points - 15);
                 alertMsg = "Fisken var helt frisk och behövde inte skickas på provtagning (-15 poäng).";
