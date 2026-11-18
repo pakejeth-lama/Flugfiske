@@ -109,7 +109,7 @@
         </div>
     </div>
 
-    <!-- Modal: Universal Meddelanderuta (Högsta z-index) -->
+    <!-- Modal: Universal Meddelanderuta -->
     <div id="customAlertModal" onclick="checkOutsideModal(event, 'customAlertModal', closeCustomAlert)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-[100] p-3">
         <div id="customAlertCard" class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3.5 text-center">
             <h3 id="customAlertTitle" class="text-sm font-bold text-emerald-400 flex items-center justify-center gap-1.5">
@@ -225,7 +225,7 @@
         </div>
     </div>
 
-    <!-- Header (Slimmad med titel & namn) -->
+    <!-- Header -->
     <header class="bg-stone-900 border-b border-stone-800 py-2 px-4 shadow-md flex justify-between items-center gap-2">
         <h1 id="mainTitleHeader" class="text-base md:text-lg font-bold text-emerald-400 flex items-center gap-1.5 cursor-pointer select-none" title="Klicka 3 gånger för Admin">
             <span>🌍</span> Säveån Open World
@@ -351,7 +351,7 @@
                 </div>
 
                 <div id="castStatus" class="text-[11px] font-medium text-stone-300 text-center bg-stone-950 py-1.5 rounded-xl border border-stone-800">
-                    Redo för kast. Klicka för kast, klicka på gröna gubben för Hemtagning!
+                    Redo för kast. Klicka för kast, klicka på gubben för Hemtagning!
                 </div>
             </div>
 
@@ -422,7 +422,7 @@
         </div>
     </main>
 
-    <!-- Modal: Biotopvård Meny (Slimmad & Scrollbar) -->
+    <!-- Modal: Biotopvård Meny -->
     <div id="biotopModal" onclick="checkOutsideModal(event, 'biotopModal', closeBiotopModal)" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div id="biotopModalCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -1704,7 +1704,6 @@
 
         function getDiscountMultiplier() {
             let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
-            // Fiskevårdare (Nivå 5) eller högre ger 15% rabatt
             return titleObj.levelIndex >= 5 ? 0.85 : 1.0;
         }
 
@@ -1729,7 +1728,6 @@
             let prestigeSup = gameWorld.prestige > 0 ? `<sup>${gameWorld.prestige}</sup>` : "";
             document.getElementById('currentAnglerLabel').innerHTML = `${lockedAnglerName || '-'} <span class="text-[10px] text-emerald-400 font-normal">(${titleObj.title}${prestigeSup} • ${gameWorld.xp}/${titleObj.max} XP)</span>`;
 
-            // Uppdatera priser i biotopmenyn med ev. rabatt
             let gCost = Math.round(150 * discount);
             let bCost = Math.round(400 * discount);
             let nCost = Math.round(250 * discount);
@@ -2317,13 +2315,42 @@
                 }
             });
 
-            ctx.fillStyle = '#14532d';
-            ctx.beginPath();
-            ctx.arc(rodX, rodY, 16, 0, Math.PI*2);
-            ctx.fill();
-            ctx.strokeStyle = '#22c55e';
-            ctx.lineWidth = 3.5;
-            ctx.stroke();
+            // === DYNAMISK GUBBE (FÄRG & GLÖD BASERAT PÅ NIVÅ) ===
+            let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+            let rodFillColor = '#14532d';
+            let rodStrokeColor = '#22c55e';
+
+            if (titleObj.levelIndex === 2) { rodFillColor = '#0369a1'; rodStrokeColor = '#38bdf8'; } // Vattenkännare (Blå)
+            else if (titleObj.levelIndex === 3) { rodFillColor = '#3f6212'; rodStrokeColor = '#84cc16'; } // Strömvadare (Lime)
+            else if (titleObj.levelIndex === 4) { rodFillColor = '#78350f'; rodStrokeColor = '#f59e0b'; } // Knut- och tafsmästare (Bärnsten)
+            else if (titleObj.levelIndex === 5) { rodFillColor = '#581c87'; rodStrokeColor = '#a855f7'; } // Fiskevårdare (Lila)
+            else if (titleObj.levelIndex === 6) { rodFillColor = '#7c2d12'; rodStrokeColor = '#f97316'; } // Å-veteran (Orange)
+            else if (titleObj.levelIndex >= 7) { 
+                rodFillColor = '#422006'; 
+                rodStrokeColor = '#eab308'; // Säveå-Legendar (Guld med glöd)
+                
+                ctx.save();
+                ctx.shadowColor = '#eab308';
+                ctx.shadowBlur = 14;
+                ctx.fillStyle = rodFillColor;
+                ctx.beginPath();
+                ctx.arc(rodX, rodY, 16, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = rodStrokeColor;
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            if (titleObj.levelIndex < 7) {
+                ctx.fillStyle = rodFillColor;
+                ctx.beginPath();
+                ctx.arc(rodX, rodY, 16, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = rodStrokeColor;
+                ctx.lineWidth = 3.5;
+                ctx.stroke();
+            }
 
             ctx.fillStyle = '#ffffff';
             ctx.font = '10px Inter';
@@ -2349,8 +2376,7 @@
                     let driftSpeed = (currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed) * flowDirection;
                     castLine.x += driftSpeed;
 
-                    let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
-                    let hasVeterancyBonus = titleObj.levelIndex >= 6; // Å-veteran / Legendar
+                    let hasVeterancyBonus = titleObj.levelIndex >= 6;
 
                     if (currentFlow >= 14 && singleDriftLog && castLine) {
                         let hitLog = Math.hypot(castLine.x - singleDriftLog.x, (castLine.y + bobbing) - singleDriftLog.y) < (hasVeterancyBonus ? 24 : 32);
@@ -2428,7 +2454,7 @@
                     document.getElementById('castStatus').innerText = "Gör ett ryck i lina / hemtagning...";
 
                     let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
-                    let riseRadius = titleObj.levelIndex >= 6 ? 45 : 35; // Större träffyta för veteraner
+                    let riseRadius = titleObj.levelIndex >= 6 ? 45 : 35;
 
                     let hitRise = rises.some(r => Math.hypot(r.x - castLine.x, r.y - castLine.y) < riseRadius);
                     if (hitRise && Math.random() < 0.35 && !currentFish) {
@@ -2659,7 +2685,7 @@
                 let pullForce = (Math.random() - 0.38) * weightFactor;
 
                 let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
-                let stressDamping = titleObj.levelIndex >= 4 ? 0.88 : 1.0; // 12% långsammare stress för Knut- och tafsmästare+
+                let stressDamping = titleObj.levelIndex >= 4 ? 0.88 : 1.0;
 
                 if(isPressingScreen) {
                     tippetStress += (((currentFish.size > 70 ? 9.0 : 6.5) + pullForce) * stressDamping);
@@ -2910,7 +2936,7 @@
             currentFish = null;
             placementMode = null;
             document.getElementById('modeBanner').classList.add('hidden');
-            document.getElementById('castStatus').innerText = "Redo för kast. Klicka för kast, klicka på gröna gubben för Hemtagning!";
+            document.getElementById('castStatus').innerText = "Redo för kast. Klicka för kast, klicka på gubben för Hemtagning!";
         }
 
         function changeFlyModal() {
