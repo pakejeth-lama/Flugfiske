@@ -1041,22 +1041,27 @@
         let castLine = null;
 
         function getTitleAndProgress(xp, prestige) {
-            if (prestige > 0 && xp === 0) {
-                return { title: "Säveå-Legendar", min: 1350, max: 1350, current: 1350, levelIndex: 7 };
+            const p = prestige || 0;
+            if (p > 0) {
+                return { title: "Säveå-Legendar", min: 0, max: 1350, current: xp, levelIndex: 7, isLegend: true };
             }
-            if (xp < 150) return { title: "Strömentusiast", min: 0, max: 150, current: xp, levelIndex: 1 };
-            if (xp < 330) return { title: "Vattenkännare", min: 150, max: 330, current: xp, levelIndex: 2 };
-            if (xp < 540) return { title: "Strömvadare", min: 330, max: 540, current: xp, levelIndex: 3 };
-            if (xp < 780) return { title: "Knut- och tafsmästare", min: 540, max: 780, current: xp, levelIndex: 4 };
-            if (xp < 1050) return { title: "Fiskevårdare", min: 780, max: 1050, current: xp, levelIndex: 5 };
-            if (xp < 1350) return { title: "Å-veteran", min: 1050, max: 1350, current: xp, levelIndex: 6 };
-            return { title: "Säveå-Legendar", min: 1350, max: 1350, current: xp, levelIndex: 7 };
+            if (xp < 150) return { title: "Strömentusiast", min: 0, max: 150, current: xp, levelIndex: 1, isLegend: false };
+            if (xp < 330) return { title: "Vattenkännare", min: 150, max: 330, current: xp, levelIndex: 2, isLegend: false };
+            if (xp < 540) return { title: "Strömvadare", min: 330, max: 540, current: xp, levelIndex: 3, isLegend: false };
+            if (xp < 780) return { title: "Knut- och tafsmästare", min: 540, max: 780, current: xp, levelIndex: 4, isLegend: false };
+            if (xp < 1050) return { title: "Fiskevårdare", min: 780, max: 1050, current: xp, levelIndex: 5, isLegend: false };
+            if (xp < 1350) return { title: "Å-veteran", min: 1050, max: 1350, current: xp, levelIndex: 6, isLegend: false };
+            return { title: "Säveå-Legendar", min: 1350, max: 1350, current: xp, levelIndex: 7, isLegend: true };
         }
 
         // Kastlängd: Grund 50% av spelplanens höjd + upp till 50% bonus (totalt upp till 75% av höjden)
+        // Som Säveå-Legendar (prestige > 0 eller levelIndex >= 7) behålls full 50% bonus (1.5x).
         function getMaxCastDistance() {
             const baseRange = canvas.height * 0.5;
             const titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+            if (titleObj.isLegend || titleObj.levelIndex >= 7) {
+                return baseRange * 1.5;
+            }
             const levelProgress = Math.max(0, Math.min(1, (titleObj.levelIndex - 1) / 6));
             const xpInLevelRatio = titleObj.max > titleObj.min
                 ? Math.max(0, Math.min(1, (gameWorld.xp - titleObj.min) / (titleObj.max - titleObj.min)))
@@ -1083,12 +1088,12 @@
             gameWorld.xp += amount;
             
             if (gameWorld.xp >= 1350) {
-                gameWorld.prestige++;
+                gameWorld.prestige = (gameWorld.prestige || 0) + 1;
                 gameWorld.xp = 0;
-                showLevelUpBanner(`Säveå-Legendar${gameWorld.prestige > 1 ? '^' + gameWorld.prestige : ''}`, "⭐ Livstidsvarv avklarat! En ny prestige-siffra har tänts i gästboken.");
+                showLevelUpBanner(`Säveå-Legendar${gameWorld.prestige > 1 ? '^' + gameWorld.prestige : ''}`, "⭐ Livstidsvarv avklarat! Alla dina legendarbonusar (+50% kastlängd, tafskontroll & rabatter) är bibehållna!");
             } else {
                 let newTitleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
-                if (newTitleObj.levelIndex > oldTitleObj.levelIndex) {
+                if (!oldTitleObj.isLegend && newTitleObj.levelIndex > oldTitleObj.levelIndex) {
                     let bonusText = "";
                     if (newTitleObj.levelIndex === 4) bonusText = "🎁 Låst upp: Knut- och tafskontroll (+12% långsammare tafsstress) & längre kast!";
                     else if (newTitleObj.levelIndex === 5) bonusText = "🎁 Låst upp: Fiskevårdsrabatt (15% billigare biotopvård) & längre kast!";
@@ -2328,7 +2333,6 @@
                 }
             });
 
-            // Diskret räckviddsring runt ståplatsen när man inte redan har kastat ut
             if (!castLine && !placementMode) {
                 let maxCastDist = getMaxCastDistance();
                 ctx.save();
@@ -2341,18 +2345,13 @@
                 ctx.restore();
             }
 
-            // === DYNAMISK GUBBE (FÄRG & GLÖD BASERAT PÅ NIVÅ) ===
+            // === DYNAMISK GUBBE (FÄRG & GLÖD BASERAT PÅ NIVÅ / LEGENDAR) ===
             let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
             let rodFillColor = '#14532d';
             let rodStrokeColor = '#22c55e';
 
-            if (titleObj.levelIndex === 2) { rodFillColor = '#0369a1'; rodStrokeColor = '#38bdf8'; }
-            else if (titleObj.levelIndex === 3) { rodFillColor = '#3f6212'; rodStrokeColor = '#84cc16'; }
-            else if (titleObj.levelIndex === 4) { rodFillColor = '#78350f'; rodStrokeColor = '#f59e0b'; }
-            else if (titleObj.levelIndex === 5) { rodFillColor = '#581c87'; rodStrokeColor = '#a855f7'; }
-            else if (titleObj.levelIndex === 6) { rodFillColor = '#7c2d12'; rodStrokeColor = '#f97316'; }
-            else if (titleObj.levelIndex >= 7) { 
-                rodFillColor = '#422006'; 
+            if (titleObj.isLegend || titleObj.levelIndex >= 7) {
+                rodFillColor = '#422006';
                 rodStrokeColor = '#eab308';
                 
                 ctx.save();
@@ -2366,9 +2365,13 @@
                 ctx.lineWidth = 4;
                 ctx.stroke();
                 ctx.restore();
-            }
+            } else {
+                if (titleObj.levelIndex === 2) { rodFillColor = '#0369a1'; rodStrokeColor = '#38bdf8'; }
+                else if (titleObj.levelIndex === 3) { rodFillColor = '#3f6212'; rodStrokeColor = '#84cc16'; }
+                else if (titleObj.levelIndex === 4) { rodFillColor = '#78350f'; rodStrokeColor = '#f59e0b'; }
+                else if (titleObj.levelIndex === 5) { rodFillColor = '#581c87'; rodStrokeColor = '#a855f7'; }
+                else if (titleObj.levelIndex === 6) { rodFillColor = '#7c2d12'; rodStrokeColor = '#f97316'; }
 
-            if (titleObj.levelIndex < 7) {
                 ctx.fillStyle = rodFillColor;
                 ctx.beginPath();
                 ctx.arc(rodX, rodY, 16, 0, Math.PI*2);
@@ -2402,7 +2405,7 @@
                     let driftSpeed = (currentFlow > 14 ? baseDriftSpeed * 1.7 : baseDriftSpeed) * flowDirection;
                     castLine.x += driftSpeed;
 
-                    let hasVeterancyBonus = titleObj.levelIndex >= 6;
+                    let hasVeterancyBonus = titleObj.isLegend || titleObj.levelIndex >= 6;
 
                     if (currentFlow >= 14 && singleDriftLog && castLine) {
                         let hitLog = Math.hypot(castLine.x - singleDriftLog.x, (castLine.y + bobbing) - singleDriftLog.y) < (hasVeterancyBonus ? 24 : 32);
@@ -2480,7 +2483,7 @@
                     document.getElementById('castStatus').innerText = "Gör ett ryck i lina / hemtagning...";
 
                     let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
-                    let riseRadius = titleObj.levelIndex >= 6 ? 45 : 35;
+                    let riseRadius = (titleObj.isLegend || titleObj.levelIndex >= 6) ? 45 : 35;
 
                     let hitRise = rises.some(r => Math.hypot(r.x - castLine.x, r.y - castLine.y) < riseRadius);
                     if (hitRise && Math.random() < 0.35 && !currentFish) {
@@ -2525,7 +2528,6 @@
                 return;
             }
 
-            // Begränsa kastlängd från ståplatsen (50% av höjden + upp till 50% bonus)
             let dx = clickX - rodX;
             let dy = clickY - rodY;
             let dist = Math.hypot(dx, dy);
@@ -2552,7 +2554,7 @@
             }
 
             let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
-            let riseRadius = titleObj.levelIndex >= 6 ? 45 : 35;
+            let riseRadius = (titleObj.isLegend || titleObj.levelIndex >= 6) ? 45 : 35;
 
             let hitRise = rises.some(r => Math.hypot(r.x - clickX, r.y - clickY) < riseRadius);
             if (hitRise && !wildlifeDisturbance && Math.random() < 0.45) {
@@ -2561,7 +2563,7 @@
 
             let statusText = hitRise
                 ? "Snyggt kast i vaket! Väntar hugg..."
-                : (clampedByRange ? "Kastet nådde max kastlängd för din nivå – mer XP ger längre kast!" : "Flugan driver med strömmen...");
+                : (clampedByRange ? "Kastet nådde max kastlängd – legendarbonusen ger full räckvidd!" : "Flugan driver med strömmen...");
             document.getElementById('castStatus').innerText = statusText;
         });
 
@@ -2596,7 +2598,6 @@
             let isSmallSalmonFly = (activeFly.category === "Laxfluga") && (activeFly.size === "10#" || activeFly.size === "12#");
             let isLowFlowBigCatchWindow = (currentFlowVal < 10.0) && isSmallSalmonFly;
 
-            // Extremt låg chans på stor lax/öring i lågt flöde (<10 m³/s) med små laxflugor (10# eller 12#)
             let rareBigLowFlowRoll = isLowFlowBigCatchWindow && (Math.random() < 0.045);
 
             let canCatchSalmon = (activeFly.category !== 'Torrfluga') && !isTooLightRodForSalmon;
@@ -2738,7 +2739,7 @@
                 let pullForce = (Math.random() - 0.38) * weightFactor;
 
                 let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
-                let stressDamping = titleObj.levelIndex >= 4 ? 0.88 : 1.0;
+                let stressDamping = (titleObj.isLegend || titleObj.levelIndex >= 4) ? 0.88 : 1.0;
 
                 if(isPressingScreen) {
                     tippetStress += (((currentFish.size > 70 ? 9.0 : 6.5) + pullForce) * stressDamping);
