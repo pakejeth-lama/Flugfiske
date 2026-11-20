@@ -65,7 +65,6 @@
             animation: waterRipplePulse 1.6s ease-in-out infinite;
         }
 
-        /* Återställd spelplan minus 40px på höjden, och dubblad höjd i liggande läge */
         #gameContainer {
             aspect-ratio: 4 / 3;
             max-height: 420px;
@@ -88,7 +87,6 @@
 </head>
 <body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col select-none">
 
-    <!-- Flod-svep vid avklarat omlöp -->
     <div id="floodCelebrationOverlay" class="fixed inset-0 pointer-events-none hidden items-center justify-center z-[130] overflow-hidden">
         <div id="floodWaveLayer" class="w-[140%] h-full bg-gradient-to-r from-sky-500/80 via-cyan-300/90 to-blue-600/85 backdrop-blur-xs flex items-center justify-center shadow-2xl border-y-4 border-cyan-100">
             <div class="bg-stone-950/85 border-2 border-cyan-300 px-6 py-4 rounded-2xl shadow-2xl text-center">
@@ -97,16 +95,14 @@
         </div>
     </div>
 
-    <!-- Säkerhets- och Laddningsslöja -->
     <div id="loadingOverlay" class="fixed inset-0 bg-stone-950/95 backdrop-blur-md flex flex-col items-center justify-center z-50 transition-opacity duration-500 p-4 text-center">
         <div class="flex flex-col items-center gap-2.5">
             <div class="w-9 h-9 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
             <h3 id="loadingOverlayText" class="text-sm font-bold text-emerald-400">Ansluter till Säveåns moln och synkar data...</h3>
-            <p class="text-[11px] text-stone-400">Vänta medan spelytan låses mot fusk och molndata synkas.</p>
+            <p class="text-[11px] text-stone-400">Vänta medan anonym session startas och molndata synkas.</p>
         </div>
     </div>
 
-    <!-- Modal: Start / Låst Namnregistrering -->
     <div id="nameModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
         <div class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-5 shadow-2xl flex flex-col gap-3.5 text-center">
             <h3 class="text-base font-bold text-emerald-400">🎣 Säveån Open World</h3>
@@ -118,7 +114,6 @@
         </div>
     </div>
 
-    <!-- Level Up Banner -->
     <div id="levelUpBannerModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs hidden items-center justify-center z-[110] pointer-events-none p-4">
         <div class="bg-stone-900 border-2 border-amber-400 rounded-3xl p-5 shadow-2xl flex flex-col items-center gap-2.5 text-center max-w-xs w-full animate-level-up">
             <span class="text-3xl">⭐</span>
@@ -128,7 +123,6 @@
         </div>
     </div>
 
-    <!-- Modal: Spelarprofil & Personliga Rekord (PB) -->
     <div id="playerProfileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div id="playerProfileCard" class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -148,7 +142,6 @@
         </div>
     </div>
 
-    <!-- Modal: Universal Meddelanderuta -->
     <div id="customAlertModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-[100] p-3">
         <div id="customAlertCard" class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-3 text-center">
             <h3 id="customAlertTitle" class="text-sm font-bold text-emerald-400 flex items-center justify-center gap-1.5">
@@ -159,7 +152,6 @@
         </div>
     </div>
 
-    <!-- Modal: Utrustningsmeny -->
     <div id="equipmentModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div id="equipmentCard" class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -196,7 +188,6 @@
         </div>
     </div>
 
-    <!-- Modal: Infotavla för Beståndet -->
     <div id="populationModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div id="populationCard" class="bg-stone-900 border border-amber-600/50 rounded-2xl max-w-sm w-full p-4 shadow-2xl flex flex-col gap-2.5">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -221,7 +212,6 @@
         </div>
     </div>
 
-    <!-- Modal: Hemlig Game Master Admin -->
     <div id="adminModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden items-center justify-center z-50 p-3">
         <div id="adminCard" class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-sm w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[88vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -264,7 +254,6 @@
         </div>
     </div>
 
-    <!-- Modal: Dagens Minispel (stängs aldrig vid klick på skärmen) -->
     <div id="minigameModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[95] p-3">
         <div id="minigameCard" class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[88vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -295,7 +284,6 @@
         </div>
     </div>
 
-    <!-- Slimmad Header -->
     <header class="bg-stone-900 border-b border-stone-800 py-1.5 px-3 shadow-md flex justify-between items-center gap-2">
         <h1 id="mainTitleHeader" class="text-sm md:text-base font-bold text-emerald-400 flex items-center gap-1.5 cursor-pointer select-none" title="Klicka 3 gånger för Admin">
             <span>🌍</span> Säveån Open World
@@ -303,12 +291,8 @@
         <p id="headerAnglerDisplay" class="text-[11px] text-stone-400 text-right truncate">Fiskar som: <strong class="text-emerald-300 cursor-pointer underline" id="currentAnglerLabel" onclick="openPlayerProfile(lockedAnglerName)">-</strong></p>
     </header>
 
-    <!-- Main Layout -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-2 md:p-3 grid grid-cols-1 lg:grid-cols-3 gap-2.5 items-start">
-        
         <div class="lg:col-span-2 flex flex-col gap-2">
-            
-            <!-- Gemensam toppbar: Fiskeplats, Utrustning, Poäng och Dag -->
             <div class="bg-stone-900 px-2.5 py-1.5 rounded-xl border border-stone-800 flex flex-wrap items-center justify-between gap-2">
                 <div class="relative">
                     <button type="button" onclick="toggleCustomDropdown()" id="customDropdownBtn" class="bg-stone-950 border border-stone-800 rounded-lg px-2.5 py-1 text-xs text-emerald-400 font-bold flex items-center gap-2 focus:outline-none focus:border-emerald-500 transition">
@@ -346,7 +330,6 @@
                 </div>
             </div>
 
-            <!-- Canvas Spelyta -->
             <div id="gameContainer" class="relative bg-stone-950 w-full rounded-xl overflow-hidden border border-stone-800 shadow-inner flex flex-col items-center justify-center">
                 <canvas id="gameCanvas" class="w-full h-full cursor-crosshair"></canvas>
                 
@@ -354,7 +337,6 @@
                     📱 Liggande skärm ger bäst överblick!
                 </div>
 
-                <!-- Canvas HUD -->
                 <div class="absolute top-1.5 left-2 right-2 bg-stone-900/90 backdrop-blur px-2.5 py-1 rounded-lg border border-stone-800 text-[10px] md:text-[11px] flex flex-wrap justify-between items-center gap-2 z-20 shadow">
                     <div class="flex items-center gap-2.5">
                         <span>Fluga: <strong id="currentFlyName" class="text-emerald-400">Fireball (6#)</strong></span>
@@ -378,7 +360,6 @@
                     Aktivt läge: Klicka i vattnet!
                 </div>
 
-                <!-- Overlay för Tafsstress -->
                 <div id="fightOverlay" class="hidden absolute inset-0 bg-stone-950/60 backdrop-blur-xs flex flex-col items-center justify-center p-3 z-40 pointer-events-none">
                     <div id="fightCard" class="bg-stone-900/95 border border-amber-500/60 p-4 rounded-2xl max-w-xs w-full text-center flex flex-col gap-2.5 shadow-2xl animate-fish-rush transition-all duration-75">
                         <span id="fightTitle" class="text-xs font-bold text-amber-400 uppercase tracking-wide">Drillning – Håll inne fingret!</span>
@@ -397,7 +378,6 @@
                 </div>
             </div>
 
-            <!-- Kontroller (Dagens Pussel på Highscores plats) -->
             <div class="bg-stone-900 p-2 rounded-xl border border-stone-800 flex flex-col gap-1.5">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                     <button type="button" onclick="changeFlyModal()" class="h-8 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-lg text-[11px] font-semibold transition flex items-center justify-center gap-1 border border-stone-700">
@@ -419,7 +399,6 @@
                 </div>
             </div>
 
-            <!-- Ekosystemstatus (8 rutor: Flödesbonus & Highscore på Dagens Pussels plats) -->
             <div class="bg-stone-900 p-2.5 rounded-xl border border-stone-800">
                 <h3 class="text-[11px] font-bold text-stone-200 mb-1.5 flex items-center gap-1.5">
                     <span>📊</span> Biotopstatus för aktuell sträcka
@@ -461,9 +440,7 @@
             </div>
         </div>
 
-        <!-- Höger Kolonn -->
         <div class="flex flex-col gap-2">
-            
             <div class="bg-stone-900 p-2.5 rounded-xl border border-stone-800 flex flex-col gap-1.5">
                 <h3 class="text-[11px] font-bold text-emerald-400 flex items-center justify-between">
                     <span>🌱 Fiskevårdens Moln-Loggbok</span>
@@ -491,11 +468,9 @@
                     <p class="text-stone-500 italic">Laddar besökare...</p>
                 </div>
             </div>
-
         </div>
     </main>
 
-    <!-- Modal: Biotopvård Meny -->
     <div id="biotopModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div id="biotopModalCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-xs w-full p-3.5 shadow-2xl flex flex-col gap-2 max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -569,7 +544,6 @@
         </div>
     </div>
 
-    <!-- Modal: Highscore Topplista -->
     <div id="highscoreModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-2 md:p-3">
         <div id="highscoreCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-2xl w-full p-3.5 shadow-2xl flex flex-col gap-2 max-h-[88vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -603,7 +577,6 @@
         </div>
     </div>
 
-    <!-- Dynamic C&R Welfare Modal -->
     <div id="welfareModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[90] p-3">
         <div id="welfareCard" class="bg-stone-900 border border-emerald-500/40 rounded-2xl max-w-sm w-full p-4 shadow-2xl flex flex-col gap-2.5">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -643,7 +616,6 @@
         </div>
     </div>
 
-    <!-- Modal: Byt Fluga & Storlek -->
     <div id="flyModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div id="flyCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-sm w-full p-4 shadow-2xl flex flex-col gap-2.5">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -657,9 +629,9 @@
         </div>
     </div>
 
-    <!-- Firebase SDK Modules -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, getDoc, setDoc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -672,8 +644,34 @@
         };
 
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
+        window.authRef = auth;
         window.dbRef = db;
+
+        let authReadyPromise = null;
+        async function ensureAnonymousAuth() {
+            if (auth.currentUser) return auth.currentUser;
+            if (!authReadyPromise) {
+                authReadyPromise = (async () => {
+                    try {
+                        const cred = await signInAnonymously(auth);
+                        return cred.user;
+                    } catch (e) {
+                        console.error("Fel vid anonym inloggning:", e);
+                        return null;
+                    }
+                })();
+            }
+            const user = await authReadyPromise;
+            if (!user) authReadyPromise = null;
+            return user;
+        }
+        window.ensureAnonymousAuth = ensureAnonymousAuth;
+
+        onAuthStateChanged(auth, (user) => {
+            window.currentAuthUid = user ? user.uid : null;
+        });
 
         function getCurrentWeekKey() {
             const now = new Date();
@@ -688,8 +686,10 @@
 
         window.saveCatchToFirebase = async function(anglerName, species, size, fly, zoneName, equipment) {
             try {
+                const user = await ensureAnonymousAuth();
                 const currentWeek = getCurrentWeekKey();
                 await addDoc(collection(db, "highscores"), {
+                    uid: user ? user.uid : null,
                     angler: anglerName || "Fiskare",
                     species: species,
                     size: size,
@@ -714,6 +714,7 @@
             hofEl.innerHTML = `Laddar förra veckans mästare...`;
 
             try {
+                await ensureAnonymousAuth();
                 const currentWeek = getCurrentWeekKey();
                 const allSnap = await getDocs(collection(db, "highscores"));
                 let allCatches = [];
@@ -796,6 +797,7 @@
 
         window.fetchPlayerPbRecords = async function(anglerName) {
             try {
+                await ensureAnonymousAuth();
                 const allSnap = await getDocs(collection(db, "highscores"));
                 let pbs = {};
                 allSnap.forEach(d => {
@@ -816,11 +818,16 @@
 
         window.savePlayerStateToFirebase = async function(anglerName, stateData) {
             try {
-                await setDoc(doc(db, "players", anglerName), {
+                const user = await ensureAnonymousAuth();
+                const payload = {
                     name: anglerName,
                     lastActive: new Date().toISOString(),
                     ...stateData
-                }, { merge: true });
+                };
+                if (user) {
+                    payload.uid = user.uid;
+                }
+                await setDoc(doc(db, "players", anglerName), payload, { merge: true });
                 window.fetchGuestbook();
             } catch (e) {
                 console.error("Fel vid molnsynk:", e);
@@ -829,11 +836,14 @@
 
         window.updatePlayerPointsAtomic = async function(anglerName, deltaPoints) {
             try {
+                const user = await ensureAnonymousAuth();
                 const playerRef = doc(db, "players", anglerName);
-                await updateDoc(playerRef, {
+                const updates = {
                     points: increment(deltaPoints),
                     lastActive: new Date().toISOString()
-                });
+                };
+                if (user) updates.uid = user.uid;
+                await updateDoc(playerRef, updates);
             } catch (e) {
                 console.error("Fel vid atomär poänguppdatering:", e);
             }
@@ -841,11 +851,14 @@
 
         window.consumeCastAtomic = async function(anglerName) {
             try {
+                const user = await ensureAnonymousAuth();
                 const playerRef = doc(db, "players", anglerName);
-                await updateDoc(playerRef, {
+                const updates = {
                     castsRemaining: increment(-1),
                     lastActive: new Date().toISOString()
-                });
+                };
+                if (user) updates.uid = user.uid;
+                await updateDoc(playerRef, updates);
             } catch (e) {
                 console.error("Fel vid atomärt kast:", e);
             }
@@ -853,11 +866,14 @@
 
         window.restoreCastAtomic = async function(anglerName) {
             try {
+                const user = await ensureAnonymousAuth();
                 const playerRef = doc(db, "players", anglerName);
-                await updateDoc(playerRef, {
+                const updates = {
                     castsRemaining: increment(1),
                     lastActive: new Date().toISOString()
-                });
+                };
+                if (user) updates.uid = user.uid;
+                await updateDoc(playerRef, updates);
             } catch (e) {
                 console.error("Fel vid atomär kaståterställning:", e);
             }
@@ -865,6 +881,7 @@
 
         window.loadPlayerStateFromFirebase = async function(anglerName) {
             try {
+                await ensureAnonymousAuth();
                 const docSnap = await getDoc(doc(db, "players", anglerName));
                 if (docSnap.exists()) return docSnap.data();
             } catch (e) {
@@ -876,6 +893,7 @@
         let notifiedAnglers = new Set();
         window.fetchGuestbook = async function() {
             try {
+                await ensureAnonymousAuth();
                 const querySnapshot = await getDocs(collection(db, "players"));
                 const guestbookEl = document.getElementById('guestbookList');
                 if (querySnapshot.empty) {
@@ -933,6 +951,7 @@
 
         window.loadSharedWorld = async function() {
             try {
+                await ensureAnonymousAuth();
                 const docRef = doc(db, "world_zones", "shared_savean");
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
@@ -946,7 +965,6 @@
                         damPoints: 0,
                         damTarget: 10000,
                         laddersFixed: false,
-                        lastBiotopeResetWeek: "",
                         zones: {}
                     };
                     await setDoc(docRef, defaultWorld);
@@ -960,6 +978,7 @@
 
         window.saveSharedWorld = async function(worldData) {
             try {
+                await ensureAnonymousAuth();
                 const docRef = doc(db, "world_zones", "shared_savean");
                 await setDoc(docRef, {
                     population: worldData.population,
@@ -969,7 +988,6 @@
                     damPoints: worldData.damPoints || 0,
                     damTarget: worldData.damTarget || 10000,
                     laddersFixed: worldData.laddersFixed || false,
-                    lastBiotopeResetWeek: worldData.lastBiotopeResetWeek || "",
                     zones: worldData.zones || {}
                 }, { merge: true });
             } catch (e) {
@@ -979,7 +997,9 @@
 
         window.logBiotopeToFirebase = async function(anglerName, actionText, zoneName) {
             try {
+                const user = await ensureAnonymousAuth();
                 await addDoc(collection(db, "biotope_logs"), {
+                    uid: user ? user.uid : null,
                     angler: anglerName || "Fiskare",
                     action: actionText,
                     zone: zoneName,
@@ -993,6 +1013,7 @@
 
         window.fetchBiotopeLogsFromFirebase = async function() {
             try {
+                await ensureAnonymousAuth();
                 const q = query(collection(db, "biotope_logs"), orderBy("timestamp", "desc"), limit(6));
                 const querySnapshot = await getDocs(q);
                 const logContainer = document.getElementById('biotopeCloudLog');
@@ -1002,8 +1023,8 @@
                     return;
                 }
                 let html = "";
-                querySnapshot.forEach(doc => {
-                    const data = doc.data();
+                querySnapshot.forEach(docSnap => {
+                    const data = docSnap.data();
                     html += `<div class="border-b border-stone-900 pb-0.5"><strong class="text-emerald-400 cursor-pointer hover:underline" onclick="openPlayerProfile('${data.angler}')">${data.angler}</strong>: ${data.action} (${data.zone})</div>`;
                 });
                 logContainer.innerHTML = html;
@@ -1016,8 +1037,10 @@
             }
         };
 
-        window.fetchBiotopeLogsFromFirebase();
-        window.fetchGuestbook();
+        ensureAnonymousAuth().then(() => {
+            window.fetchBiotopeLogsFromFirebase();
+            window.fetchGuestbook();
+        });
     </script>
 
     <script>
@@ -1059,8 +1082,7 @@
                 trees: 2,
                 bushes: 2,
                 damPoints: 0,
-                damTarget: 10000,
-                lastBiotopeResetWeek: ""
+                damTarget: 10000
             }
         };
 
@@ -1261,9 +1283,6 @@
                    !document.getElementById('flyModal').classList.contains('hidden');
         }
 
-        // =========================================================================
-        // DAGLIGA MINISPEL (LÅST EFTER AVKLARAT DATUM, 3 BONUSAR)
-        // =========================================================================
         function dateSeedInt(dateStr) {
             let h = 2166136261;
             for (let i = 0; i < dateStr.length; i++) {
@@ -1823,7 +1842,7 @@
 
                 bodyEl.innerHTML = `
                     <p class="text-stone-300 leading-relaxed">
-                        Tryck på rännorna för att vrida dem <strong>90°</strong>. När två bitar passar ihop strömmar vattnet – led flödet från <strong class="text-emerald-400">IN</strong> till <strong class="text-amber-400">UT</strong>.
+                        Tryck på rännorna för att vrida dem. När två bitar passar ihop strömmar vattnet – led flödet från <strong class="text-emerald-400">IN</strong> till <strong class="text-amber-400">UT</strong>.
                     </p>
                     <div class="bg-stone-950 p-2 rounded-2xl border border-stone-800">
                         <div class="grid grid-cols-4 gap-1.5 max-w-[260px] mx-auto">
@@ -2080,16 +2099,19 @@
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
             
             try {
+                if (window.ensureAnonymousAuth) await window.ensureAnonymousAuth();
                 if (window.dbRef) {
                     const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-                    await setDoc(doc(window.dbRef, "players", targetPlayer), {
+                    const payload = {
                         name: targetPlayer,
                         points: 700,
                         castsRemaining: 5,
                         dayOfSeason: 1,
                         lastPlayedDate: todayStr,
                         lastActive: new Date().toISOString()
-                    }, { merge: true });
+                    };
+                    if (window.currentAuthUid) payload.uid = window.currentAuthUid;
+                    await setDoc(doc(window.dbRef, "players", targetPlayer), payload, { merge: true });
                 }
 
                 if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
@@ -2151,11 +2173,7 @@
             zState.boulders = [];
             zState.nurseries = [];
             
-            let sharedWorldData = await window.loadSharedWorld();
-            if (sharedWorldData && sharedWorldData.zones) {
-                sharedWorldData.zones[currentZoneKey] = { gravels: [], boulders: [], nurseries: [] };
-                await window.saveSharedWorld(sharedWorldData);
-            }
+            await saveCurrentZoneBiotopeToCloud();
 
             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, "GM Rensa Biotop", saveanZones[currentZoneKey].name);
             updateUI();
@@ -2173,6 +2191,9 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            if (window.ensureAnonymousAuth) {
+                await window.ensureAnonymousAuth();
+            }
             if (!lockedAnglerName) {
                 hideLoadingOverlay();
                 document.getElementById('nameModal').classList.remove('hidden');
@@ -2189,35 +2210,14 @@
 
         async function initCloudSession() {
             if (!lockedAnglerName) return;
+            if (window.ensureAnonymousAuth) {
+                await window.ensureAnonymousAuth();
+            }
             
             try {
                 if (window.loadSharedWorld) {
                     let sharedWorldData = await window.loadSharedWorld();
                     if (sharedWorldData) {
-                        let currentWeekKey = window.getCurrentWeekKey ? window.getCurrentWeekKey() : "";
-                        let weekNum = parseInt(currentWeekKey.split('-W')[1]) || 0;
-                        let isEvenWeek = (weekNum % 2 === 0);
-
-                        if (isEvenWeek && sharedWorldData.lastBiotopeResetWeek !== currentWeekKey) {
-                            sharedWorldData.damPoints = 0;
-                            sharedWorldData.laddersFixed = false;
-                            sharedWorldData.population = 210;
-                            sharedWorldData.maxPop = 380;
-                            sharedWorldData.trees = 0;
-                            sharedWorldData.bushes = 0;
-                            sharedWorldData.lastBiotopeResetWeek = currentWeekKey;
-                            
-                            for (let zKey in gameWorld.zones) {
-                                gameWorld.zones[zKey].gravels = [];
-                                gameWorld.zones[zKey].boulders = [];
-                                gameWorld.zones[zKey].nurseries = [];
-                            }
-                            sharedWorldData.zones = {};
-                            
-                            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
-                            if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `🔄 SÄSONGSRESET (Vecka ${weekNum}): Biotop, träd, buskar & vandringshinder nollställt!`, "Säveån");
-                        }
-
                         gameWorld.shared.population = sharedWorldData.population !== undefined ? sharedWorldData.population : gameWorld.shared.population;
                         gameWorld.shared.maxPop = sharedWorldData.maxPop !== undefined ? sharedWorldData.maxPop : gameWorld.shared.maxPop;
                         gameWorld.shared.trees = sharedWorldData.trees !== undefined ? sharedWorldData.trees : gameWorld.shared.trees;
@@ -2225,7 +2225,16 @@
                         gameWorld.shared.damPoints = sharedWorldData.damPoints !== undefined ? sharedWorldData.damPoints : gameWorld.shared.damPoints;
                         gameWorld.shared.damTarget = sharedWorldData.damTarget !== undefined ? sharedWorldData.damTarget : gameWorld.shared.damTarget;
                         gameWorld.laddersFixed = sharedWorldData.laddersFixed !== undefined ? sharedWorldData.laddersFixed : gameWorld.laddersFixed;
-                        gameWorld.shared.lastBiotopeResetWeek = sharedWorldData.shared?.lastBiotopeResetWeek || "";
+
+                        if (sharedWorldData.zones && typeof sharedWorldData.zones === 'object') {
+                            for (let zKey in gameWorld.zones) {
+                                if (sharedWorldData.zones[zKey]) {
+                                    gameWorld.zones[zKey].gravels = Array.isArray(sharedWorldData.zones[zKey].gravels) ? sharedWorldData.zones[zKey].gravels : [];
+                                    gameWorld.zones[zKey].boulders = Array.isArray(sharedWorldData.zones[zKey].boulders) ? sharedWorldData.zones[zKey].boulders : [];
+                                    gameWorld.zones[zKey].nurseries = Array.isArray(sharedWorldData.zones[zKey].nurseries) ? sharedWorldData.zones[zKey].nurseries : [];
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -2264,7 +2273,7 @@
                         sharedWorldData.population = gameWorld.shared.population;
                         if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                        await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
+                        await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                     }
                 } else {
                     gameWorld.lastPlayedDate = todayStr;
@@ -2272,7 +2281,7 @@
                     gameWorld.dayOfSeason = 1;
                     gameWorld.dailyFlowBoost = 0;
                     gameWorld.xp = 80;
-                    await window.savePlayerStateFromFirebase(lockedAnglerName, gameWorld);
+                    await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                 }
             } catch (e) {
                 console.error("Fel vid molnsynk under initiering:", e);
@@ -2457,10 +2466,19 @@
             try {
                 if (window.loadSharedWorld) {
                     let sharedWorldData = await window.loadSharedWorld();
-                    if (sharedWorldData && sharedWorldData.zones && sharedWorldData.zones[key]) {
-                        gameWorld.zones[key].gravels = sharedWorldData.zones[key].gravels || [];
-                        gameWorld.zones[key].boulders = sharedWorldData.zones[key].boulders || [];
-                        gameWorld.zones[key].nurseries = sharedWorldData.zones[key].nurseries || [];
+                    if (sharedWorldData) {
+                        gameWorld.shared.population = sharedWorldData.population !== undefined ? sharedWorldData.population : gameWorld.shared.population;
+                        gameWorld.shared.maxPop = sharedWorldData.maxPop !== undefined ? sharedWorldData.maxPop : gameWorld.shared.maxPop;
+                        gameWorld.shared.trees = sharedWorldData.trees !== undefined ? sharedWorldData.trees : gameWorld.shared.trees;
+                        gameWorld.shared.bushes = sharedWorldData.bushes !== undefined ? sharedWorldData.bushes : gameWorld.shared.bushes;
+                        gameWorld.shared.damPoints = sharedWorldData.damPoints !== undefined ? sharedWorldData.damPoints : gameWorld.shared.damPoints;
+                        gameWorld.laddersFixed = sharedWorldData.laddersFixed !== undefined ? sharedWorldData.laddersFixed : gameWorld.laddersFixed;
+
+                        if (sharedWorldData.zones && sharedWorldData.zones[key]) {
+                            gameWorld.zones[key].gravels = Array.isArray(sharedWorldData.zones[key].gravels) ? sharedWorldData.zones[key].gravels : [];
+                            gameWorld.zones[key].boulders = Array.isArray(sharedWorldData.zones[key].boulders) ? sharedWorldData.zones[key].boulders : [];
+                            gameWorld.zones[key].nurseries = Array.isArray(sharedWorldData.zones[key].nurseries) ? sharedWorldData.zones[key].nurseries : [];
+                        }
                     }
                 }
             } catch(e) { console.error("Kunde inte ladda zondata", e); }
@@ -2662,7 +2680,16 @@
         }
 
         async function saveCurrentZoneBiotopeToCloud() {
-            let sharedWorldData = await window.loadSharedWorld() || { population: gameWorld.shared.population, maxPop: gameWorld.shared.maxPop, trees: gameWorld.shared.trees, bushes: gameWorld.shared.bushes, zones: {} };
+            let sharedWorldData = await window.loadSharedWorld() || {
+                population: gameWorld.shared.population,
+                maxPop: gameWorld.shared.maxPop,
+                trees: gameWorld.shared.trees,
+                bushes: gameWorld.shared.bushes,
+                damPoints: gameWorld.shared.damPoints || 0,
+                damTarget: gameWorld.shared.damTarget || 10000,
+                laddersFixed: gameWorld.laddersFixed || false,
+                zones: {}
+            };
             sharedWorldData.zones = sharedWorldData.zones || {};
             sharedWorldData.zones[currentZoneKey] = {
                 gravels: gameWorld.zones[currentZoneKey].gravels || [],
