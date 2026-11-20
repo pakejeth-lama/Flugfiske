@@ -197,7 +197,7 @@
                 <button type="button" onclick="closePopulationModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
             </div>
             <div class="text-xs text-stone-300 space-y-2 leading-relaxed">
-                <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, fiskepress och hemtag av fisk.</p>
+                <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, fiskepress och hemtag av fisk. Varje 14-dagars säsong startar varannan måndag på jämna veckor (t.ex. v46, v48, v50) och kröner största lax och öring till Hall of Fame.</p>
                 <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
                     <strong>Tips för storfiske & viltvård:</strong>
                     <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
@@ -325,7 +325,7 @@
                     </div>
                     
                     <button type="button" id="nextDayBtn" onclick="nextDay()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 rounded-lg font-semibold transition shadow flex items-center gap-1 text-[11px]">
-                        <span>🔄</span> <span id="dayCounter">Dag 1/7</span>
+                        <span>🔄</span> <span id="dayCounter">Dag 1/14</span>
                     </button>
                 </div>
             </div>
@@ -548,7 +548,7 @@
         <div id="highscoreCard" class="bg-stone-900 border border-stone-800 rounded-2xl max-w-2xl w-full p-3.5 shadow-2xl flex flex-col gap-2 max-h-[88vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
                 <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                    <span>🏆</span> Veckans Highscore & Hall of Fame
+                    <span>🏆</span> Säsongens Highscore & Hall of Fame
                 </h3>
                 <button type="button" onclick="closeHighscoreModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-0.5 rounded hover:bg-stone-800">✕</button>
             </div>
@@ -673,21 +673,122 @@
             window.currentAuthUid = user ? user.uid : null;
         });
 
-        function getCurrentWeekKey() {
-            const now = new Date();
-            const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+        function getIsoWeekInfo(dateObj = new Date()) {
+            const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
             const dayNum = d.getUTCDay() || 7;
             d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-            const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
             const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-            return `${d.getUTCFullYear()}-W${weekNo}`;
+            return { year: d.getUTCFullYear(), week: weekNo, isoDay: dayNum };
+        }
+
+        function getMondayUtcForDate(dateObj = new Date()) {
+            const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() - (dayNum - 1));
+            return d;
+        }
+
+        // 14-dagars säsong som startar varje måndag på jämna veckor (v46, v48, v50...)
+        function getSeasonCycleInfo(dateObj = new Date()) {
+            const weekInfo = getIsoWeekInfo(dateObj);
+            const mondayUtc = getMondayUtcForDate(dateObj);
+            const isEvenWeek = weekInfo.week % 2 === 0;
+
+            let seasonStartMondayUtc;
+            let startWeekNum;
+            if (isEvenWeek) {
+                seasonStartMondayUtc = mondayUtc;
+                startWeekNum = weekInfo.week;
+            } else {
+                seasonStartMondayUtc = new Date(mondayUtc.getTime() - 7 * 86400000);
+                const prevWeekInfo = getIsoWeekInfo(seasonStartMondayUtc);
+                startWeekNum = prevWeekInfo.week;
+            }
+
+            const currentDayUtc = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
+            const daysSinceStart = Math.floor((currentDayUtc - seasonStartMondayUtc) / 86400000);
+            const seasonDay = Math.max(1, Math.min(14, daysSinceStart + 1));
+
+            const seasonYear = getIsoWeekInfo(seasonStartMondayUtc).year;
+            const seasonId = `${seasonYear}-S-W${String(startWeekNum).padStart(2, '0')}`;
+            const endWeekNum = startWeekNum + 1;
+            const label = `Säsong v${startWeekNum}–v${endWeekNum} (${seasonYear})`;
+
+            return {
+                seasonId,
+                startWeekNum,
+                endWeekNum,
+                seasonDay,
+                isEvenWeek,
+                isMonday: weekInfo.isoDay === 1,
+                label
+            };
+        }
+        window.getSeasonCycleInfo = getSeasonCycleInfo;
+
+        function getCurrentWeekKey() {
+            const sInfo = getSeasonCycleInfo(new Date());
+            return sInfo.seasonId;
         }
         window.getCurrentWeekKey = getCurrentWeekKey;
+
+        window.archiveSeasonToHallOfFameIfNeeded = async function(previousSeasonId) {
+            if (!previousSeasonId) return null;
+            try {
+                await ensureAnonymousAuth();
+                const hofRef = doc(db, "hall_of_fame", previousSeasonId);
+                const existingHof = await getDoc(hofRef);
+                if (existingHof.exists()) {
+                    return existingHof.data();
+                }
+
+                const allSnap = await getDocs(collection(db, "highscores"));
+                const seasonCatches = [];
+                allSnap.forEach(d => {
+                    const data = d.data();
+                    if (data.seasonId === previousSeasonId || data.week === previousSeasonId) {
+                        seasonCatches.push(data);
+                    }
+                });
+
+                const bestSalmon = seasonCatches
+                    .filter(c => c.species && c.species.includes("Lax"))
+                    .sort((a, b) => (b.size || 0) - (a.size || 0))[0] || null;
+
+                const bestTrout = seasonCatches
+                    .filter(c => c.species && c.species.includes("Öring"))
+                    .sort((a, b) => (b.size || 0) - (a.size || 0))[0] || null;
+
+                const hofPayload = {
+                    seasonId: previousSeasonId,
+                    archivedAt: new Date().toISOString(),
+                    salmon: bestSalmon ? {
+                        angler: bestSalmon.angler,
+                        size: bestSalmon.size,
+                        zone: bestSalmon.zone || "",
+                        fly: bestSalmon.fly || ""
+                    } : null,
+                    trout: bestTrout ? {
+                        angler: bestTrout.angler,
+                        size: bestTrout.size,
+                        zone: bestTrout.zone || "",
+                        fly: bestTrout.fly || ""
+                    } : null
+                };
+
+                await setDoc(hofRef, hofPayload, { merge: true });
+                return hofPayload;
+            } catch (e) {
+                console.error("Fel vid arkivering till Hall of Fame:", e);
+                return null;
+            }
+        };
 
         window.saveCatchToFirebase = async function(anglerName, species, size, fly, zoneName, equipment) {
             try {
                 const user = await ensureAnonymousAuth();
-                const currentWeek = getCurrentWeekKey();
+                const sInfo = getSeasonCycleInfo(new Date());
                 await addDoc(collection(db, "highscores"), {
                     uid: user ? user.uid : null,
                     angler: anglerName || "Fiskare",
@@ -696,7 +797,9 @@
                     fly: fly,
                     equipment: equipment || "Standard",
                     zone: zoneName,
-                    week: currentWeek,
+                    week: sInfo.seasonId,
+                    seasonId: sInfo.seasonId,
+                    seasonLabel: sInfo.label,
                     timestamp: new Date().toISOString()
                 });
             } catch (e) {
@@ -711,24 +814,26 @@
             
             salmonListEl.innerHTML = `<p class="text-stone-400 italic text-center py-2">Laddar laxar...</p>`;
             troutListEl.innerHTML = `<p class="text-stone-400 italic text-center py-2">Laddar öringar...</p>`;
-            hofEl.innerHTML = `Laddar förra veckans mästare...`;
+            hofEl.innerHTML = `Laddar säsongens Hall of Fame...`;
 
             try {
                 await ensureAnonymousAuth();
-                const currentWeek = getCurrentWeekKey();
+                const sInfo = getSeasonCycleInfo(new Date());
+                const currentSeasonId = sInfo.seasonId;
+
                 const allSnap = await getDocs(collection(db, "highscores"));
                 let allCatches = [];
                 allSnap.forEach(d => allCatches.push(d.data()));
 
-                let currentWeekCatches = allCatches.filter(c => c.week === currentWeek);
+                let currentSeasonCatches = allCatches.filter(c => (c.seasonId || c.week) === currentSeasonId);
                 
-                let salmonCatches = currentWeekCatches.filter(c => c.species && c.species.includes("Lax")).sort((a, b) => b.size - a.size);
-                let troutCatches = currentWeekCatches.filter(c => c.species && c.species.includes("Öring")).sort((a, b) => b.size - a.size);
+                let salmonCatches = currentSeasonCatches.filter(c => c.species && c.species.includes("Lax")).sort((a, b) => b.size - a.size);
+                let troutCatches = currentSeasonCatches.filter(c => c.species && c.species.includes("Öring")).sort((a, b) => b.size - a.size);
 
                 let salmonHtml = "";
                 let rank = 1;
                 if (salmonCatches.length === 0) {
-                    salmonListEl.innerHTML = `<p class="text-stone-500 italic text-center py-2">Inga laxar denna vecka.</p>`;
+                    salmonListEl.innerHTML = `<p class="text-stone-500 italic text-center py-2">Inga laxar denna 14-dagarsperiod.</p>`;
                 } else {
                     salmonCatches.slice(0, 10).forEach((data) => {
                         let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
@@ -752,7 +857,7 @@
                 let troutHtml = "";
                 rank = 1;
                 if (troutCatches.length === 0) {
-                    troutListEl.innerHTML = `<p class="text-stone-500 italic text-center py-2">Inga öringar denna vecka.</p>`;
+                    troutListEl.innerHTML = `<p class="text-stone-500 italic text-center py-2">Inga öringar denna 14-dagarsperiod.</p>`;
                 } else {
                     troutCatches.slice(0, 10).forEach((data) => {
                         let medal = rank === 1 ? "🥇" : (rank === 2 ? "🥈" : (rank === 3 ? "🥉" : `${rank}.`));
@@ -773,21 +878,35 @@
                     troutListEl.innerHTML = troutHtml;
                 }
 
-                let pastWeeks = [...new Set(allCatches.map(c => c.week))].filter(w => w && w !== currentWeek).sort().reverse();
-                let hofHtml = "";
-                
-                if (pastWeeks.length > 0) {
-                    let lastWeekKey = pastWeeks[0];
-                    let lastWeekCatches = allCatches.filter(c => c.week === lastWeekKey);
-                    
-                    let bestSalmon = lastWeekCatches.filter(c => c.species && c.species.includes("Lax")).sort((a,b) => b.size - a.size)[0];
-                    let bestTrout = lastWeekCatches.filter(c => c.species && c.species.includes("Öring")).sort((a,b) => b.size - a.size)[0];
+                const hofSnap = await getDocs(collection(db, "hall_of_fame"));
+                let hofDocs = [];
+                hofSnap.forEach(d => hofDocs.push(d.data()));
+                hofDocs = hofDocs.filter(h => h.seasonId && h.seasonId !== currentSeasonId).sort((a, b) => (b.seasonId || "").localeCompare(a.seasonId || ""));
 
-                    hofHtml += bestSalmon ? `<span>🐟 Lax (${lastWeekKey}): <strong class="cursor-pointer underline text-amber-300" onclick="openPlayerProfile('${bestSalmon.angler}')">${bestSalmon.angler}</strong> (${bestSalmon.size} cm)</span>` : ``;
-                    hofHtml += bestTrout ? `<span>🐠 Öring (${lastWeekKey}): <strong class="cursor-pointer underline text-amber-300" onclick="openPlayerProfile('${bestTrout.angler}')">${bestTrout.angler}</strong> (${bestTrout.size} cm)</span>` : ``;
+                let hofHtml = "";
+                if (hofDocs.length > 0) {
+                    const latestHof = hofDocs[0];
+                    if (latestHof.salmon) {
+                        hofHtml += `<span>🐟 Lax (${latestHof.seasonId}): <strong class="cursor-pointer underline text-amber-300" onclick="openPlayerProfile('${latestHof.salmon.angler}')">${latestHof.salmon.angler}</strong> (${latestHof.salmon.size} cm)</span>`;
+                    }
+                    if (latestHof.trout) {
+                        hofHtml += `<span>🐠 Öring (${latestHof.seasonId}): <strong class="cursor-pointer underline text-amber-300" onclick="openPlayerProfile('${latestHof.trout.angler}')">${latestHof.trout.angler}</strong> (${latestHof.trout.size} cm)</span>`;
+                    }
                 }
 
-                hofEl.innerHTML = hofHtml || `Inga Hall of Fame-poster än. Bli den förste!`;
+                if (!hofHtml) {
+                    let pastSeasons = [...new Set(allCatches.map(c => c.seasonId || c.week))].filter(w => w && w !== currentSeasonId).sort().reverse();
+                    if (pastSeasons.length > 0) {
+                        let lastSeasonKey = pastSeasons[0];
+                        let lastSeasonCatches = allCatches.filter(c => (c.seasonId || c.week) === lastSeasonKey);
+                        let bestSalmon = lastSeasonCatches.filter(c => c.species && c.species.includes("Lax")).sort((a,b) => b.size - a.size)[0];
+                        let bestTrout = lastSeasonCatches.filter(c => c.species && c.species.includes("Öring")).sort((a,b) => b.size - a.size)[0];
+                        hofHtml += bestSalmon ? `<span>🐟 Lax (${lastSeasonKey}): <strong class="cursor-pointer underline text-amber-300" onclick="openPlayerProfile('${bestSalmon.angler}')">${bestSalmon.angler}</strong> (${bestSalmon.size} cm)</span>` : ``;
+                        hofHtml += bestTrout ? `<span>🐠 Öring (${lastSeasonKey}): <strong class="cursor-pointer underline text-amber-300" onclick="openPlayerProfile('${bestTrout.angler}')">${bestTrout.angler}</strong> (${bestTrout.size} cm)</span>` : ``;
+                    }
+                }
+
+                hofEl.innerHTML = hofHtml || `Inga Hall of Fame-mästare arkiverade ännu. Nästa säsongsbyte sker måndag jämn vecka.`;
 
             } catch (e) {
                 console.error("Fel vid hämtning av highscores:", e);
@@ -1062,6 +1181,7 @@
             flyCounts: {},
             laddersFixed: false,
             lastPlayedDate: todayStr,
+            seasonId: "",
             dayOfSeason: 1,
             castsRemaining: 5,
             equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" },
@@ -2097,6 +2217,7 @@
         async function adminResetPlayerWeek() {
             let targetPlayer = document.getElementById('targetPlayerInput').value.trim();
             if(!targetPlayer) return showCustomAlert("Ange spelarnamn!", "Fel");
+            const sInfo = getSeasonCycleInfo(new Date());
             
             try {
                 if (window.ensureAnonymousAuth) await window.ensureAnonymousAuth();
@@ -2106,7 +2227,8 @@
                         name: targetPlayer,
                         points: 700,
                         castsRemaining: 5,
-                        dayOfSeason: 1,
+                        seasonId: sInfo.seasonId,
+                        dayOfSeason: sInfo.seasonDay,
                         lastPlayedDate: todayStr,
                         lastActive: new Date().toISOString()
                     };
@@ -2116,13 +2238,14 @@
 
                 if (lockedAnglerName && targetPlayer.toLowerCase() === lockedAnglerName.toLowerCase()) {
                     gameWorld.castsRemaining = 5;
-                    gameWorld.dayOfSeason = 1;
+                    gameWorld.seasonId = sInfo.seasonId;
+                    gameWorld.dayOfSeason = sInfo.seasonDay;
                     gameWorld.points = 700;
                     gameWorld.lastPlayedDate = todayStr;
                     updateUI();
                 }
 
-                showCustomAlert(`Kastveckan har återställts för ${targetPlayer} i molnet (Dag 1 & 5 kast)!`, "GM Admin");
+                showCustomAlert(`Kast & säsong har återställts för ${targetPlayer} i molnet (Dag ${sInfo.seasonDay}/14 & 5 kast)!`, "GM Admin");
             } catch (e) {
                 console.error("Kunde inte nollställa via GM:", e);
                 showCustomAlert("Kunde inte nå molnet för att nollställa spelaren: " + e.message, "Fel");
@@ -2213,6 +2336,8 @@
             if (window.ensureAnonymousAuth) {
                 await window.ensureAnonymousAuth();
             }
+
+            const sInfo = getSeasonCycleInfo(new Date());
             
             try {
                 if (window.loadSharedWorld) {
@@ -2248,10 +2373,28 @@
                     gameWorld.minigameSolvedDate = cloudState.minigameSolvedDate || "";
                     
                     let lastDate = cloudState.lastPlayedDate || todayStr;
-                    
-                    if (lastDate === todayStr) {
+                    let prevSeasonId = cloudState.seasonId || "";
+                    let isNew14DaySeason = prevSeasonId && prevSeasonId !== sInfo.seasonId;
+
+                    if (isNew14DaySeason) {
+                        if (window.archiveSeasonToHallOfFameIfNeeded) {
+                            await window.archiveSeasonToHallOfFameIfNeeded(prevSeasonId);
+                        }
+                        gameWorld.seasonId = sInfo.seasonId;
+                        gameWorld.dayOfSeason = sInfo.seasonDay;
+                        gameWorld.castsRemaining = 5;
+                        gameWorld.points = 700;
+                        gameWorld.dailyFlowBoost = 0;
+                        gameWorld.lastPlayedDate = todayStr;
+                        for (let zKey in gameWorld.zones) {
+                            gameWorld.zones[zKey].log = [];
+                        }
+                        await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
+                        showCustomAlert(`🏆 Ny 14-dagars säsong startad (${sInfo.label})!\n\nFöregående säsongs största lax och öring har arkiverats till Hall of Fame och säsongen har nollställts inför nya rekord.`, "Ny 14-Dagars Säsong");
+                    } else if (lastDate === todayStr) {
+                        gameWorld.seasonId = sInfo.seasonId;
+                        gameWorld.dayOfSeason = sInfo.seasonDay;
                         gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? Math.max(0, cloudState.castsRemaining) : 5;
-                        gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
                         gameWorld.lastPlayedDate = todayStr;
                         gameWorld.dailyFlowBoost = cloudState.dailyFlowBoost || 0;
                     } else {
@@ -2260,9 +2403,10 @@
                         let diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
                         if (isNaN(diffDays) || diffDays < 1) diffDays = 1;
 
+                        gameWorld.seasonId = sInfo.seasonId;
                         gameWorld.lastPlayedDate = todayStr;
                         gameWorld.castsRemaining = 5; 
-                        gameWorld.dayOfSeason = 1; 
+                        gameWorld.dayOfSeason = sInfo.seasonDay; 
                         gameWorld.dailyFlowBoost = 0;
                         
                         addXp(80);
@@ -2276,9 +2420,10 @@
                         await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                     }
                 } else {
+                    gameWorld.seasonId = sInfo.seasonId;
                     gameWorld.lastPlayedDate = todayStr;
                     gameWorld.castsRemaining = 5;
-                    gameWorld.dayOfSeason = 1;
+                    gameWorld.dayOfSeason = sInfo.seasonDay;
                     gameWorld.dailyFlowBoost = 0;
                     gameWorld.xp = 80;
                     await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
@@ -2516,6 +2661,7 @@
             const s = gameWorld.shared;
             const zState = gameWorld.zones[currentZoneKey];
             const discount = getDiscountMultiplier();
+            const sInfo = getSeasonCycleInfo(new Date());
 
             document.getElementById('wCondition').innerText = weatherData.condition;
             document.getElementById('wTemp').innerText = weatherData.temp;
@@ -2525,7 +2671,7 @@
             document.getElementById('conservationPoints').innerText = gameWorld.points + " p";
             document.getElementById('hudPopulation').innerText = s.population;
             document.getElementById('castsLeft').innerText = `${gameWorld.castsRemaining} / 5`;
-            document.getElementById('dayCounter').innerText = `Dag ${gameWorld.dayOfSeason}/7`;
+            document.getElementById('dayCounter').innerText = `Dag ${sInfo.seasonDay}/14`;
             document.getElementById('currentFlyName').innerText = `${activeFly.name} (${activeFly.size})`;
             document.getElementById('hudEqLabel').innerText = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
 
@@ -2578,7 +2724,8 @@
                     prestige: gameWorld.prestige,
                     flyCounts: gameWorld.flyCounts,
                     castsRemaining: gameWorld.castsRemaining,
-                    dayOfSeason: gameWorld.dayOfSeason,
+                    seasonId: sInfo.seasonId,
+                    dayOfSeason: sInfo.seasonDay,
                     equipment: gameWorld.equipment,
                     minigameSolvedDate: gameWorld.minigameSolvedDate,
                     dailyFlowBoost: gameWorld.dailyFlowBoost || 0,
@@ -2599,7 +2746,8 @@
             btn.classList.add('opacity-50', 'cursor-not-allowed');
 
             try {
-                if(gameWorld.dayOfSeason < 7) {
+                const sInfo = getSeasonCycleInfo(new Date());
+                if(gameWorld.dayOfSeason < 14) {
                     gameWorld.dayOfSeason++;
                     gameWorld.castsRemaining = 5;
                     const s = gameWorld.shared;
@@ -2623,9 +2771,9 @@
                     if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
                     fetchWeather(currentZoneKey);
-                    document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/7. 5 nya kast & +100 p!`;
+                    document.getElementById('castStatus').innerText = `Dag ${gameWorld.dayOfSeason}/14 (${sInfo.label}). 5 nya kast & +100 p!`;
                 } else {
-                    showCustomAlert("Dina kast är slut, kom tillbaka imorgon", "Veckan slut");
+                    showCustomAlert(`Säsongen (${sInfo.label}) löper 14 dagar från måndag jämn vecka. Dina kast är slut för idag – kom tillbaka imorgon!`, "Säsong & Kast");
                 }
                 updateUI();
             } finally {
