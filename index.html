@@ -61,8 +61,8 @@
             to { stroke-dashoffset: -28; }
         }
         .animate-flow-stream {
-            stroke-dasharray: 6 6;
-            animation: flowStreamDash 0.85s linear infinite;
+            stroke-dasharray: 5 7;
+            animation: flowStreamDash 0.9s linear infinite;
         }
 
         @keyframes jointBridgeGlow {
@@ -226,7 +226,7 @@
         </div>
     </div>
 
-    <!-- Minispelmodal: 3 slumpmässigt valda pussel per dag (1/3 Flödesschema Omlöp, 2/3 Lintrassel, 3/3 Prickkastning) -->
+    <!-- Minispelmodal: 3 slumpmässigt valda pussel per dag, max 1 gång per spel och verkligt datum -->
     <div id="minigamesModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
         <div id="minigamesCard" class="bg-stone-900 border border-emerald-500/50 rounded-2xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[92vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
@@ -241,17 +241,17 @@
 
             <div class="grid grid-cols-3 gap-1.5 text-[11px]" id="miniGameStepTabs"></div>
 
-            <!-- 1. Flödesschema: Omlöp (5x5 innanför spelplan, slumpmässig IN/UT, matchande kopplingsanimation, +4.5 m³/s bonusflöde) -->
+            <!-- 1. Flödesschema: Omlöp (5x5 bäckliknande rutnät, datumlåst 1 gång/dag) -->
             <div id="miniGamePanel_flow" class="hidden flex-col gap-2 bg-stone-950 p-3 rounded-xl border border-stone-800 text-xs">
                 <div class="flex justify-between items-center">
-                    <span class="font-bold text-amber-300">🌊 Flödesschema – Omlöp (5×5)</span>
+                    <span class="font-bold text-amber-300">🏞️ Flödesschema – Omlöpsbäck (5×5)</span>
                     <span class="text-[10px] text-cyan-300 font-semibold">+4,5 m³/s flöde • +45 p / +15 XP</span>
                 </div>
-                <p class="text-[11px] text-stone-400 leading-snug">
-                    Vrid bitarna så omlöpet går från <strong class="text-sky-400">IN</strong> till <strong class="text-emerald-400">UT</strong>. Matchande skarvar tänds med flödeskoppling!
+                <p id="flowStatusDesc" class="text-[11px] text-stone-400 leading-snug">
+                    Vrid bäckbitarna så vattnet slingrar sig från <strong class="text-sky-400">IN</strong> till <strong class="text-emerald-400">UT</strong>. Matchande bäckskarvar kopplas ihop!
                 </p>
-                <div id="flowGridContainer" class="grid grid-cols-5 gap-1 bg-gradient-to-b from-slate-950 via-stone-900 to-slate-950 p-2 rounded-2xl border border-sky-900/50"></div>
-                <div class="flex gap-2">
+                <div id="flowGridContainer" class="grid grid-cols-5 gap-1 bg-gradient-to-b from-emerald-950/60 via-stone-900 to-emerald-950/60 p-2 rounded-2xl border border-emerald-800/60 shadow-inner"></div>
+                <div id="flowActionButtons" class="flex gap-2">
                     <button type="button" onclick="checkFlowPuzzle()" class="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded-lg text-[11px] font-bold transition">
                         Kontrollera omlöp
                     </button>
@@ -261,31 +261,31 @@
                 </div>
             </div>
 
-            <!-- 2. Lintrassel: Flytta punkter så inget nuddar/korsar varandra -->
+            <!-- 2. Lintrassel (datumlåst 1 gång/dag) -->
             <div id="miniGamePanel_tangle" class="hidden flex-col gap-2 bg-stone-950 p-3 rounded-xl border border-stone-800 text-xs">
                 <div class="flex justify-between items-center">
                     <span class="font-bold text-amber-300">🧶 Lintrassel</span>
                     <span class="text-[10px] text-emerald-400 font-semibold">+45 p / +15 XP</span>
                 </div>
-                <p class="text-[11px] text-stone-400 leading-snug">
+                <p id="tangleStatusDesc" class="text-[11px] text-stone-400 leading-snug">
                     Dra punkterna tills inga linjer korsar varandra – då rätas trasslet ut automatiskt!
                 </p>
                 <canvas id="tangleCanvas" width="340" height="190" class="w-full h-44 bg-stone-900 rounded-xl border border-stone-800 cursor-grab active:cursor-grabbing"></canvas>
                 <div class="flex justify-between items-center text-[10px]">
                     <span id="tangleCrossingStatus" class="text-amber-300 font-semibold">Korsande linjer: beräknar...</span>
-                    <button type="button" onclick="initTanglePuzzle()" class="bg-stone-800 hover:bg-stone-700 text-stone-300 px-2.5 py-1 rounded-lg font-semibold transition">
+                    <button type="button" id="btnResetTangle" onclick="initTanglePuzzle()" class="bg-stone-800 hover:bg-stone-700 text-stone-300 px-2.5 py-1 rounded-lg font-semibold transition">
                         Nytt trassel
                     </button>
                 </div>
             </div>
 
-            <!-- 3. Prickkastning (3 av 3) med mindre målzon -->
+            <!-- 3. Prickkastning (3 av 3, datumlåst 1 gång/dag) -->
             <div id="miniGamePanel_cast" class="hidden flex-col gap-2 bg-stone-950 p-3 rounded-xl border border-stone-800 text-xs">
                 <div class="flex justify-between items-center">
                     <span class="font-bold text-amber-300">🎯 Prickkastning (3 av 3)</span>
                     <span class="text-[10px] text-emerald-400 font-semibold">+40 p / +15 XP</span>
                 </div>
-                <p class="text-[11px] text-stone-400 leading-snug">
+                <p id="castMiniStatusDesc" class="text-[11px] text-stone-400 leading-snug">
                     Starta mätaren och tryck igen när markören är i det lilla gröna fältet.
                 </p>
                 <div class="w-full bg-stone-900 h-3 rounded-full overflow-hidden border border-stone-800 relative">
@@ -1236,6 +1236,7 @@
             seasonId: "",
             dayOfSeason: 1,
             castsRemaining: 5,
+            completedMiniGames: {},
             equipment: { brand: "Hardy", spec: "9 fot #6 (Enhands)" },
             zones: createFreshZones(),
             shared: {
@@ -1258,7 +1259,7 @@
         let wildlifeDisturbance = false;
         let isActionLocked = false;
 
-        // Slumpmässig dagsordning för de 3 minispelet (1: Flödesschema Omlöp, 2: Lintrassel, 3: Prickkastning)
+        // Slumpmässig dagsordning för de 3 minispelen (varje spel kan bara klaras 1 gång per datum)
         const ALL_MINIGAMES = [
             { id: 'flow', label: '1. Omlöp', title: 'Flödesschema (Omlöp)' },
             { id: 'tangle', label: '2. Trassel', title: 'Lintrassel' },
@@ -1267,7 +1268,54 @@
         let dailyMiniGameOrder = [];
         let activeMiniGameStep = 0;
 
-        // 1. Flödesschema Omlöp (5x5 rutnät; riktningar: 0=upp, 1=höger, 2=ner, 3=vänster)
+        // Datumlås för minispel (1 gång per spel och datum, synkat lokalt och i Firebase)
+        function getMiniGameLocalKey() {
+            return `savean_minigames_${lockedAnglerName || 'guest'}_${todayStr}`;
+        }
+
+        function loadLocalMiniGameLocks() {
+            try {
+                const raw = localStorage.getItem(getMiniGameLocalKey());
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && typeof parsed === 'object') {
+                        gameWorld.completedMiniGames = gameWorld.completedMiniGames || {};
+                        gameWorld.completedMiniGames[todayStr] = Object.assign(
+                            {},
+                            gameWorld.completedMiniGames[todayStr] || {},
+                            parsed
+                        );
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function isMiniGameCompletedToday(gameId) {
+            todayStr = getLocalDateString();
+            loadLocalMiniGameLocks();
+            const dayMap = (gameWorld.completedMiniGames && gameWorld.completedMiniGames[todayStr]) || {};
+            return Boolean(dayMap[gameId]);
+        }
+
+        async function markMiniGameCompletedToday(gameId) {
+            todayStr = getLocalDateString();
+            loadLocalMiniGameLocks();
+            gameWorld.completedMiniGames = gameWorld.completedMiniGames || {};
+            gameWorld.completedMiniGames[todayStr] = gameWorld.completedMiniGames[todayStr] || {};
+            gameWorld.completedMiniGames[todayStr][gameId] = true;
+
+            try {
+                localStorage.setItem(getMiniGameLocalKey(), JSON.stringify(gameWorld.completedMiniGames[todayStr]));
+            } catch (e) {}
+
+            if (lockedAnglerName && window.savePlayerStateToFirebase) {
+                await window.savePlayerStateToFirebase(lockedAnglerName, {
+                    completedMiniGames: gameWorld.completedMiniGames
+                });
+            }
+        }
+
+        // 1. Flödesschema Omlöp (5x5 bäckliknande rutnät; riktningar: 0=upp, 1=höger, 2=ner, 3=vänster)
         const FLOW_GRID_SIZE = 5;
         let flowInRow = 1;
         let flowOutRow = 3;
@@ -1360,6 +1408,7 @@
         }
 
         function computeDailyMiniGameOrder() {
+            todayStr = getLocalDateString();
             const seedKey = `${todayStr}-D${gameWorld.dayOfSeason}`;
             const rng = seededRandomFromString(seedKey);
             const pool = ALL_MINIGAMES.slice();
@@ -1374,12 +1423,15 @@
         }
 
         function openMinigamesModal() {
+            todayStr = getLocalDateString();
+            loadLocalMiniGameLocks();
             computeDailyMiniGameOrder();
             initFlowPuzzle(true);
             initTanglePuzzle();
             stopCastMeter(false);
             renderMiniGameStepTabs();
-            selectMiniGameStep(0);
+            const firstOpenIdx = dailyMiniGameOrder.findIndex(g => !isMiniGameCompletedToday(g.id));
+            selectMiniGameStep(firstOpenIdx >= 0 ? firstOpenIdx : 0);
             document.getElementById('minigamesModal').classList.remove('hidden');
             document.getElementById('minigamesModal').classList.add('flex');
         }
@@ -1394,24 +1446,92 @@
         function renderMiniGameStepTabs() {
             const schedEl = document.getElementById('dailyMiniGameScheduleLabel');
             if (schedEl) {
-                schedEl.innerText = `Slumpad dagsordning (${todayStr} • Dag ${gameWorld.dayOfSeason}/7): ${dailyMiniGameOrder.map(g => g.title).join(' → ')}`;
+                const doneCount = ALL_MINIGAMES.filter(g => isMiniGameCompletedToday(g.id)).length;
+                schedEl.innerText = `Datum: ${todayStr} • Klarade idag: ${doneCount}/3 (1 gång per spel & datum)`;
             }
             const tabsEl = document.getElementById('miniGameStepTabs');
             if (!tabsEl) return;
             tabsEl.innerHTML = dailyMiniGameOrder.map((g, idx) => {
                 const isActive = idx === activeMiniGameStep;
+                const isDone = isMiniGameCompletedToday(g.id);
+                const statusIcon = isDone ? '🔒' : `${idx + 1}/3`;
+                const btnStyle = isActive
+                    ? (isDone ? 'bg-stone-800 text-emerald-300 border-emerald-500/70' : 'bg-emerald-700 text-white border-emerald-500')
+                    : (isDone ? 'bg-stone-950 text-emerald-400/80 border-emerald-800/50' : 'bg-stone-950 text-stone-300 border-stone-800 hover:bg-stone-800');
                 return `
-                    <button type="button" onclick="selectMiniGameStep(${idx})" class="py-1.5 px-2 rounded-lg font-bold transition border ${isActive ? 'bg-emerald-700 text-white border-emerald-500' : 'bg-stone-950 text-stone-300 border-stone-800 hover:bg-stone-800'}">
-                        ${idx + 1}/3 ${g.label.split('. ')[1]}
+                    <button type="button" onclick="selectMiniGameStep(${idx})" class="py-1.5 px-2 rounded-lg font-bold transition border ${btnStyle}">
+                        ${statusIcon} ${g.label.split('. ')[1]}
                     </button>
                 `;
             }).join('');
+        }
+
+        function updateMiniGameLockUI() {
+            const flowDone = isMiniGameCompletedToday('flow');
+            const flowDesc = document.getElementById('flowStatusDesc');
+            const flowBtns = document.getElementById('flowActionButtons');
+            if (flowDesc && flowBtns) {
+                if (flowDone) {
+                    flowDesc.innerHTML = `<span class="text-emerald-400 font-bold">🔒 Klarat för idag (${todayStr})!</span> Du kan spela omlöpet igen nästa datum.`;
+                    flowBtns.innerHTML = `
+                        <div class="w-full bg-emerald-950/60 border border-emerald-600/50 text-emerald-300 py-1.5 px-3 rounded-lg text-[11px] font-bold text-center">
+                            ✅ Redan avklarat idag • Återkommer imorgon
+                        </div>
+                    `;
+                } else {
+                    flowDesc.innerHTML = `Vrid bäckbitarna så vattnet slingrar sig från <strong class="text-sky-400">IN</strong> till <strong class="text-emerald-400">UT</strong>. Matchande bäckskarvar kopplas ihop!`;
+                    flowBtns.innerHTML = `
+                        <button type="button" onclick="checkFlowPuzzle()" class="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded-lg text-[11px] font-bold transition">
+                            Kontrollera omlöp
+                        </button>
+                        <button type="button" onclick="initFlowPuzzle(true)" class="bg-stone-800 hover:bg-stone-700 text-stone-300 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition">
+                            Blanda om
+                        </button>
+                    `;
+                }
+            }
+
+            const tangleDone = isMiniGameCompletedToday('tangle');
+            const tangleDesc = document.getElementById('tangleStatusDesc');
+            const btnResetTangle = document.getElementById('btnResetTangle');
+            if (tangleDesc) {
+                tangleDesc.innerHTML = tangleDone
+                    ? `<span class="text-emerald-400 font-bold">🔒 Klarat för idag (${todayStr})!</span> Du kan spela lintrassel igen nästa datum.`
+                    : `Dra punkterna tills inga linjer korsar varandra – då rätas trasslet ut automatiskt!`;
+            }
+            if (btnResetTangle) {
+                btnResetTangle.disabled = tangleDone;
+                btnResetTangle.className = tangleDone
+                    ? "bg-stone-900 text-stone-500 px-2.5 py-1 rounded-lg font-semibold cursor-not-allowed border border-stone-800"
+                    : "bg-stone-800 hover:bg-stone-700 text-stone-300 px-2.5 py-1 rounded-lg font-semibold transition";
+                btnResetTangle.innerText = tangleDone ? "Låst idag" : "Nytt trassel";
+            }
+
+            const castDone = isMiniGameCompletedToday('cast');
+            const castDesc = document.getElementById('castMiniStatusDesc');
+            const btnCast = document.getElementById('btnCastMiniGame');
+            if (castDesc) {
+                castDesc.innerHTML = castDone
+                    ? `<span class="text-emerald-400 font-bold">🔒 Klarat för idag (${todayStr})!</span> Du kan spela prickkastning igen nästa datum.`
+                    : `Starta mätaren och tryck igen när markören är i det lilla gröna fältet.`;
+            }
+            if (btnCast) {
+                btnCast.disabled = castDone;
+                if (castDone) {
+                    btnCast.className = "w-full bg-emerald-950/60 border border-emerald-600/50 text-emerald-300 py-1.5 rounded-lg text-[11px] font-bold cursor-not-allowed";
+                    btnCast.innerText = "✅ Redan avklarat idag • Återkommer imorgon";
+                } else {
+                    btnCast.className = "w-full bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded-lg text-[11px] font-bold transition";
+                    btnCast.innerText = castMeterRunning ? "Stanna kastet nu!" : "Starta kastmätare";
+                }
+            }
         }
 
         function selectMiniGameStep(idx) {
             stopCastMeter(false);
             activeMiniGameStep = idx;
             renderMiniGameStepTabs();
+            updateMiniGameLockUI();
             ['flow', 'tangle', 'cast'].forEach(id => {
                 const panel = document.getElementById(`miniGamePanel_${id}`);
                 if (panel) {
@@ -1432,21 +1552,16 @@
             }
         }
 
-        // --- 1. Flödesschema: Omlöp (5x5 innanför spelplan, slumpmässiga IN/UT-portar, matchande kopplingsanimation) ---
+        // --- 1. Flödesschema: Omlöp (5x5 bäckliknande rutnät, slumpmässiga IN/UT-portar, datumlås) ---
         function initFlowPuzzle(randomize) {
             const N = FLOW_GRID_SIZE;
             flowInRow = Math.floor(Math.random() * N);
             flowOutRow = Math.floor(Math.random() * N);
 
-            const dr = [-1, 0, 1, 0];
-            const dc = [0, 1, 0, -1];
             const oppDir = [2, 3, 0, 1];
-
-            // Bygg en garanterat lösbar slingrande väg från (flowInRow, 0) till (flowOutRow, N-1)
             const pathSet = new Set();
             const solDirs = Array.from({ length: N }, () => Array.from({ length: N }, () => new Set()));
 
-            // IN kommer in från vänster (dir 3) in i (flowInRow, 0)
             solDirs[flowInRow][0].add(3);
             pathSet.add(`${flowInRow},0`);
 
@@ -1455,7 +1570,6 @@
 
             while (curC < N - 1) {
                 const candidates = [];
-                // Gå höger (1) eller upp/ner (0/2) om inom gränser och ej besökt
                 if (curC + 1 < N && !pathSet.has(`${curR},${curC + 1}`)) {
                     candidates.push({ nr: curR, nc: curC + 1, d: 1, weight: 3 });
                 }
@@ -1467,7 +1581,6 @@
                 }
 
                 if (candidates.length === 0) {
-                    // Flytta mot målraden eller rakt höger
                     const stepR = curR < flowOutRow ? 1 : (curR > flowOutRow ? -1 : 0);
                     if (stepR !== 0 && !pathSet.has(`${curR + stepR},${curC}`)) {
                         const d = stepR > 0 ? 2 : 0;
@@ -1502,7 +1615,6 @@
                 }
             }
 
-            // Gå vertikalt till flowOutRow i sista kolumnen (N - 1)
             while (curR !== flowOutRow) {
                 const d = curR < flowOutRow ? 2 : 0;
                 solDirs[curR][curC].add(d);
@@ -1511,12 +1623,13 @@
                 pathSet.add(`${curR},${curC}`);
             }
 
-            // UT går ut åt höger (dir 1) från (flowOutRow, N - 1)
             solDirs[flowOutRow][N - 1].add(1);
 
             const pairTemplates = [
                 [0, 1], [1, 2], [2, 3], [3, 0], [0, 2], [1, 3]
             ];
+
+            const alreadyDone = isMiniGameCompletedToday('flow');
 
             flowCells = [];
             for (let r = 0; r < N; r++) {
@@ -1527,8 +1640,9 @@
                         const tpl = pairTemplates[Math.floor(Math.random() * pairTemplates.length)];
                         baseDirs = tpl.slice();
                     }
-                    // Blanda ordentligt med olika rotationer varje gång
-                    const turns = randomize ? (1 + Math.floor(Math.random() * 3)) : (1 + ((r + c) % 3));
+                    const turns = alreadyDone
+                        ? 0
+                        : (randomize ? (1 + Math.floor(Math.random() * 3)) : (1 + ((r + c) % 3)));
                     const rotated = baseDirs.map(d => (d + turns) % 4).sort((a, b) => a - b);
                     rowArr.push({ r, c, dirs: rotated });
                 }
@@ -1538,17 +1652,24 @@
         }
 
         function rotateFlowCell(r, c) {
+            if (isMiniGameCompletedToday('flow')) {
+                showCustomAlert(`Du har redan klarat omlöpet idag (${todayStr}). Kom tillbaka imorgon för ett nytt omlöp!`, "Datumlås");
+                return;
+            }
             const cell = flowCells[r] && flowCells[r][c];
             if (!cell) return;
             cell.dirs = cell.dirs.map(d => (d + 1) % 4).sort((a, b) => a - b);
             renderFlowGrid();
         }
 
-        function buildSoftChannelSvg5x5(r, c, dirs, active, matchedDirs) {
+        function buildCreekChannelSvg5x5(r, c, dirs, active, matchedDirs) {
             const N = FLOW_GRID_SIZE;
-            const outerColor = active ? "#0284c7" : "#334155";
-            const coreColor = active ? "#38bdf8" : "#64748b";
-            let segments = "";
+            // Bäckpalett: grus- & mosskant runt mjukt slingrande bäckfåra
+            const bankMossColor = active ? "#14532d" : "#1c1917";
+            const gravelBankColor = active ? "#78716c" : "#44403c";
+            const creekBedColor = active ? "#0369a1" : "#1e293b";
+            const creekWaterColor = active ? "#38bdf8" : "#475569";
+            const creekHighlight = active ? "#bae6fd" : "#64748b";
 
             const edgePts = {
                 0: { x: 30, y: 0 },
@@ -1557,37 +1678,62 @@
                 3: { x: 0, y: 30 }
             };
 
+            // Organisk bäckkrök beroende på rutans position
+            const wobbleX = ((r + c) % 2 === 0) ? 28 : 32;
+            const wobbleY = ((r * 2 + c) % 2 === 0) ? 28 : 32;
+
+            let paths = [];
             if (dirs.length === 2) {
                 const [d1, d2] = dirs;
                 const p1 = edgePts[d1];
                 const p2 = edgePts[d2];
-                const dPath = `M ${p1.x} ${p1.y} Q 30 30 ${p2.x} ${p2.y}`;
-                segments += `<path d="${dPath}" fill="none" stroke="${outerColor}" stroke-width="11" stroke-linecap="round"/>`;
-                segments += `<path d="${dPath}" fill="none" stroke="${coreColor}" stroke-width="5.5" stroke-linecap="round"/>`;
-                if (active) {
-                    segments += `<path d="${dPath}" fill="none" stroke="#e0f2fe" stroke-width="2" stroke-linecap="round" class="animate-flow-stream"/>`;
-                }
+                paths.push(`M ${p1.x} ${p1.y} Q ${wobbleX} ${wobbleY} ${p2.x} ${p2.y}`);
             } else {
                 dirs.forEach(d => {
                     const p = edgePts[d];
-                    const dPath = `M 30 30 L ${p.x} ${p.y}`;
-                    segments += `<path d="${dPath}" fill="none" stroke="${outerColor}" stroke-width="11" stroke-linecap="round"/>`;
-                    segments += `<path d="${dPath}" fill="none" stroke="${coreColor}" stroke-width="5.5" stroke-linecap="round"/>`;
+                    paths.push(`M ${wobbleX} ${wobbleY} L ${p.x} ${p.y}`);
                 });
             }
 
-            // Animerad kopplingsnod när en öppning matchar en granne (eller IN/UT-port)
+            let channelLayers = "";
+            paths.forEach(dPath => {
+                // 1. Grön mossig bäckkant ytterst
+                channelLayers += `<path d="${dPath}" fill="none" stroke="${bankMossColor}" stroke-width="21" stroke-linecap="round"/>`;
+                // 2. Grus- & stenbank runt bäcken
+                channelLayers += `<path d="${dPath}" fill="none" stroke="${gravelBankColor}" stroke-width="16.5" stroke-linecap="round"/>`;
+                // 3. Djup bäckfåra
+                channelLayers += `<path d="${dPath}" fill="none" stroke="${creekBedColor}" stroke-width="11.5" stroke-linecap="round"/>`;
+                // 4. Rinnande bäckvatten
+                channelLayers += `<path d="${dPath}" fill="none" stroke="${creekWaterColor}" stroke-width="6.5" stroke-linecap="round"/>`;
+                // 5. Vattenkrusningar & strömvirvlar
+                if (active) {
+                    channelLayers += `<path d="${dPath}" fill="none" stroke="${creekHighlight}" stroke-width="2.2" stroke-linecap="round" class="animate-flow-stream"/>`;
+                } else {
+                    channelLayers += `<path d="${dPath}" fill="none" stroke="${creekHighlight}" stroke-width="1.3" stroke-dasharray="3 6" stroke-linecap="round" opacity="0.55"/>`;
+                }
+            });
+
+            // Små naturstenar & tuvor längs bäckbanken
+            const stoneSeed = (r * 7 + c * 13) % 4;
+            const bankDecor = [
+                `<circle cx="11" cy="11" r="2.8" fill="#57534e"/><circle cx="15" cy="9" r="1.8" fill="#78716c"/><circle cx="49" cy="49" r="3" fill="#166534" opacity="0.75"/>`,
+                `<circle cx="49" cy="12" r="2.7" fill="#57534e"/><circle cx="11" cy="48" r="3.1" fill="#15803d" opacity="0.75"/><circle cx="15" cy="51" r="1.9" fill="#78716c"/>`,
+                `<circle cx="10" cy="49" r="2.6" fill="#57534e"/><circle cx="50" cy="11" r="3" fill="#166534" opacity="0.75"/><circle cx="46" cy="49" r="2" fill="#78716c"/>`,
+                `<circle cx="12" cy="12" r="3" fill="#15803d" opacity="0.75"/><circle cx="48" cy="48" r="2.7" fill="#57534e"/><circle cx="51" cy="45" r="1.7" fill="#78716c"/>`
+            ][stoneSeed];
+
+            // Animerad vattenkoppling när två bäckbitar matchar varandra
             let matchBadges = "";
             dirs.forEach(d => {
                 const isPortMatch = (r === flowInRow && c === 0 && d === 3) || (r === flowOutRow && c === N - 1 && d === 1);
                 if (matchedDirs.has(d) || isPortMatch) {
                     const pt = edgePts[d];
-                    const mx = pt.x + (30 - pt.x) * 0.22;
-                    const my = pt.y + (30 - pt.y) * 0.22;
+                    const mx = pt.x + (30 - pt.x) * 0.2;
+                    const my = pt.y + (30 - pt.y) * 0.2;
                     matchBadges += `
                         <g class="animate-joint-bridge">
-                            <circle cx="${mx}" cy="${my}" r="6.5" fill="rgba(56, 189, 248, 0.35)"/>
-                            <circle cx="${mx}" cy="${my}" r="3.5" fill="#7dd3fc"/>
+                            <circle cx="${mx}" cy="${my}" r="6.5" fill="rgba(56, 189, 248, 0.38)"/>
+                            <circle cx="${mx}" cy="${my}" r="3.4" fill="#e0f2fe"/>
                         </g>
                     `;
                 }
@@ -1595,10 +1741,9 @@
 
             return `
                 <svg class="w-7 h-7 sm:w-8 sm:h-8 overflow-visible" viewBox="0 0 60 60">
-                    <circle cx="30" cy="30" r="16" fill="${active ? 'rgba(56, 189, 248, 0.16)' : (matchedDirs.size > 0 ? 'rgba(34, 211, 238, 0.09)' : 'rgba(148, 163, 184, 0.05)')}"/>
-                    ${segments}
+                    ${bankDecor}
+                    ${channelLayers}
                     ${matchBadges}
-                    <circle cx="30" cy="30" r="3.8" fill="${active ? '#e0f2fe' : (matchedDirs.size > 0 ? '#38bdf8' : coreColor)}"/>
                 </svg>
             `;
         }
@@ -1611,7 +1756,6 @@
             const dr = [-1, 0, 1, 0];
             const dc = [0, 1, 0, -1];
 
-            // Beräkna vilka öppningar som matchar granne (2 bitar som passar ihop)
             const cellMatchedDirs = Array.from({ length: N }, () =>
                 Array.from({ length: N }, () => new Set())
             );
@@ -1630,7 +1774,6 @@
                 }
             }
 
-            // BFS från IN (flowInRow, 0)
             const energized = Array.from({ length: N }, () => Array(N).fill(false));
             const queue = [];
             if (flowCells[flowInRow][0].dirs.includes(3)) {
@@ -1651,6 +1794,7 @@
                 }
             }
 
+            const alreadyDone = isMiniGameCompletedToday('flow');
             let html = "";
             for (let r = 0; r < N; r++) {
                 for (let c = 0; c < N; c++) {
@@ -1662,17 +1806,17 @@
                     const isIn = (r === flowInRow && c === 0);
                     const isOut = (r === flowOutRow && c === N - 1);
                     const badge = isIn
-                        ? `<span class="text-[7px] font-extrabold text-sky-300 bg-sky-950/90 px-1 rounded border border-sky-500/40">IN</span>`
-                        : (isOut ? `<span class="text-[7px] font-extrabold text-emerald-300 bg-emerald-950/90 px-1 rounded border border-emerald-500/40">UT</span>` : ``);
+                        ? `<span class="text-[7px] font-extrabold text-sky-200 bg-sky-950/90 px-1 rounded border border-sky-400/50">IN</span>`
+                        : (isOut ? `<span class="text-[7px] font-extrabold text-emerald-200 bg-emerald-950/90 px-1 rounded border border-emerald-400/50">UT</span>` : ``);
 
                     const borderClass = active
                         ? 'border-sky-400/80 shadow-sm shadow-sky-500/30'
-                        : (hasPairMatch ? 'border-cyan-500/50' : 'border-stone-800');
+                        : (hasPairMatch ? 'border-emerald-600/60' : 'border-stone-800');
 
                     html += `
-                        <button type="button" onclick="rotateFlowCell(${r},${c})" class="bg-gradient-to-br from-slate-900 to-stone-950 hover:from-slate-800 hover:to-stone-900 border ${borderClass} rounded-lg h-10 sm:h-11 flex items-center justify-center relative transition">
+                        <button type="button" onclick="rotateFlowCell(${r},${c})" class="bg-gradient-to-br from-emerald-950/45 via-stone-900 to-stone-950 ${alreadyDone ? 'cursor-default' : 'hover:from-emerald-900/40 hover:to-stone-900'} border ${borderClass} rounded-lg h-10 sm:h-11 flex items-center justify-center relative transition">
                             ${badge ? `<div class="absolute top-0.5 left-0.5 z-10 pointer-events-none">${badge}</div>` : ``}
-                            ${buildSoftChannelSvg5x5(r, c, dirs, active, matched)}
+                            ${buildCreekChannelSvg5x5(r, c, dirs, active, matched)}
                         </button>
                     `;
                 }
@@ -1698,6 +1842,10 @@
         }
 
         async function checkFlowPuzzle() {
+            if (isMiniGameCompletedToday('flow')) {
+                showCustomAlert(`Du har redan klarat omlöpet idag (${todayStr}).`, "Datumlås");
+                return;
+            }
             const N = FLOW_GRID_SIZE;
             const oppDir = [2, 3, 0, 1];
             const dr = [-1, 0, 1, 0];
@@ -1724,12 +1872,12 @@
 
             const connectedToOutlet = visited[flowOutRow][N - 1] && flowCells[flowOutRow][N - 1].dirs.includes(1);
             if (connectedToOutlet) {
+                await markMiniGameCompletedToday('flow');
                 gameWorld.points += 45;
                 gameWorld.shared.flowBonus = Number(((gameWorld.shared.flowBonus || 0) + 4.5).toFixed(1));
                 recomputeCurrentFlow();
                 addXp(15);
                 updateUI();
-                initFlowPuzzle(true);
 
                 if (window.saveSharedWorld) {
                     const sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
@@ -1740,11 +1888,11 @@
                 closeMinigamesModal();
                 triggerPuzzleWaveSweep();
             } else {
-                showCustomAlert("Flödet når inte ända ut till UT ännu – fortsätt vrida bitarna!", "Inte klart än");
+                showCustomAlert("Bäckflödet når inte ända ut till UT ännu – fortsätt vrida bitarna!", "Inte klart än");
             }
         }
 
-        // --- 2. Lintrassel ---
+        // --- 2. Lintrassel (datumlåst 1 gång/dag) ---
         function segmentsIntersect(p1, p2, p3, p4) {
             if (
                 (p1.x === p3.x && p1.y === p3.y) ||
@@ -1781,9 +1929,10 @@
             const rx = w * 0.34;
             const ry = h * 0.34;
 
+            const alreadyDone = isMiniGameCompletedToday('tangle');
             tangleNodes = [];
             const nCount = 6;
-            const order = [0, 3, 1, 4, 2, 5];
+            const order = alreadyDone ? [0, 1, 2, 3, 4, 5] : [0, 3, 1, 4, 2, 5];
             for (let i = 0; i < nCount; i++) {
                 const ang = (order[i] / nCount) * Math.PI * 2;
                 tangleNodes.push({
@@ -1804,23 +1953,29 @@
             const tctx = cnv.getContext('2d');
             tctx.clearRect(0, 0, cnv.width, cnv.height);
 
+            const alreadyDone = isMiniGameCompletedToday('tangle');
             const crossings = countTangleCrossings();
             const statusEl = document.getElementById('tangleCrossingStatus');
             if (statusEl) {
-                statusEl.innerText = crossings === 0
-                    ? "Trasslet är uträtat (0 korsningar)!"
-                    : `Korsande linjer: ${crossings}`;
-                statusEl.className = crossings === 0 ? "text-emerald-400 font-bold" : "text-amber-300 font-semibold";
+                if (alreadyDone) {
+                    statusEl.innerText = "🔒 Redan uträtat idag!";
+                    statusEl.className = "text-emerald-400 font-bold";
+                } else {
+                    statusEl.innerText = crossings === 0
+                        ? "Trasslet är uträtat (0 korsningar)!"
+                        : `Korsande linjer: ${crossings}`;
+                    statusEl.className = crossings === 0 ? "text-emerald-400 font-bold" : "text-amber-300 font-semibold";
+                }
             }
 
             tangleEdges.forEach(([i, j], idx) => {
                 const n1 = tangleNodes[i];
                 const n2 = tangleNodes[j];
-                const isBad = tangleEdges.some(([k, l], idx2) => {
+                const isBad = !alreadyDone && tangleEdges.some(([k, l], idx2) => {
                     if (idx2 <= idx) return false;
                     return segmentsIntersect(n1, n2, tangleNodes[k], tangleNodes[l]);
                 });
-                tctx.strokeStyle = crossings === 0 ? '#34d399' : (isBad ? '#f87171' : '#94a3b8');
+                tctx.strokeStyle = (alreadyDone || crossings === 0) ? '#34d399' : (isBad ? '#f87171' : '#94a3b8');
                 tctx.lineWidth = 2;
                 tctx.beginPath();
                 tctx.moveTo(n1.x, n1.y);
@@ -1829,7 +1984,7 @@
             });
 
             tangleNodes.forEach((pt, idx) => {
-                tctx.fillStyle = idx === draggedNodeIdx ? '#fbbf24' : '#38bdf8';
+                tctx.fillStyle = alreadyDone ? '#10b981' : (idx === draggedNodeIdx ? '#fbbf24' : '#38bdf8');
                 tctx.beginPath();
                 tctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
                 tctx.fill();
@@ -1855,13 +2010,14 @@
             }
 
             function onDown(evt) {
+                if (isMiniGameCompletedToday('tangle')) return;
                 const p = getPt(evt);
                 draggedNodeIdx = tangleNodes.findIndex(n => Math.hypot(n.x - p.x, n.y - p.y) <= 14);
                 drawTangleCanvas();
             }
 
             function onMove(evt) {
-                if (draggedNodeIdx < 0) return;
+                if (draggedNodeIdx < 0 || isMiniGameCompletedToday('tangle')) return;
                 if (evt.touches) evt.preventDefault();
                 const p = getPt(evt);
                 tangleNodes[draggedNodeIdx].x = Math.max(12, Math.min(cnv.width - 12, p.x));
@@ -1869,15 +2025,15 @@
                 drawTangleCanvas();
             }
 
-            function onUp() {
+            async function onUp() {
                 if (draggedNodeIdx >= 0) {
                     draggedNodeIdx = -1;
                     drawTangleCanvas();
-                    if (countTangleCrossings() === 0) {
+                    if (!isMiniGameCompletedToday('tangle') && countTangleCrossings() === 0) {
+                        await markMiniGameCompletedToday('tangle');
                         gameWorld.points += 45;
                         addXp(15);
                         updateUI();
-                        initTanglePuzzle();
                         closeMinigamesModal();
                         triggerPuzzleWaveSweep();
                     }
@@ -1892,30 +2048,38 @@
             window.addEventListener('touchend', onUp);
         })();
 
-        // --- 3. Prickkastning (3 av 3) med mindre målzon (44% - 56%) ---
-        function stopCastMeter(evaluateResult) {
+        // --- 3. Prickkastning (3 av 3, datumlåst 1 gång/dag) ---
+        async function stopCastMeter(evaluateResult) {
             castMeterRunning = false;
             if (castMeterInterval) {
                 clearInterval(castMeterInterval);
                 castMeterInterval = null;
             }
-            const btn = document.getElementById('btnCastMiniGame');
-            if (btn) btn.innerText = "Starta kastmätare";
+            updateMiniGameLockUI();
 
             if (evaluateResult) {
+                if (isMiniGameCompletedToday('cast')) {
+                    showCustomAlert(`Du har redan klarat prickkastningen idag (${todayStr}).`, "Datumlås");
+                    return;
+                }
                 if (castMeterPos >= 44 && castMeterPos <= 56) {
+                    await markMiniGameCompletedToday('cast');
                     gameWorld.points += 40;
                     addXp(15);
                     updateUI();
                     closeMinigamesModal();
                     triggerPuzzleWaveSweep();
                 } else {
-                    showCustomAlert("Missade den lilla målzoonen – försök stanna markören mitt i det gröna fältet!", "Prickkastning");
+                    showCustomAlert("Missade den lilla målzonen – försök stanna markören mitt i det gröna fältet!", "Prickkastning");
                 }
             }
         }
 
         function toggleCastMiniGame() {
+            if (isMiniGameCompletedToday('cast')) {
+                showCustomAlert(`Du har redan klarat prickkastningen idag (${todayStr}). Kom tillbaka imorgon!`, "Datumlås");
+                return;
+            }
             const btn = document.getElementById('btnCastMiniGame');
             if (!castMeterRunning) {
                 castMeterRunning = true;
@@ -2320,6 +2484,7 @@
                 await window.ensureAnonymousAuth();
             }
 
+            todayStr = getLocalDateString();
             const sInfo = window.getEvenWeekSeasonInfo ? window.getEvenWeekSeasonInfo(new Date()) : { seasonId: "", isEvenWeek: false, isMonday: false };
             
             try {
@@ -2361,6 +2526,9 @@
                     gameWorld.xp = cloudState.xp !== undefined ? cloudState.xp : 0;
                     gameWorld.prestige = cloudState.prestige !== undefined ? cloudState.prestige : 0;
                     gameWorld.flyCounts = cloudState.flyCounts !== undefined ? cloudState.flyCounts : {};
+                    if (cloudState.completedMiniGames && typeof cloudState.completedMiniGames === 'object') {
+                        gameWorld.completedMiniGames = cloudState.completedMiniGames;
+                    }
                     
                     let lastDate = cloudState.lastPlayedDate || todayStr;
                     
@@ -2413,6 +2581,7 @@
                 console.error("Fel vid molnsynk under initiering:", e);
             }
 
+            loadLocalMiniGameLocks();
             computeDailyMiniGameOrder();
             updateUI();
             await selectZone('dickson', 'Dickson');
@@ -2713,7 +2882,8 @@
                     dayOfSeason: gameWorld.dayOfSeason,
                     seasonId: sInfo.seasonId,
                     equipment: gameWorld.equipment,
-                    lastPlayedDate: todayStr
+                    lastPlayedDate: todayStr,
+                    completedMiniGames: gameWorld.completedMiniGames
                 });
             }
         }
