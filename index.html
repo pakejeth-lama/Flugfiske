@@ -61,8 +61,18 @@
             to { stroke-dashoffset: -28; }
         }
         .animate-flow-stream {
-            stroke-dasharray: 7 7;
-            animation: flowStreamDash 1.1s linear infinite;
+            stroke-dasharray: 6 6;
+            animation: flowStreamDash 0.85s linear infinite;
+        }
+
+        @keyframes jointBridgeGlow {
+            0%, 100% { opacity: 0.55; transform: scale(0.88); }
+            50% { opacity: 1; transform: scale(1.18); }
+        }
+        .animate-joint-bridge {
+            animation: jointBridgeGlow 1.15s ease-in-out infinite;
+            transform-box: fill-box;
+            transform-origin: center;
         }
 
         #gameContainer {
@@ -218,7 +228,7 @@
 
     <!-- Minispelmodal: 3 slumpmässigt valda pussel per dag (1/3 Flödesschema Omlöp, 2/3 Lintrassel, 3/3 Prickkastning) -->
     <div id="minigamesModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div id="minigamesCard" class="bg-stone-900 border border-emerald-500/50 rounded-2xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[90vh] overflow-y-auto">
+        <div id="minigamesCard" class="bg-stone-900 border border-emerald-500/50 rounded-2xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[92vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
                 <div>
                     <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
@@ -231,16 +241,16 @@
 
             <div class="grid grid-cols-3 gap-1.5 text-[11px]" id="miniGameStepTabs"></div>
 
-            <!-- 1. Flödesschema: Omlöp (mjukare illustration & animerat flöde, +4.5 m³/s bonusflöde) -->
+            <!-- 1. Flödesschema: Omlöp (5x5 innanför spelplan, slumpmässig IN/UT, matchande kopplingsanimation, +4.5 m³/s bonusflöde) -->
             <div id="miniGamePanel_flow" class="hidden flex-col gap-2 bg-stone-950 p-3 rounded-xl border border-stone-800 text-xs">
                 <div class="flex justify-between items-center">
-                    <span class="font-bold text-amber-300">🌊 Flödesschema – Omlöp</span>
+                    <span class="font-bold text-amber-300">🌊 Flödesschema – Omlöp (5×5)</span>
                     <span class="text-[10px] text-cyan-300 font-semibold">+4,5 m³/s flöde • +45 p / +15 XP</span>
                 </div>
                 <p class="text-[11px] text-stone-400 leading-snug">
-                    Klicka på böjarna för att vrida dem 90° så att omlöpet kopplas ihop från <strong class="text-sky-400">IN</strong> till <strong class="text-emerald-400">UT</strong>.
+                    Vrid bitarna så omlöpet går från <strong class="text-sky-400">IN</strong> till <strong class="text-emerald-400">UT</strong>. Matchande skarvar tänds med flödeskoppling!
                 </p>
-                <div id="flowGridContainer" class="grid grid-cols-3 gap-2 bg-gradient-to-b from-slate-950 via-stone-900 to-slate-950 p-2.5 rounded-2xl border border-sky-900/50"></div>
+                <div id="flowGridContainer" class="grid grid-cols-5 gap-1 bg-gradient-to-b from-slate-950 via-stone-900 to-slate-950 p-2 rounded-2xl border border-sky-900/50"></div>
                 <div class="flex gap-2">
                     <button type="button" onclick="checkFlowPuzzle()" class="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded-lg text-[11px] font-bold transition">
                         Kontrollera omlöp
@@ -452,7 +462,7 @@
                 <h3 class="text-[11px] font-bold text-stone-200 mb-1.5 flex items-center gap-1.5">
                     <span>📊</span> Biotopstatus för aktuell sträcka
                 </h3>
-                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 text-[10px]">
+                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 text-[10px]">
                     <div class="bg-stone-950 px-2 py-1.5 rounded-lg border border-stone-800">
                         <span class="text-stone-400 block leading-tight">Lekgrus</span>
                         <span id="statGravel" class="font-bold text-stone-100">0 st</span>
@@ -477,15 +487,13 @@
                         <span class="text-stone-400 block leading-tight">Vandringshinder</span>
                         <span id="statLadders" class="font-bold text-stone-100">Ej åtgärdat</span>
                     </div>
-                    <div class="flex items-stretch gap-1">
-                        <button type="button" onclick="openHighscoreModal()" class="flex-1 bg-amber-600/20 hover:bg-amber-600/35 px-2 py-1.5 rounded-lg border border-amber-500 text-left transition cursor-pointer group min-w-0">
-                            <span class="text-amber-300 block leading-tight font-bold group-hover:text-amber-200 truncate">🏆 Highscore</span>
-                            <span class="font-bold text-amber-400">Öppna ▸</span>
-                        </button>
-                        <div id="flowBonusBadge" class="bg-cyan-950/70 border border-cyan-500/50 px-1.5 py-1 rounded-lg flex flex-col items-center justify-center text-center shrink-0" title="Bonusflöde från omlöpet">
-                            <span class="text-[9px] leading-none text-cyan-300">🌊</span>
-                            <span id="flowBonusValue" class="text-[9px] font-bold text-cyan-200 leading-tight mt-0.5">0 m³/s</span>
-                        </div>
+                    <button type="button" onclick="openHighscoreModal()" class="bg-amber-600/20 hover:bg-amber-600/35 px-2 py-1.5 rounded-lg border border-amber-500 text-left transition cursor-pointer group">
+                        <span class="text-amber-300 block leading-tight font-bold group-hover:text-amber-200">🏆 Highscore</span>
+                        <span class="font-bold text-amber-400">Öppna ▸</span>
+                    </button>
+                    <div id="flowBonusBox" class="bg-stone-950 px-2 py-1.5 rounded-lg border border-stone-800" title="Bonusflöde från omlöpet">
+                        <span class="text-stone-400 block leading-tight">Bonusflöde</span>
+                        <span id="flowBonusValue" class="font-bold text-cyan-300">0 m³/s</span>
                     </div>
                 </div>
             </div>
@@ -1259,13 +1267,10 @@
         let dailyMiniGameOrder = [];
         let activeMiniGameStep = 0;
 
-        // 1. Flödesschema Omlöp (3x3 rutnät; riktningar: 0=upp, 1=höger, 2=ner, 3=vänster)
-        // Verifierad bana från (0,0) vänster in -> (0,0) höger -> (0,1) höger -> (0,2) ner -> (1,2) ner -> (2,2) höger ut
-        const FLOW_SOLUTION_DIRS = [
-            [ [1, 2], [1, 3], [2, 3] ],
-            [ [0, 2], [0, 1], [0, 2] ],
-            [ [0, 1], [1, 3], [0, 1] ]
-        ];
+        // 1. Flödesschema Omlöp (5x5 rutnät; riktningar: 0=upp, 1=höger, 2=ner, 3=vänster)
+        const FLOW_GRID_SIZE = 5;
+        let flowInRow = 1;
+        let flowOutRow = 3;
         let flowCells = [];
 
         // 2. Lintrassel-state
@@ -1370,7 +1375,7 @@
 
         function openMinigamesModal() {
             computeDailyMiniGameOrder();
-            initFlowPuzzle(false);
+            initFlowPuzzle(true);
             initTanglePuzzle();
             stopCastMeter(false);
             renderMiniGameStepTabs();
@@ -1427,15 +1432,104 @@
             }
         }
 
-        // --- 1. Flödesschema: Omlöp (mjukare illustration & animerat flöde, garanterat lösbar bana) ---
+        // --- 1. Flödesschema: Omlöp (5x5 innanför spelplan, slumpmässiga IN/UT-portar, matchande kopplingsanimation) ---
         function initFlowPuzzle(randomize) {
+            const N = FLOW_GRID_SIZE;
+            flowInRow = Math.floor(Math.random() * N);
+            flowOutRow = Math.floor(Math.random() * N);
+
+            const dr = [-1, 0, 1, 0];
+            const dc = [0, 1, 0, -1];
+            const oppDir = [2, 3, 0, 1];
+
+            // Bygg en garanterat lösbar slingrande väg från (flowInRow, 0) till (flowOutRow, N-1)
+            const pathSet = new Set();
+            const solDirs = Array.from({ length: N }, () => Array.from({ length: N }, () => new Set()));
+
+            // IN kommer in från vänster (dir 3) in i (flowInRow, 0)
+            solDirs[flowInRow][0].add(3);
+            pathSet.add(`${flowInRow},0`);
+
+            let curR = flowInRow;
+            let curC = 0;
+
+            while (curC < N - 1) {
+                const candidates = [];
+                // Gå höger (1) eller upp/ner (0/2) om inom gränser och ej besökt
+                if (curC + 1 < N && !pathSet.has(`${curR},${curC + 1}`)) {
+                    candidates.push({ nr: curR, nc: curC + 1, d: 1, weight: 3 });
+                }
+                if (curR > 0 && !pathSet.has(`${curR - 1},${curC}`)) {
+                    candidates.push({ nr: curR - 1, nc: curC, d: 0, weight: 1.5 });
+                }
+                if (curR + 1 < N && !pathSet.has(`${curR + 1},${curC}`)) {
+                    candidates.push({ nr: curR + 1, nc: curC, d: 2, weight: 1.5 });
+                }
+
+                if (candidates.length === 0) {
+                    // Flytta mot målraden eller rakt höger
+                    const stepR = curR < flowOutRow ? 1 : (curR > flowOutRow ? -1 : 0);
+                    if (stepR !== 0 && !pathSet.has(`${curR + stepR},${curC}`)) {
+                        const d = stepR > 0 ? 2 : 0;
+                        solDirs[curR][curC].add(d);
+                        curR += stepR;
+                        solDirs[curR][curC].add(oppDir[d]);
+                        pathSet.add(`${curR},${curC}`);
+                    } else if (curC + 1 < N) {
+                        solDirs[curR][curC].add(1);
+                        curC += 1;
+                        solDirs[curR][curC].add(3);
+                        pathSet.add(`${curR},${curC}`);
+                    } else {
+                        break;
+                    }
+                } else {
+                    const totalW = candidates.reduce((acc, item) => acc + item.weight, 0);
+                    let pick = Math.random() * totalW;
+                    let chosen = candidates[candidates.length - 1];
+                    for (const item of candidates) {
+                        pick -= item.weight;
+                        if (pick <= 0) {
+                            chosen = item;
+                            break;
+                        }
+                    }
+                    solDirs[curR][curC].add(chosen.d);
+                    curR = chosen.nr;
+                    curC = chosen.nc;
+                    solDirs[curR][curC].add(oppDir[chosen.d]);
+                    pathSet.add(`${curR},${curC}`);
+                }
+            }
+
+            // Gå vertikalt till flowOutRow i sista kolumnen (N - 1)
+            while (curR !== flowOutRow) {
+                const d = curR < flowOutRow ? 2 : 0;
+                solDirs[curR][curC].add(d);
+                curR += (curR < flowOutRow ? 1 : -1);
+                solDirs[curR][curC].add(oppDir[d]);
+                pathSet.add(`${curR},${curC}`);
+            }
+
+            // UT går ut åt höger (dir 1) från (flowOutRow, N - 1)
+            solDirs[flowOutRow][N - 1].add(1);
+
+            const pairTemplates = [
+                [0, 1], [1, 2], [2, 3], [3, 0], [0, 2], [1, 3]
+            ];
+
             flowCells = [];
-            for (let r = 0; r < 3; r++) {
+            for (let r = 0; r < N; r++) {
                 const rowArr = [];
-                for (let c = 0; c < 3; c++) {
-                    const baseDirs = FLOW_SOLUTION_DIRS[r][c];
-                    const rotTurns = randomize ? (1 + Math.floor(Math.random() * 3)) : 1;
-                    const rotated = baseDirs.map(d => (d + rotTurns) % 4);
+                for (let c = 0; c < N; c++) {
+                    let baseDirs = Array.from(solDirs[r][c]);
+                    if (baseDirs.length < 2) {
+                        const tpl = pairTemplates[Math.floor(Math.random() * pairTemplates.length)];
+                        baseDirs = tpl.slice();
+                    }
+                    // Blanda ordentligt med olika rotationer varje gång
+                    const turns = randomize ? (1 + Math.floor(Math.random() * 3)) : (1 + ((r + c) % 3));
+                    const rotated = baseDirs.map(d => (d + turns) % 4).sort((a, b) => a - b);
                     rowArr.push({ r, c, dirs: rotated });
                 }
                 flowCells.push(rowArr);
@@ -1446,16 +1540,16 @@
         function rotateFlowCell(r, c) {
             const cell = flowCells[r] && flowCells[r][c];
             if (!cell) return;
-            cell.dirs = cell.dirs.map(d => (d + 1) % 4);
+            cell.dirs = cell.dirs.map(d => (d + 1) % 4).sort((a, b) => a - b);
             renderFlowGrid();
         }
 
-        function buildSoftChannelSvg(dirs, active) {
+        function buildSoftChannelSvg5x5(r, c, dirs, active, matchedDirs) {
+            const N = FLOW_GRID_SIZE;
             const outerColor = active ? "#0284c7" : "#334155";
             const coreColor = active ? "#38bdf8" : "#64748b";
             let segments = "";
 
-            // Mjuk rundad förbindelse mellan två anslutningar (0=upp, 1=höger, 2=ner, 3=vänster)
             const edgePts = {
                 0: { x: 30, y: 0 },
                 1: { x: 60, y: 30 },
@@ -1468,25 +1562,43 @@
                 const p1 = edgePts[d1];
                 const p2 = edgePts[d2];
                 const dPath = `M ${p1.x} ${p1.y} Q 30 30 ${p2.x} ${p2.y}`;
-                segments += `<path d="${dPath}" fill="none" stroke="${outerColor}" stroke-width="13" stroke-linecap="round"/>`;
-                segments += `<path d="${dPath}" fill="none" stroke="${coreColor}" stroke-width="7" stroke-linecap="round"/>`;
+                segments += `<path d="${dPath}" fill="none" stroke="${outerColor}" stroke-width="11" stroke-linecap="round"/>`;
+                segments += `<path d="${dPath}" fill="none" stroke="${coreColor}" stroke-width="5.5" stroke-linecap="round"/>`;
                 if (active) {
-                    segments += `<path d="${dPath}" fill="none" stroke="#e0f2fe" stroke-width="2.2" stroke-linecap="round" class="animate-flow-stream"/>`;
+                    segments += `<path d="${dPath}" fill="none" stroke="#e0f2fe" stroke-width="2" stroke-linecap="round" class="animate-flow-stream"/>`;
                 }
             } else {
                 dirs.forEach(d => {
                     const p = edgePts[d];
                     const dPath = `M 30 30 L ${p.x} ${p.y}`;
-                    segments += `<path d="${dPath}" fill="none" stroke="${outerColor}" stroke-width="13" stroke-linecap="round"/>`;
-                    segments += `<path d="${dPath}" fill="none" stroke="${coreColor}" stroke-width="7" stroke-linecap="round"/>`;
+                    segments += `<path d="${dPath}" fill="none" stroke="${outerColor}" stroke-width="11" stroke-linecap="round"/>`;
+                    segments += `<path d="${dPath}" fill="none" stroke="${coreColor}" stroke-width="5.5" stroke-linecap="round"/>`;
                 });
             }
 
+            // Animerad kopplingsnod när en öppning matchar en granne (eller IN/UT-port)
+            let matchBadges = "";
+            dirs.forEach(d => {
+                const isPortMatch = (r === flowInRow && c === 0 && d === 3) || (r === flowOutRow && c === N - 1 && d === 1);
+                if (matchedDirs.has(d) || isPortMatch) {
+                    const pt = edgePts[d];
+                    const mx = pt.x + (30 - pt.x) * 0.22;
+                    const my = pt.y + (30 - pt.y) * 0.22;
+                    matchBadges += `
+                        <g class="animate-joint-bridge">
+                            <circle cx="${mx}" cy="${my}" r="6.5" fill="rgba(56, 189, 248, 0.35)"/>
+                            <circle cx="${mx}" cy="${my}" r="3.5" fill="#7dd3fc"/>
+                        </g>
+                    `;
+                }
+            });
+
             return `
-                <svg width="50" height="50" viewBox="0 0 60 60" class="overflow-visible">
-                    <circle cx="30" cy="30" r="17" fill="${active ? 'rgba(56, 189, 248, 0.14)' : 'rgba(148, 163, 184, 0.06)'}"/>
+                <svg class="w-7 h-7 sm:w-8 sm:h-8 overflow-visible" viewBox="0 0 60 60">
+                    <circle cx="30" cy="30" r="16" fill="${active ? 'rgba(56, 189, 248, 0.16)' : (matchedDirs.size > 0 ? 'rgba(34, 211, 238, 0.09)' : 'rgba(148, 163, 184, 0.05)')}"/>
                     ${segments}
-                    <circle cx="30" cy="30" r="4.5" fill="${active ? '#bae6fd' : coreColor}"/>
+                    ${matchBadges}
+                    <circle cx="30" cy="30" r="3.8" fill="${active ? '#e0f2fe' : (matchedDirs.size > 0 ? '#38bdf8' : coreColor)}"/>
                 </svg>
             `;
         }
@@ -1494,22 +1606,43 @@
         function renderFlowGrid() {
             const container = document.getElementById('flowGridContainer');
             if (!container) return;
+            const N = FLOW_GRID_SIZE;
             const oppDir = [2, 3, 0, 1];
             const dr = [-1, 0, 1, 0];
             const dc = [0, 1, 0, -1];
 
-            const energized = Array.from({ length: 3 }, () => [false, false, false]);
+            // Beräkna vilka öppningar som matchar granne (2 bitar som passar ihop)
+            const cellMatchedDirs = Array.from({ length: N }, () =>
+                Array.from({ length: N }, () => new Set())
+            );
+
+            for (let r = 0; r < N; r++) {
+                for (let c = 0; c < N; c++) {
+                    for (const d of flowCells[r][c].dirs) {
+                        const nr = r + dr[d];
+                        const nc = c + dc[d];
+                        if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
+                            if (flowCells[nr][nc].dirs.includes(oppDir[d])) {
+                                cellMatchedDirs[r][c].add(d);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // BFS från IN (flowInRow, 0)
+            const energized = Array.from({ length: N }, () => Array(N).fill(false));
             const queue = [];
-            if (flowCells[0][0].dirs.includes(3)) {
-                energized[0][0] = true;
-                queue.push([0, 0]);
+            if (flowCells[flowInRow][0].dirs.includes(3)) {
+                energized[flowInRow][0] = true;
+                queue.push([flowInRow, 0]);
             }
             while (queue.length > 0) {
                 const [cr, cc] = queue.shift();
                 for (const d of flowCells[cr][cc].dirs) {
                     const nr = cr + dr[d];
                     const nc = cc + dc[d];
-                    if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) {
+                    if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
                         if (!energized[nr][nc] && flowCells[nr][nc].dirs.includes(oppDir[d])) {
                             energized[nr][nc] = true;
                             queue.push([nr, nc]);
@@ -1519,18 +1652,27 @@
             }
 
             let html = "";
-            for (let r = 0; r < 3; r++) {
-                for (let c = 0; c < 3; c++) {
+            for (let r = 0; r < N; r++) {
+                for (let c = 0; c < N; c++) {
                     const dirs = flowCells[r][c].dirs;
                     const active = energized[r][c];
-                    const badge = (r === 0 && c === 0)
-                        ? `<span class="text-[8px] font-extrabold text-sky-300 bg-sky-950/80 px-1.5 rounded-full border border-sky-500/40">IN</span>`
-                        : ((r === 2 && c === 2) ? `<span class="text-[8px] font-extrabold text-emerald-300 bg-emerald-950/80 px-1.5 rounded-full border border-emerald-500/40">UT</span>` : ``);
+                    const matched = cellMatchedDirs[r][c];
+                    const hasPairMatch = matched.size > 0;
+
+                    const isIn = (r === flowInRow && c === 0);
+                    const isOut = (r === flowOutRow && c === N - 1);
+                    const badge = isIn
+                        ? `<span class="text-[7px] font-extrabold text-sky-300 bg-sky-950/90 px-1 rounded border border-sky-500/40">IN</span>`
+                        : (isOut ? `<span class="text-[7px] font-extrabold text-emerald-300 bg-emerald-950/90 px-1 rounded border border-emerald-500/40">UT</span>` : ``);
+
+                    const borderClass = active
+                        ? 'border-sky-400/80 shadow-sm shadow-sky-500/30'
+                        : (hasPairMatch ? 'border-cyan-500/50' : 'border-stone-800');
 
                     html += `
-                        <button type="button" onclick="rotateFlowCell(${r},${c})" class="bg-gradient-to-br from-slate-900 to-stone-950 hover:from-slate-800 hover:to-stone-900 border ${active ? 'border-sky-400/70 shadow-md shadow-sky-950/60' : 'border-stone-800'} rounded-xl h-16 flex flex-col items-center justify-center relative transition">
-                            ${badge ? `<div class="absolute top-0.5 left-1 z-10">${badge}</div>` : ``}
-                            ${buildSoftChannelSvg(dirs, active)}
+                        <button type="button" onclick="rotateFlowCell(${r},${c})" class="bg-gradient-to-br from-slate-900 to-stone-950 hover:from-slate-800 hover:to-stone-900 border ${borderClass} rounded-lg h-10 sm:h-11 flex items-center justify-center relative transition">
+                            ${badge ? `<div class="absolute top-0.5 left-0.5 z-10 pointer-events-none">${badge}</div>` : ``}
+                            ${buildSoftChannelSvg5x5(r, c, dirs, active, matched)}
                         </button>
                     `;
                 }
@@ -1542,35 +1684,36 @@
             const bonus = gameWorld.shared.flowBonus || 0;
             weatherData.flow = Math.max(2, baseWeatherFlow + bonus).toFixed(1);
             const bonusEl = document.getElementById('flowBonusValue');
-            const bonusBox = document.getElementById('flowBonusBadge');
+            const bonusBox = document.getElementById('flowBonusBox');
             if (bonusEl) {
                 bonusEl.innerText = bonus > 0 ? `+${bonus.toFixed(1).replace('.', ',')} m³/s` : `0 m³/s`;
             }
             if (bonusBox) {
                 if (bonus > 0) {
-                    bonusBox.className = "bg-cyan-900/80 border border-cyan-400 px-1.5 py-1 rounded-lg flex flex-col items-center justify-center text-center shrink-0 shadow-sm shadow-cyan-500/30";
+                    bonusBox.className = "bg-cyan-950/70 px-2 py-1.5 rounded-lg border border-cyan-500/60";
                 } else {
-                    bonusBox.className = "bg-stone-950 border border-stone-800 px-1.5 py-1 rounded-lg flex flex-col items-center justify-center text-center shrink-0";
+                    bonusBox.className = "bg-stone-950 px-2 py-1.5 rounded-lg border border-stone-800";
                 }
             }
         }
 
         async function checkFlowPuzzle() {
+            const N = FLOW_GRID_SIZE;
             const oppDir = [2, 3, 0, 1];
             const dr = [-1, 0, 1, 0];
             const dc = [0, 1, 0, -1];
-            const visited = Array.from({ length: 3 }, () => [false, false, false]);
+            const visited = Array.from({ length: N }, () => Array(N).fill(false));
             const queue = [];
-            if (flowCells[0][0].dirs.includes(3)) {
-                visited[0][0] = true;
-                queue.push([0, 0]);
+            if (flowCells[flowInRow][0].dirs.includes(3)) {
+                visited[flowInRow][0] = true;
+                queue.push([flowInRow, 0]);
             }
             while (queue.length > 0) {
                 const [cr, cc] = queue.shift();
                 for (const d of flowCells[cr][cc].dirs) {
                     const nr = cr + dr[d];
                     const nc = cc + dc[d];
-                    if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) {
+                    if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
                         if (!visited[nr][nc] && flowCells[nr][nc].dirs.includes(oppDir[d])) {
                             visited[nr][nc] = true;
                             queue.push([nr, nc]);
@@ -1579,7 +1722,7 @@
                 }
             }
 
-            const connectedToOutlet = visited[2][2] && flowCells[2][2].dirs.includes(1);
+            const connectedToOutlet = visited[flowOutRow][N - 1] && flowCells[flowOutRow][N - 1].dirs.includes(1);
             if (connectedToOutlet) {
                 gameWorld.points += 45;
                 gameWorld.shared.flowBonus = Number(((gameWorld.shared.flowBonus || 0) + 4.5).toFixed(1));
@@ -1597,7 +1740,7 @@
                 closeMinigamesModal();
                 triggerPuzzleWaveSweep();
             } else {
-                showCustomAlert("Flödet når inte ända ut till UT ännu – fortsätt vrida böjarna!", "Inte klart än");
+                showCustomAlert("Flödet når inte ända ut till UT ännu – fortsätt vrida bitarna!", "Inte klart än");
             }
         }
 
