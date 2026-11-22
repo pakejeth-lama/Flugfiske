@@ -217,7 +217,7 @@
                         <li>Lax kräver spö klass #7 eller grövre</li>
                         <li>Lax hugger på lax/tubflugor i strömdrag</li>
                         <li><strong>Flugstorlek:</strong> Vid lågt flöde (&lt; 10 m³/s) ger små laxflugor (10#, 12#) en liten chans på stor lax och öring!</li>
-                        <li><strong>Omlöpsbonus:</strong> Att lösa omlöpet ger +4,5 m³/s bonusflöde i spelet!</li>
+                        <li><strong>Omlöpsbonus:</strong> Att lösa omlöpet ger +4,5 m³/s bonusflöde under dagen!</li>
                         <li><strong>Gös</strong> är en skadlig inkräktare vid flöden under 14 m³/s. Avliva den för poäng (+250p), släpp inte tillbaka (-100p)!</li>
                     </ul>
                 </div>
@@ -241,11 +241,11 @@
 
             <div class="grid grid-cols-3 gap-1.5 text-[11px]" id="miniGameStepTabs"></div>
 
-            <!-- 1. Flödesschema: Omlöp (5x5 bäckliknande rutnät, datumlåst 1 gång/dag) -->
+            <!-- 1. Flödesschema: Omlöp (5x5 bäckliknande rutnät, datumlåst 1 gång/dag, daglig reset på bonusflöde) -->
             <div id="miniGamePanel_flow" class="hidden flex-col gap-2 bg-stone-950 p-3 rounded-xl border border-stone-800 text-xs">
                 <div class="flex justify-between items-center">
                     <span class="font-bold text-amber-300">🏞️ Flödesschema – Omlöpsbäck (5×5)</span>
-                    <span class="text-[10px] text-cyan-300 font-semibold">+4,5 m³/s flöde • +45 p / +15 XP</span>
+                    <span class="text-[10px] text-cyan-300 font-semibold">+4,5 m³/s (idag) • +45 p / +15 XP</span>
                 </div>
                 <p id="flowStatusDesc" class="text-[11px] text-stone-400 leading-snug">
                     Vrid bäckbitarna så vattnet slingrar sig från <strong class="text-sky-400">IN</strong> till <strong class="text-emerald-400">UT</strong>. Matchande bäckskarvar kopplas ihop!
@@ -261,14 +261,14 @@
                 </div>
             </div>
 
-            <!-- 2. Lintrassel (datumlåst 1 gång/dag) -->
+            <!-- 2. Lintrassel (9 punkter, datumlåst 1 gång/dag) -->
             <div id="miniGamePanel_tangle" class="hidden flex-col gap-2 bg-stone-950 p-3 rounded-xl border border-stone-800 text-xs">
                 <div class="flex justify-between items-center">
-                    <span class="font-bold text-amber-300">🧶 Lintrassel</span>
+                    <span class="font-bold text-amber-300">🧶 Lintrassel (9 punkter)</span>
                     <span class="text-[10px] text-emerald-400 font-semibold">+45 p / +15 XP</span>
                 </div>
                 <p id="tangleStatusDesc" class="text-[11px] text-stone-400 leading-snug">
-                    Dra punkterna tills inga linjer korsar varandra – då rätas trasslet ut automatiskt!
+                    Dra de 9 punkterna tills inga linjer korsar varandra – då rätas trasslet ut automatiskt!
                 </p>
                 <canvas id="tangleCanvas" width="340" height="190" class="w-full h-44 bg-stone-900 rounded-xl border border-stone-800 cursor-grab active:cursor-grabbing"></canvas>
                 <div class="flex justify-between items-center text-[10px]">
@@ -491,7 +491,7 @@
                         <span class="text-amber-300 block leading-tight font-bold group-hover:text-amber-200">🏆 Highscore</span>
                         <span class="font-bold text-amber-400">Öppna ▸</span>
                     </button>
-                    <div id="flowBonusBox" class="bg-stone-950 px-2 py-1.5 rounded-lg border border-stone-800" title="Bonusflöde från omlöpet">
+                    <div id="flowBonusBox" class="bg-stone-950 px-2 py-1.5 rounded-lg border border-stone-800" title="Dagens bonusflöde från omlöpet (nollställs dagligen)">
                         <span class="text-stone-400 block leading-tight">Bonusflöde</span>
                         <span id="flowBonusValue" class="font-bold text-cyan-300">0 m³/s</span>
                     </div>
@@ -832,6 +832,7 @@
                 damTarget: 10000,
                 laddersFixed: false,
                 flowBonus: 0,
+                flowBonusDate: getLocalDateString(),
                 seasonId: currentSeasonId,
                 zones: {}
             };
@@ -1123,6 +1124,7 @@
                         damTarget: 10000,
                         laddersFixed: false,
                         flowBonus: 0,
+                        flowBonusDate: getLocalDateString(),
                         zones: {}
                     };
                     await setDoc(docRef, defaultWorld);
@@ -1147,6 +1149,7 @@
                     damTarget: worldData.damTarget || 10000,
                     laddersFixed: worldData.laddersFixed || false,
                     flowBonus: worldData.flowBonus || 0,
+                    flowBonusDate: worldData.flowBonusDate || getLocalDateString(),
                     zones: worldData.zones || {}
                 }, { merge: true });
             } catch (e) {
@@ -1246,7 +1249,8 @@
                 bushes: 2,
                 damPoints: 0,
                 damTarget: 10000,
-                flowBonus: 0
+                flowBonus: 0,
+                flowBonusDate: todayStr
             }
         };
 
@@ -1315,13 +1319,25 @@
             }
         }
 
+        // Daglig reset på bonusflödet från omlöpet
+        function ensureDailyFlowBonusReset(sharedObj) {
+            todayStr = getLocalDateString();
+            const targetShared = sharedObj || gameWorld.shared;
+            if (!targetShared.flowBonusDate || targetShared.flowBonusDate !== todayStr) {
+                targetShared.flowBonus = 0;
+                targetShared.flowBonusDate = todayStr;
+                return true;
+            }
+            return false;
+        }
+
         // 1. Flödesschema Omlöp (5x5 bäckliknande rutnät; riktningar: 0=upp, 1=höger, 2=ner, 3=vänster)
         const FLOW_GRID_SIZE = 5;
         let flowInRow = 1;
         let flowOutRow = 3;
         let flowCells = [];
 
-        // 2. Lintrassel-state
+        // 2. Lintrassel-state (9 punkter)
         let tangleNodes = [];
         let tangleEdges = [];
         let draggedNodeIdx = -1;
@@ -1423,7 +1439,12 @@
         }
 
         function openMinigamesModal() {
+            todayStr =GameStep = 0;
+        }
+
+        function openMinigamesModal() {
             todayStr = getLocalDateString();
+            ensureDailyFlowBonusReset(gameWorld.shared);
             loadLocalMiniGameLocks();
             computeDailyMiniGameOrder();
             initFlowPuzzle(true);
@@ -1472,7 +1493,7 @@
             const flowBtns = document.getElementById('flowActionButtons');
             if (flowDesc && flowBtns) {
                 if (flowDone) {
-                    flowDesc.innerHTML = `<span class="text-emerald-400 font-bold">🔒 Klarat för idag (${todayStr})!</span> Du kan spela omlöpet igen nästa datum.`;
+                    flowDesc.innerHTML = `<span class="text-emerald-400 font-bold">🔒 Klarat för idag (${todayStr})!</span> Bonusflödet gäller idag och nollställs vid nytt datum.`;
                     flowBtns.innerHTML = `
                         <div class="w-full bg-emerald-950/60 border border-emerald-600/50 text-emerald-300 py-1.5 px-3 rounded-lg text-[11px] font-bold text-center">
                             ✅ Redan avklarat idag • Återkommer imorgon
@@ -1497,7 +1518,7 @@
             if (tangleDesc) {
                 tangleDesc.innerHTML = tangleDone
                     ? `<span class="text-emerald-400 font-bold">🔒 Klarat för idag (${todayStr})!</span> Du kan spela lintrassel igen nästa datum.`
-                    : `Dra punkterna tills inga linjer korsar varandra – då rätas trasslet ut automatiskt!`;
+                    : `Dra de 9 punkterna tills inga linjer korsar varandra – då rätas trasslet ut automatiskt!`;
             }
             if (btnResetTangle) {
                 btnResetTangle.disabled = tangleDone;
@@ -1552,7 +1573,7 @@
             }
         }
 
-        // --- 1. Flödesschema: Omlöp (5x5 bäckliknande rutnät, slumpmässiga IN/UT-portar, datumlås) ---
+        // --- 1. Flödesschema: Omlöp (5x5 bäckliknande rutnät, slumpmässiga IN/UT-portar, datumlås, daglig reset) ---
         function initFlowPuzzle(randomize) {
             const N = FLOW_GRID_SIZE;
             flowInRow = Math.floor(Math.random() * N);
@@ -1664,7 +1685,6 @@
 
         function buildCreekChannelSvg5x5(r, c, dirs, active, matchedDirs) {
             const N = FLOW_GRID_SIZE;
-            // Bäckpalett: grus- & mosskant runt mjukt slingrande bäckfåra
             const bankMossColor = active ? "#14532d" : "#1c1917";
             const gravelBankColor = active ? "#78716c" : "#44403c";
             const creekBedColor = active ? "#0369a1" : "#1e293b";
@@ -1678,7 +1698,6 @@
                 3: { x: 0, y: 30 }
             };
 
-            // Organisk bäckkrök beroende på rutans position
             const wobbleX = ((r + c) % 2 === 0) ? 28 : 32;
             const wobbleY = ((r * 2 + c) % 2 === 0) ? 28 : 32;
 
@@ -1697,15 +1716,10 @@
 
             let channelLayers = "";
             paths.forEach(dPath => {
-                // 1. Grön mossig bäckkant ytterst
                 channelLayers += `<path d="${dPath}" fill="none" stroke="${bankMossColor}" stroke-width="21" stroke-linecap="round"/>`;
-                // 2. Grus- & stenbank runt bäcken
                 channelLayers += `<path d="${dPath}" fill="none" stroke="${gravelBankColor}" stroke-width="16.5" stroke-linecap="round"/>`;
-                // 3. Djup bäckfåra
                 channelLayers += `<path d="${dPath}" fill="none" stroke="${creekBedColor}" stroke-width="11.5" stroke-linecap="round"/>`;
-                // 4. Rinnande bäckvatten
                 channelLayers += `<path d="${dPath}" fill="none" stroke="${creekWaterColor}" stroke-width="6.5" stroke-linecap="round"/>`;
-                // 5. Vattenkrusningar & strömvirvlar
                 if (active) {
                     channelLayers += `<path d="${dPath}" fill="none" stroke="${creekHighlight}" stroke-width="2.2" stroke-linecap="round" class="animate-flow-stream"/>`;
                 } else {
@@ -1713,7 +1727,6 @@
                 }
             });
 
-            // Små naturstenar & tuvor längs bäckbanken
             const stoneSeed = (r * 7 + c * 13) % 4;
             const bankDecor = [
                 `<circle cx="11" cy="11" r="2.8" fill="#57534e"/><circle cx="15" cy="9" r="1.8" fill="#78716c"/><circle cx="49" cy="49" r="3" fill="#166534" opacity="0.75"/>`,
@@ -1722,7 +1735,6 @@
                 `<circle cx="12" cy="12" r="3" fill="#15803d" opacity="0.75"/><circle cx="48" cy="48" r="2.7" fill="#57534e"/><circle cx="51" cy="45" r="1.7" fill="#78716c"/>`
             ][stoneSeed];
 
-            // Animerad vattenkoppling när två bäckbitar matchar varandra
             let matchBadges = "";
             dirs.forEach(d => {
                 const isPortMatch = (r === flowInRow && c === 0 && d === 3) || (r === flowOutRow && c === N - 1 && d === 1);
@@ -1825,6 +1837,7 @@
         }
 
         function recomputeCurrentFlow() {
+            ensureDailyFlowBonusReset(gameWorld.shared);
             const bonus = gameWorld.shared.flowBonus || 0;
             weatherData.flow = Math.max(2, baseWeatherFlow + bonus).toFixed(1);
             const bonusEl = document.getElementById('flowBonusValue');
@@ -1872,9 +1885,11 @@
 
             const connectedToOutlet = visited[flowOutRow][N - 1] && flowCells[flowOutRow][N - 1].dirs.includes(1);
             if (connectedToOutlet) {
+                todayStr = getLocalDateString();
                 await markMiniGameCompletedToday('flow');
                 gameWorld.points += 45;
-                gameWorld.shared.flowBonus = Number(((gameWorld.shared.flowBonus || 0) + 4.5).toFixed(1));
+                gameWorld.shared.flowBonus = 4.5;
+                gameWorld.shared.flowBonusDate = todayStr;
                 recomputeCurrentFlow();
                 addXp(15);
                 updateUI();
@@ -1882,6 +1897,7 @@
                 if (window.saveSharedWorld) {
                     const sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
                     sharedWorldData.flowBonus = gameWorld.shared.flowBonus;
+                    sharedWorldData.flowBonusDate = todayStr;
                     await window.saveSharedWorld(sharedWorldData);
                 }
 
@@ -1892,7 +1908,7 @@
             }
         }
 
-        // --- 2. Lintrassel (datumlåst 1 gång/dag) ---
+        // --- 2. Lintrassel (9 punkter, svårare trassel, datumlåst 1 gång/dag) ---
         function segmentsIntersect(p1, p2, p3, p4) {
             if (
                 (p1.x === p3.x && p1.y === p3.y) ||
@@ -1926,13 +1942,15 @@
             const h = cnv ? cnv.height : 190;
             const cx = w / 2;
             const cy = h / 2;
-            const rx = w * 0.34;
-            const ry = h * 0.34;
+            const rx = w * 0.36;
+            const ry = h * 0.36;
 
             const alreadyDone = isMiniGameCompletedToday('tangle');
             tangleNodes = [];
-            const nCount = 6;
-            const order = alreadyDone ? [0, 1, 2, 3, 4, 5] : [0, 3, 1, 4, 2, 5];
+            const nCount = 9;
+            // Trasslig startpermutation med 9 punkter så det alltid har flera korsningar från start
+            const tangledOrder = [0, 4, 8, 3, 7, 2, 6, 1, 5];
+            const order = alreadyDone ? [0, 1, 2, 3, 4, 5, 6, 7, 8] : tangledOrder;
             for (let i = 0; i < nCount; i++) {
                 const ang = (order[i] / nCount) * Math.PI * 2;
                 tangleNodes.push({
@@ -1941,8 +1959,8 @@
                 });
             }
             tangleEdges = [
-                [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0],
-                [0, 3], [1, 4]
+                [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 8], [8, 0],
+                [0, 4], [1, 5], [2, 6], [3, 7]
             ];
             drawTangleCanvas();
         }
@@ -1986,7 +2004,7 @@
             tangleNodes.forEach((pt, idx) => {
                 tctx.fillStyle = alreadyDone ? '#10b981' : (idx === draggedNodeIdx ? '#fbbf24' : '#38bdf8');
                 tctx.beginPath();
-                tctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+                tctx.arc(pt.x, pt.y, 7.5, 0, Math.PI * 2);
                 tctx.fill();
                 tctx.strokeStyle = '#0f172a';
                 tctx.lineWidth = 2;
@@ -2506,7 +2524,14 @@
                         gameWorld.shared.damPoints = sharedWorldData.damPoints !== undefined ? sharedWorldData.damPoints : gameWorld.shared.damPoints;
                         gameWorld.shared.damTarget = sharedWorldData.damTarget !== undefined ? sharedWorldData.damTarget : gameWorld.shared.damTarget;
                         gameWorld.shared.flowBonus = sharedWorldData.flowBonus !== undefined ? sharedWorldData.flowBonus : gameWorld.shared.flowBonus;
+                        gameWorld.shared.flowBonusDate = sharedWorldData.flowBonusDate || todayStr;
                         gameWorld.laddersFixed = sharedWorldData.laddersFixed !== undefined ? sharedWorldData.laddersFixed : gameWorld.laddersFixed;
+
+                        if (ensureDailyFlowBonusReset(gameWorld.shared) && window.saveSharedWorld) {
+                            sharedWorldData.flowBonus = 0;
+                            sharedWorldData.flowBonusDate = todayStr;
+                            await window.saveSharedWorld(sharedWorldData);
+                        }
 
                         if (sharedWorldData.zones && typeof sharedWorldData.zones === 'object') {
                             for (let zKey in gameWorld.zones) {
@@ -2540,6 +2565,7 @@
                         gameWorld.points = 700;
                         gameWorld.laddersFixed = false;
                         gameWorld.shared.flowBonus = 0;
+                        gameWorld.shared.flowBonusDate = todayStr;
                         gameWorld.zones = createFreshZones();
                         await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                         showCustomAlert("🏆 Ny jämn vecka (måndag)! Spelplanen är återställd, Hall of Fame är uppdaterad och highscoren är nollställd inför nästa 14-dagarsperiod.", "Ny Säsong");
@@ -2558,6 +2584,8 @@
                         gameWorld.lastPlayedDate = todayStr;
                         gameWorld.castsRemaining = 5; 
                         gameWorld.dayOfSeason = 1; 
+                        gameWorld.shared.flowBonus = 0;
+                        gameWorld.shared.flowBonusDate = todayStr;
                         
                         addXp(80);
                         
@@ -2565,6 +2593,8 @@
                         
                         let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
                         sharedWorldData.population = gameWorld.shared.population;
+                        sharedWorldData.flowBonus = 0;
+                        sharedWorldData.flowBonusDate = todayStr;
                         if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
                         await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
@@ -2575,6 +2605,8 @@
                     gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = 1;
                     gameWorld.xp = 80;
+                    gameWorld.shared.flowBonus = 0;
+                    gameWorld.shared.flowBonusDate = todayStr;
                     await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                 }
             } catch (e) {
@@ -2767,7 +2799,14 @@
                         gameWorld.shared.bushes = sharedWorldData.bushes !== undefined ? sharedWorldData.bushes : gameWorld.shared.bushes;
                         gameWorld.shared.damPoints = sharedWorldData.damPoints !== undefined ? sharedWorldData.damPoints : gameWorld.shared.damPoints;
                         gameWorld.shared.flowBonus = sharedWorldData.flowBonus !== undefined ? sharedWorldData.flowBonus : gameWorld.shared.flowBonus;
+                        gameWorld.shared.flowBonusDate = sharedWorldData.flowBonusDate || getLocalDateString();
                         gameWorld.laddersFixed = sharedWorldData.laddersFixed !== undefined ? sharedWorldData.laddersFixed : gameWorld.laddersFixed;
+
+                        if (ensureDailyFlowBonusReset(gameWorld.shared) && window.saveSharedWorld) {
+                            sharedWorldData.flowBonus = 0;
+                            sharedWorldData.flowBonusDate = getLocalDateString();
+                            await window.saveSharedWorld(sharedWorldData);
+                        }
 
                         if (sharedWorldData.zones && typeof sharedWorldData.zones === 'object') {
                             for (let zKey in gameWorld.zones) {
@@ -2991,6 +3030,7 @@
                 damTarget: gameWorld.shared.damTarget || 10000,
                 laddersFixed: gameWorld.laddersFixed || false,
                 flowBonus: gameWorld.shared.flowBonus || 0,
+                flowBonusDate: gameWorld.shared.flowBonusDate || getLocalDateString(),
                 zones: {}
             };
             sharedWorldData.zones = sharedWorldData.zones || {};
@@ -3778,11 +3818,13 @@
                 }
             }
 
+            // Blödning kan drabba alla fiskar; svamp kan bara drabba lax och öring
             let healthState = "normal";
+            let canGetFungus = (species === "Lax" || species === "Öring");
             let healthRoll = Math.random();
             if (healthRoll < 0.08) {
                 healthState = "bleeding";
-            } else if (healthRoll < 0.14) {
+            } else if (canGetFungus && healthRoll < 0.14) {
                 healthState = "sick";
             }
 
