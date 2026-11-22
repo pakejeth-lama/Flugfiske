@@ -732,6 +732,25 @@
             window.currentAuthUid = user ? user.uid : null;
         });
 
+        function normalizeSeasonKey(rawKey) {
+            if (!rawKey) return "";
+            const str = String(rawKey).trim();
+            const matchW = str.match(/^(\d{4})-?W(\d{1,2})$/i);
+            if (matchW) {
+                return `${matchW[1]}-W${String(parseInt(matchW[2], 10)).padStart(2, "0")}`;
+            }
+            const matchNum = str.match(/^(\d{4})-(\d{1,2})$/);
+            if (matchNum) {
+                return `${matchNum[1]}-W${String(parseInt(matchNum[2], 10)).padStart(2, "0")}`;
+            }
+            const matchOnlyW = str.match(/^W(\d{1,2})$/i);
+            if (matchOnlyW) {
+                return `2026-W${String(parseInt(matchOnlyW[1], 10)).padStart(2, "0")}`;
+            }
+            return str;
+        }
+        window.normalizeSeasonKey = normalizeSeasonKey;
+
         function getIsoWeekInfo(dateObj = new Date()) {
             const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
             const dayNum = d.getUTCDay() || 7;
@@ -786,31 +805,34 @@
             if (!previousSeasonId || previousSeasonId === currentSeasonId) return false;
             await ensureAnonymousAuth();
 
+            const normPrev = normalizeSeasonKey(previousSeasonId);
+            const normCurr = normalizeSeasonKey(currentSeasonId);
+
             const allSnap = await getDocs(collection(db, "highscores"));
             const docsList = [];
             allSnap.forEach(d => docsList.push({ id: d.id, ...d.data() }));
 
-            const prevCatches = docsList.filter(c => (c.seasonId || c.week) === previousSeasonId);
+            const prevCatches = docsList.filter(c => normalizeSeasonKey(c.seasonId || c.week) === normPrev);
             const bestSalmon = prevCatches
                 .filter(c => c.species && c.species.includes("Lax"))
-                .sort((a, b) => (b.size || 0) - (a.size || 0))[0] || null;
+                .sort((a, b) => (Number(b.size) || 0) - (Number(a.size) || 0))[0] || null;
             const bestTrout = prevCatches
                 .filter(c => c.species && c.species.includes("Öring"))
-                .sort((a, b) => (b.size || 0) - (a.size || 0))[0] || null;
+                .sort((a, b) => (Number(b.size) || 0) - (Number(a.size) || 0))[0] || null;
 
             if (bestSalmon || bestTrout) {
-                await setDoc(doc(db, "hall_of_fame", previousSeasonId), {
-                    seasonId: previousSeasonId,
+                await setDoc(doc(db, "hall_of_fame", normPrev), {
+                    seasonId: normPrev,
                     updatedAt: new Date().toISOString(),
                     salmon: bestSalmon ? {
                         angler: bestSalmon.angler,
-                        size: bestSalmon.size,
+                        size: Number(bestSalmon.size) || 0,
                         zone: bestSalmon.zone || "",
                         fly: bestSalmon.fly || ""
                     } : null,
                     trout: bestTrout ? {
                         angler: bestTrout.angler,
-                        size: bestTrout.size,
+                        size: Number(bestTrout.size) || 0,
                         zone: bestTrout.zone || "",
                         fly: bestTrout.fly || ""
                     } : null
@@ -818,7 +840,7 @@
             }
 
             for (const item of docsList) {
-                if ((item.seasonId || item.week) !== currentSeasonId) {
+                if (normalizeSeasonKey(item.seasonId || item.week) !== normCurr) {
                     await deleteDoc(doc(db, "highscores", item.id));
                 }
             }
@@ -833,7 +855,7 @@
                 laddersFixed: false,
                 flowBonus: 0,
                 flowBonusDate: getLocalDateString(),
-                seasonId: currentSeasonId,
+                seasonId: normCurr,
                 zones: {}
             };
             await setDoc(doc(db, "world_zones", "shared_savean"), freshWorld);
@@ -848,7 +870,7 @@
                     uid: user ? user.uid : null,
                     angler: anglerName || "Fiskare",
                     species: species,
-                    size: size,
+                    size: Number(size) || 0,
                     fly: fly,
                     equipment: equipment || "Standard",
                     zone: zoneName,
@@ -872,15 +894,22 @@
 
             try {
                 await ensureAnonymousAuth();
-                const currentSeasonId = getCurrentWeekKey();
+                const targetSeason = normalizeSeasonKey(getCurrentWeekKey());
                 const querySnapshot = await getDocs(collection(db, "highscores"));
                 let allCatches = [];
                 querySnapshot.forEach(d => allCatches.push(d.data()));
 
-                let currentSeasonCatches = allCatches.filter(c => (c.seasonId || c.week) === currentSeasonId);
+                let currentSeasonCatches = allCatches.filter(c => normalizeSeasonKey(c.seasonId || c.week) === targetSeason);
                 
-                let salmonCatches = currentSeasonCatches.filter(c => c.species && c.species.includes("Lax")).sort((a, b) => b.size - a.size);
-                let troutCatches = currentSeasonCatches.filter(c => c.species && c.species.includes("Öring")).sort((a, b) => b.size - a.size);
+                let salmonCatches = currentSeasonCatches
+                    .filter(c => typeof c.species === "string" && c.species.includes("Lax"))
+                    .map(c => ({ ...c, size: Number(c.size) || 0 }))
+                    .sort((a, b) => b.size - a.size);
+
+                let troutCatches = currentSeasonCatches
+                    .filter(c => typeof c.species === "string" && c.species.includes("Öring"))
+                    .map(c => ({ ...c, size: Number(c.size) || 0 }))
+                    .sort((a, b) => b.size - a.size);
 
                 let salmonHtml = "";
                 let rank = 1;
@@ -929,11 +958,18 @@
                     });
                     troutListEl.innerHTML = troutHtml;
                 }
+            } catch (e) {
+                console.error("Fel vid hämtning av highscores:", e);
+                salmonListEl.innerHTML = `<p class="text-rose-400 italic text-center py-2">Kunde inte ladda.</p>`;
+                troutListEl.innerHTML = `<p class="text-rose-400 italic text-center py-2">Kunde inte ladda.</p>`;
+            }
 
+            try {
+                await ensureAnonymousAuth();
                 const hofSnap = await getDocs(collection(db, "hall_of_fame"));
                 let hofEntries = [];
                 hofSnap.forEach(d => hofEntries.push(d.data()));
-                hofEntries.sort((a, b) => (b.seasonId || "").localeCompare(a.seasonId || ""));
+                hofEntries.sort((a, b) => normalizeSeasonKey(b.seasonId || "").localeCompare(normalizeSeasonKey(a.seasonId || "")));
 
                 let hofHtml = "";
                 if (hofEntries.length > 0) {
@@ -946,10 +982,9 @@
                     }
                 }
                 hofEl.innerHTML = hofHtml || `Inga Hall of Fame-rekord ännu.`;
-
             } catch (e) {
-                console.error("Fel vid hämtning av highscores:", e);
-                salmonListEl.innerHTML = `<p class="text-rose-400 italic text-center py-2">Kunde inte ladda.</p>`;
+                console.error("Fel vid hämtning av Hall of Fame:", e);
+                hofEl.innerHTML = `<span class="text-stone-400 italic">Kunde inte ladda Hall of Fame.</span>`;
             }
         };
 
@@ -962,8 +997,9 @@
                     let data = d.data();
                     if (data.angler && data.angler.toLowerCase() === anglerName.toLowerCase()) {
                         let cleanSpecies = data.species ? data.species.split(' ')[0] : "Okänd";
-                        if (!pbs[cleanSpecies] || data.size > pbs[cleanSpecies]) {
-                            pbs[cleanSpecies] = data.size;
+                        let numSize = Number(data.size) || 0;
+                        if (!pbs[cleanSpecies] || numSize > pbs[cleanSpecies]) {
+                            pbs[cleanSpecies] = numSize;
                         }
                     }
                 });
@@ -1436,10 +1472,6 @@
             }
             dailyMiniGameOrder = pool;
             activeMiniGameStep = 0;
-        }
-
-        function openMinigamesModal() {
-            todayStr =GameStep = 0;
         }
 
         function openMinigamesModal() {
@@ -1948,7 +1980,6 @@
             const alreadyDone = isMiniGameCompletedToday('tangle');
             tangleNodes = [];
             const nCount = 9;
-            // Trasslig startpermutation med 9 punkter så det alltid har flera korsningar från start
             const tangledOrder = [0, 4, 8, 3, 7, 2, 6, 1, 5];
             const order = alreadyDone ? [0, 1, 2, 3, 4, 5, 6, 7, 8] : tangledOrder;
             for (let i = 0; i < nCount; i++) {
@@ -2408,254 +2439,7 @@
                     gameWorld.points = 700;
                     gameWorld.lastPlayedDate = todayStr;
                     updateUI();
-                }// ============================================================================
-// SÄSONGSHANTERING, OPTIMERAD HIGHSCORE & HALL OF FAME (INKL. ALL-TIME)
-// ============================================================================
-
-let highscoreCache = { key: "", ts: 0, rows: [] };
-
-function invalidateHighscoreCache() {
-  highscoreCache.ts = 0;
-}
-
-function getIsoWeekInfo(date = new Date()) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  return { year: d.getUTCFullYear(), week };
-}
-
-function getActiveSeasonWeeks(date = new Date()) {
-  const { year, week } = getIsoWeekInfo(date);
-  const evenStartWeek = week % 2 === 0 ? week : week - 1;
-  const w1 = `${year}-W${String(Math.max(1, evenStartWeek)).padStart(2, "0")}`;
-  const w2 = `${year}-W${String(evenStartWeek + 1).padStart(2, "0")}`;
-  return {
-    seasonId: w1,
-    activeWeeks: [w1, w2]
-  };
-}
-
-function getPreviousSeasonWeeks(currentSeasonId) {
-  const m = String(currentSeasonId || "").match(/^(\d{4})-W(\d{2})$/);
-  if (!m) return [];
-  const year = Number(m[1]);
-  const startWeek = Number(m[2]);
-  const prevStart = Math.max(1, startWeek - 2);
-  return [
-    `${year}-W${String(prevStart).padStart(2, "0")}`,
-    `${year}-W${String(prevStart + 1).padStart(2, "0")}`
-  ];
-}
-
-function getFishMetric(row) {
-  return Number(row?.size) || Number(row?.points) || 0;
-}
-
-async function fetchHighscoresOptimized(activeSeasonIds = [], maxDocs = 100) {
-  if (!window.dbRef) return [];
-  const { getDocs, query, collection, where, limit } = await import(
-    "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
-  );
-
-  const seasonsToQuery = activeSeasonIds.length
-    ? activeSeasonIds.slice(0, 10)
-    : getActiveSeasonWeeks().activeWeeks;
-
-  const cacheKey = `${seasonsToQuery.join(",")}|${maxDocs}`;
-  const now = Date.now();
-  if (highscoreCache.key === cacheKey && now - highscoreCache.ts < 15000) {
-    return highscoreCache.rows;
-  }
-
-  const q = query(
-    collection(window.dbRef, "highscores"),
-    where("seasonId", "in", seasonsToQuery),
-    limit(maxDocs)
-  );
-
-  const snap = await getDocs(q);
-  const rows = snap.docs
-    .map((d) => ({ id: d.id, ...(d.data() || {}) }))
-    .sort((a, b) => getFishMetric(b) - getFishMetric(a));
-
-  highscoreCache = { key: cacheKey, ts: now, rows };
-  return rows;
-}
-
-async function renderActiveHighscoreView(renderListFn, maxDocs = 100) {
-  const { seasonId, activeWeeks } = getActiveSeasonWeeks();
-  const rows = await fetchHighscoresOptimized(activeWeeks, maxDocs);
-
-  const normalized = rows.map((r, idx) => ({
-    rank: idx + 1,
-    angler: r.angler || r.playerName || "Okänd",
-    species: r.species || "",
-    size: getFishMetric(r),
-    zone: r.zone || "",
-    fly: r.fly || "",
-    seasonId: r.seasonId || seasonId
-  }));
-
-  if (typeof renderListFn === "function") {
-    renderListFn(normalized, { seasonId, activeWeeks });
-  }
-  return normalized;
-}
-
-async function runAutoSeasonRolloverIfNeeded() {
-  if (!window.dbRef) return;
-  const {
-    getDoc, getDocs, setDoc, deleteDoc, doc, collection, query, where
-  } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
-
-  const { seasonId: currentSeasonId } = getActiveSeasonWeeks();
-  const stateRef = doc(window.dbRef, "global", "season_state");
-  const stateSnap = await getDoc(stateRef);
-  const lastSeasonId = stateSnap.exists() ? stateSnap.data()?.lastSeasonId : null;
-
-  if (!lastSeasonId) {
-    await setDoc(stateRef, {
-      lastSeasonId: currentSeasonId,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
-    return;
-  }
-
-  if (lastSeasonId === currentSeasonId) {
-    return;
-  }
-
-  const prevWeeks = getPreviousSeasonWeeks(currentSeasonId);
-  const targetWeeks = prevWeeks.length ? prevWeeks : [lastSeasonId];
-
-  const q = query(
-    collection(window.dbRef, "highscores"),
-    where("seasonId", "in", targetWeeks.slice(0, 10))
-  );
-  const snap = await getDocs(q);
-  const items = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
-
-  const bestSalmon = items
-    .filter((c) => String(c.species || "").toLowerCase().includes("lax"))
-    .sort((a, b) => getFishMetric(b) - getFishMetric(a))[0] || null;
-
-  const bestTrout = items
-    .filter((c) => String(c.species || "").toLowerCase().includes("öring"))
-    .sort((a, b) => getFishMetric(b) - getFishMetric(a))[0] || null;
-
-  await setDoc(doc(window.dbRef, "hall_of_fame", lastSeasonId), {
-    seasonId: lastSeasonId,
-    archivedAt: new Date().toISOString(),
-    salmon: bestSalmon ? {
-      rank: 1,
-      angler: bestSalmon.angler || bestSalmon.playerName || "Okänd",
-      size: getFishMetric(bestSalmon),
-      zone: bestSalmon.zone || "",
-      fly: bestSalmon.fly || ""
-    } : null,
-    trout: bestTrout ? {
-      rank: 1,
-      angler: bestTrout.angler || bestTrout.playerName || "Okänd",
-      size: getFishMetric(bestTrout),
-      zone: bestTrout.zone || "",
-      fly: bestTrout.fly || ""
-    } : null
-  }, { merge: true });
-
-  for (const d of snap.docs) {
-    await deleteDoc(doc(window.dbRef, "highscores", d.id));
-  }
-
-  await setDoc(stateRef, {
-    lastSeasonId: currentSeasonId,
-    archivedSeasonId: lastSeasonId,
-    updatedAt: new Date().toISOString()
-  }, { merge: true });
-
-  invalidateHighscoreCache();
-}
-
-async function checkAndFlagSeasonRecord(caughtFish) {
-  const speciesLower = String(caughtFish?.species || "").toLowerCase();
-  const isSalmon = speciesLower.includes("lax");
-  const isTrout = speciesLower.includes("öring");
-  if (!isSalmon && !isTrout) {
-    return { isNewRecord: false, category: null, recordText: "" };
-  }
-
-  invalidateHighscoreCache();
-  const { activeWeeks } = getActiveSeasonWeeks();
-  const rows = await fetchHighscoresOptimized(activeWeeks, 100);
-  const caughtSize = getFishMetric(caughtFish);
-
-  const sameSpeciesTop = rows
-    .filter((r) => {
-      const s = String(r.species || "").toLowerCase();
-      return isSalmon ? s.includes("lax") : s.includes("öring");
-    })
-    .reduce((max, r) => Math.max(max, getFishMetric(r)), 0);
-
-  const isNewRecord = caughtSize > 0 && caughtSize >= sameSpeciesTop;
-  const category = isSalmon ? "lax" : "öring";
-  const recordText = isNewRecord
-    ? `🏆 Största ${category}en hittills den här säsongen!`
-    : "";
-
-  return { isNewRecord, category, recordText };
-}
-
-async function updateAllTimeHallOfFameIfRecord(caughtFish) {
-  if (!window.dbRef || !caughtFish) return { brokeAllTime: false, category: null };
-
-  const speciesLower = String(caughtFish.species || "").toLowerCase();
-  const isSalmon = speciesLower.includes("lax");
-  const isTrout = speciesLower.includes("öring");
-  if (!isSalmon && !isTrout) {
-    return { brokeAllTime: false, category: null };
-  }
-
-  const { getDoc, setDoc, doc } = await import(
-    "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"
-  );
-  const ref = doc(window.dbRef, "hall_of_fame", "all_time_records");
-  const snap = await getDoc(ref);
-  const current = snap.exists() ? (snap.data() || {}) : {};
-
-  const category = isSalmon ? "salmon" : "trout";
-  const labelSv = isSalmon ? "laxen" : "öringen";
-  const size = getFishMetric(caughtFish);
-  const prevRecord = Number(current[category]?.size) || 0;
-
-  if (size <= 0 || size <= prevRecord) {
-    return { brokeAllTime: false, category, currentRecord: current[category] || null };
-  }
-
-  const nextEntry = {
-    rank: 1,
-    angler: caughtFish.angler || caughtFish.playerName || "Okänd",
-    size,
-    species: caughtFish.species || (isSalmon ? "Lax" : "Öring"),
-    zone: caughtFish.zone || "",
-    fly: caughtFish.fly || "",
-    seasonId: caughtFish.seasonId || getActiveSeasonWeeks().seasonId,
-    brokenAt: new Date().toISOString()
-  };
-
-  await setDoc(ref, {
-    [category]: nextEntry,
-    updatedAt: new Date().toISOString()
-  }, { merge: true });
-
-  return {
-    brokeAllTime: true,
-    category,
-    entry: nextEntry,
-    bannerText: `👑 HISTORISKT REKORD! Spelets största ${labelSv} någonsin (${size}) av ${nextEntry.angler}!`
-  };
-}
+                }
 
                 showCustomAlert(`Dag & kast har återställts för ${targetPlayer} i molnet (Dag 1/7 & 5 kast)!`, "GM Admin");
             } catch (e) {
@@ -2757,7 +2541,7 @@ async function updateAllTimeHallOfFameIfRecord(caughtFish) {
                 let prevSeasonId = cloudState ? (cloudState.seasonId || "") : "";
                 let didEvenWeekReset = false;
 
-                if (prevSeasonId && prevSeasonId !== sInfo.seasonId && sInfo.isEvenWeek && sInfo.isMonday && window.runEvenWeekMondayResetIfNeeded) {
+                if (prevSeasonId && prevSeasonId !== sInfo.seasonId && window.runEvenWeekMondayResetIfNeeded) {
                     didEvenWeekReset = await window.runEvenWeekMondayResetIfNeeded(prevSeasonId, sInfo.seasonId);
                 }
 
@@ -2815,7 +2599,7 @@ async function updateAllTimeHallOfFameIfRecord(caughtFish) {
                         gameWorld.shared.flowBonusDate = todayStr;
                         gameWorld.zones = createFreshZones();
                         await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
-                        showCustomAlert("🏆 Ny jämn vecka (måndag)! Spelplanen är återställd, Hall of Fame är uppdaterad och highscoren är nollställd inför nästa 14-dagarsperiod.", "Ny Säsong");
+                        showCustomAlert("🏆 Ny 14-dagarsperiod! Spelplanen är återställd, Hall of Fame är uppdaterad och highscoren är nollställd.", "Ny Säsong");
                     } else if (lastDate === todayStr) {
                         gameWorld.seasonId = sInfo.seasonId;
                         gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
@@ -4065,7 +3849,6 @@ async function updateAllTimeHallOfFameIfRecord(caughtFish) {
                 }
             }
 
-            // Blödning kan drabba alla fiskar; svamp kan bara drabba lax och öring
             let healthState = "normal";
             let canGetFungus = (species === "Lax" || species === "Öring");
             let healthRoll = Math.random();
