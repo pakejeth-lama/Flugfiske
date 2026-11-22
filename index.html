@@ -1276,45 +1276,70 @@
             }
         };
 
-        window.fetchPlayerPbRecords = async function(anglerName) {
-            try {
-                await ensureAnonymousAuth();
-                const targetLower = String(anglerName || "").trim().toLowerCase();
-                if (!targetLower) return {};
+window.fetchPlayerPbRecords = async function(anglerName) {
+            await ensureAnonymousAuth();
+            const targetLower = String(anglerName || "").trim().toLowerCase();
+            if (!targetLower) return {};
 
-                const pbs = {};
+            const pbs = {};
+            const addPb = (rawSpecies, rawSize) => {
+                const numSize = Number(rawSize) || 0;
+                if (numSize <= 0) return;
+                const baseSpecies = String(rawSpecies || "Okänd").replace(/\s*\((Hona|Hane)\)\s*/i, "").trim();
+                const cleanSpecies = baseSpecies.split(" ")[0] || "Okänd";
+                if (!pbs[cleanSpecies] || numSize > pbs[cleanSpecies]) {
+                    pbs[cleanSpecies] = numSize;
+                }
+            };
+
+            // 1. Läs från player_pbs
+            try {
                 const pbSnap = await getDocs(collection(db, "player_pbs"));
                 pbSnap.forEach(d => {
                     const data = d.data() || {};
-                    const docAngler = String(data.angler || decodeURIComponent(d.id) || "").trim().toLowerCase();
+                    let decodedId = d.id;
+                    try { decodedId = decodeURIComponent(d.id); } catch (_) {}
+                    const docAngler = String(data.angler || decodedId || "").trim().toLowerCase();
                     if (docAngler === targetLower && data.records && typeof data.records === "object") {
                         for (const spKey of Object.keys(data.records)) {
-                            const val = Number(data.records[spKey]?.size) || 0;
-                            if (val > 0 && (!pbs[spKey] || val > pbs[spKey])) {
-                                pbs[spKey] = val;
-                            }
+                            addPb(spKey, data.records[spKey]?.size ?? data.records[spKey]);
                         }
                     }
                 });
+            } catch (e) {
+                console.warn("Kunde inte läsa player_pbs:", e);
+            }
 
+            // 2. Läs från highscores
+            try {
                 const allSnap = await getDocs(collection(db, "highscores"));
                 allSnap.forEach(d => {
                     const data = d.data() || {};
                     if (String(data.angler || "").trim().toLowerCase() === targetLower) {
-                        const baseSpecies = data.species ? String(data.species).replace(/\s*\((Hona|Hane)\)\s*/i, "").trim() : "Okänd";
-                        const cleanSpecies = baseSpecies.split(" ")[0] || "Okänd";
-                        const numSize = getFishMetric(data);
-                        if (numSize > 0 && (!pbs[cleanSpecies] || numSize > pbs[cleanSpecies])) {
-                            pbs[cleanSpecies] = numSize;
-                        }
+                        addPb(data.species, getFishMetric(data));
                     }
                 });
-
-                return pbs;
             } catch (e) {
-                console.error("Fel vid PB-hämtning:", e);
-                return {};
+                console.warn("Kunde inte läsa highscores för PB:", e);
             }
+
+            // 3. Läs eventuella rekord från hall_of_fame (all-time & arkiverade säsonger)
+            try {
+                const hofSnap = await getDocs(collection(db, "hall_of_fame"));
+                hofSnap.forEach(d => {
+                    const data = d.data() || {};
+                    if (data.salmon && String(data.salmon.angler || "").trim().toLowerCase() === targetLower) {
+                        addPb("Lax", data.salmon.size);
+                    }
+                    if (data.trout && String(data.trout.angler || "").trim().toLowerCase() === targetLower) {
+                        addPb("Öring", data.trout.size);
+                    }
+                });
+            } catch (e) {
+                console.warn("Kunde inte läsa hall_of_fame för PB:", e);
+            }
+
+            return pbs;
         };
 
         window.savePlayerStateToFirebase = async function(anglerName, stateData) {
