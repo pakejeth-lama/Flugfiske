@@ -2423,25 +2423,62 @@
             const h = cnv ? cnv.height : 190;
             const cx = w / 2;
             const cy = h / 2;
-            const rx = w * 0.36;
-            const ry = h * 0.36;
+            const maxRx = w * 0.40;
+            const maxRy = h * 0.38;
+
+            // Kubiskt prisma (8 punkter, 12 kanter): alltid planärt och 100 % lösbar
+            tangleEdges = [
+                [0, 1], [1, 2], [2, 3], [3, 0], // yttre fyrkant
+                [4, 5], [5, 6], [6, 7], [7, 4], // inre fyrkant
+                [0, 4], [1, 5], [2, 6], [3, 7]  // kopplingar mellan ringarna
+            ];
 
             const alreadyDone = isMiniGameCompletedToday('tangle');
             tangleNodes = [];
             const nCount = 8;
-            const tangledOrder = [0, 3, 6, 1, 4, 7, 2, 5];
-            const order = alreadyDone ? [0, 1, 2, 3, 4, 5, 6, 7] : tangledOrder;
-            for (let i = 0; i < nCount; i++) {
-                const ang = (order[i] / nCount) * Math.PI * 2;
-                tangleNodes.push({
-                    x: cx + Math.cos(ang) * rx,
-                    y: cy + Math.sin(ang) * ry
-                });
+
+            if (alreadyDone) {
+                for (let i = 0; i < nCount; i++) {
+                    const isInner = i >= 4;
+                    const idxInRing = i % 4;
+                    const ang = (idxInRing / 4) * Math.PI * 2 + Math.PI / 4;
+                    const scale = isInner ? 0.45 : 0.92;
+                    tangleNodes.push({
+                        x: cx + Math.cos(ang) * maxRx * scale,
+                        y: cy + Math.sin(ang) * maxRy * scale
+                    });
+                }
+                drawTangleCanvas();
+                return;
             }
-            tangleEdges = [
-                [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0],
-                [0, 4], [1, 5], [2, 6], [3, 7]
-            ];
+
+            // Slumpa punkternas ordning, radie och vinkel varje gång
+            for (let attempt = 0; attempt < 25; attempt++) {
+                const slots = [0, 1, 2, 3, 4, 5, 6, 7];
+                for (let i = slots.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    const tmp = slots[i];
+                    slots[i] = slots[j];
+                    slots[j] = tmp;
+                }
+
+                const phaseOffset = Math.random() * Math.PI * 2;
+                const candidateNodes = [];
+                for (let i = 0; i < nCount; i++) {
+                    const slot = slots[i];
+                    const baseAng = phaseOffset + (slot / nCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.35;
+                    const radScale = 0.42 + Math.random() * 0.55;
+                    const nx = Math.max(18, Math.min(w - 18, cx + Math.cos(baseAng) * maxRx * radScale));
+                    const ny = Math.max(18, Math.min(h - 18, cy + Math.sin(baseAng) * maxRy * radScale));
+                    candidateNodes.push({ x: nx, y: ny });
+                }
+
+                tangleNodes = candidateNodes;
+                if (countTangleCrossings() >= 3) {
+                    break;
+                }
+            }
+
             drawTangleCanvas();
         }
 
@@ -2680,7 +2717,7 @@
             let banner = document.createElement('div');
             banner.id = 'liveAnglerBanner';
             banner.style.cssText = `
-                position: fixed; top: 20px; right: 20px; z-index: 9999;
+                position: fixed; top: 20px; right: 20px; z-9999;
                 background: rgba(15, 23, 42, 0.95); border: 1px solid #10b981;
                 color: #e2e8f0; padding: 10px 16px; border-radius: 8px;
                 font-family: inherit; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
@@ -4434,339 +4471,261 @@
             let isLargeSalmon = currentFish.species === "Lax" && currentFish.size > 70;
             let isLargeTrout = currentFish.species === "Öring" && currentFish.size > 65;
 
-            if (isLightRod && (isLargeSalmon || isLargeTrout) && !success) {
-                gameWorld.points = Math.max(0, gameWorld.points - 15);
-                updateUI();
-                showCustomAlert("Tafsen gick av direkt! Ett klass #6-spö klarar inte av att tygla en storfisk i hård ström. Byt till klass #7 eller grövre!", "Tafsbryt");
+            if(!success) {
+                if ("vibrate" in navigator) navigator.vibrate([500, 150, 500]);
+                if (isLightRod && (isLargeSalmon || isLargeTrout)) {
+                    showCustomAlert(`💥 TAFSEN GICK AV!\n\nDitt lätta spö (${gameWorld.equipment.spec}) orkade inte hålla emot den stora ${currentFish.species.toLowerCase()}n (${currentFish.size} cm). Använd grövre utrustning för stor fisk!`, "Utrustningsvarning");
+                } else {
+                    showCustomAlert("💥 Tafsen gick av under stressen! Fisken simmade iväg med flugan.", "Linbrott");
+                }
                 resetAfterCatch();
                 return;
             }
 
-            if(success) {
-                landFish();
+            let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+            document.getElementById('caughtFishDetails').innerText = `Du landade en ${currentFish.species.toLowerCase()}${genderStr} på ${currentFish.size} cm!`;
+            
+            const healthBanner = document.getElementById('healthAlertBanner');
+            if (currentFish.healthState === "bleeding") {
+                healthBanner.innerText = "🩸 Skadad: Fisken blöder kraftigt från gälarna!";
+                healthBanner.className = "px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold bg-rose-950/80 border-rose-500/60 text-rose-300";
+                healthBanner.classList.remove('hidden');
+            } else if (currentFish.healthState === "sick") {
+                healthBanner.innerText = "🍄 Sjukdom: Fisken har tydliga svampangrepp!";
+                healthBanner.className = "px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold bg-amber-950/80 border-amber-500/60 text-amber-300";
+                healthBanner.classList.remove('hidden');
             } else {
-                gameWorld.points = Math.max(0, gameWorld.points - 15);
-                updateUI();
-                showCustomAlert("💥 Tafsen gick av! Fisken drog för hårt när mätaren stod på rött (-15 p).", "Tafsbryt");
-                resetAfterCatch();
+                healthBanner.classList.add('hidden');
             }
+
+            const sampleBtn = document.getElementById('btnSampleFish');
+            if (currentFish.healthState === "sick") {
+                sampleBtn.classList.remove('hidden');
+            } else {
+                sampleBtn.classList.add('hidden');
+            }
+
+            setupSingleWelfareQuestion();
+
+            document.getElementById('welfareModal').classList.remove('hidden');
+            document.getElementById('welfareModal').classList.add('flex');
         }
 
-        // --- 9J. KOMPAKT C&R-MENY & JUSTERBARA POÄNGKONSTANTER ---
-        // Justera poängen fritt här:
-        const WELFARE_SCORING = {
-            baseRelease: 60,
-            over70Bonus: 80,
-            over50Bonus: 40,
-            bleedingReleasePenalty: -200,
-            airPenalty: -50,
-            releaseIntruder: -50,
-            keepIntruder: 100,
-            keepSmallPike: 50,
-            releaseSmallPike: -25,
-            keepSmallPerch: 30,
-            releaseSmallPerch: -15,
-            keepBleeding: 40,
-            keepNormal: -40,
-            sampleBase: 140
-        };
-
-        const WELFARE_QUESTION_POOL = [
-            {
-                id: 'softNet',
-                questionText: 'Skonsam, blöt knutlös håv använd?',
-                checkedPoints: 25
-            },
-            {
-                id: 'wetHands',
-                questionText: 'Blöta händer vid hantering och avkrokning?',
-                checkedPoints: 25
-            },
-            {
-                id: 'noDrySurface',
-                questionText: 'Fisken hölls borta från torra stenar och gräs?',
-                checkedPoints: 25
-            },
-            {
-                id: 'gentleUnhook',
-                questionText: 'Krokade du av under ytan?',
-                checkedPoints: 25
-            },
-            {
-                id: 'reviveCurrent',
-                questionText: 'Återhämtning med nosen mot lugn ström före släpp?',
-                checkedPoints: 25
-            }
-        ];
-
-        function pickRandomWelfareQuestion() {
-            const idx = Math.floor(Math.random() * WELFARE_QUESTION_POOL.length);
-            currentWelfareQuestion = WELFARE_QUESTION_POOL[idx];
+        function setupSingleWelfareQuestion() {
             const container = document.getElementById('dynamicSingleQuestionContainer');
             if (!container) return;
 
-            container.innerHTML = `
-                <label class="flex items-center justify-between gap-2 cursor-pointer text-stone-300 leading-snug">
-                    <span>${currentWelfareQuestion.questionText}</span>
-                    <input type="checkbox" id="chkDynamicWelfare" checked class="accent-emerald-600 rounded w-4 h-4 shrink-0">
-                </label>
-            `;
+            let qType = "hook";
+            if (currentFish && currentFish.healthState === "bleeding" && Math.random() < 0.5) {
+                qType = "bleeding";
+            } else if (Math.random() < 0.5) {
+                qType = "net";
+            }
+
+            currentWelfareQuestion = qType;
+
+            if (qType === "hook") {
+                container.innerHTML = `
+                    <label class="flex items-center gap-2 cursor-pointer text-stone-200">
+                        <input type="checkbox" id="chkUnhookUnderwater" class="accent-emerald-600 rounded">
+                        <span>Krokade du av under ytan?</span>
+                    </label>
+                `;
+            } else if (qType === "net") {
+                container.innerHTML = `
+                    <label class="flex items-center gap-2 cursor-pointer text-stone-200">
+                        <input type="checkbox" id="chkSoftNet" class="accent-emerald-600 rounded">
+                        <span>Håvade du fisken varsamt i knutlös håv?</span>
+                    </label>
+                `;
+            } else {
+                container.innerHTML = `
+                    <label class="flex items-center gap-2 cursor-pointer text-stone-200">
+                        <input type="checkbox" id="chkBleedingHandled" class="accent-emerald-600 rounded">
+                        <span>Stödde du buken & undvek gällock/ögon?</span>
+                    </label>
+                `;
+            }
         }
 
         function updateAirTimeLabel(val) {
-            const lbl = document.getElementById('lblAirTime');
-            if (!lbl) return;
-            lbl.innerText = `${val}s`;
-            if (parseInt(val, 10) > 10) {
-                lbl.className = "font-bold text-rose-400";
-            } else {
-                lbl.className = "font-bold text-emerald-400";
-            }
+            document.getElementById('lblAirTime').innerText = val + "s";
         }
 
-        function landFish() {
-            const modal = document.getElementById('welfareModal');
-            let genderText = currentFish.gender ? ` (${currentFish.gender})` : "";
-            document.getElementById('caughtFishDetails').innerHTML = `Fångad art: <strong class="text-emerald-400">${currentFish.species}${genderText}</strong> (${currentFish.size} cm) med <strong>${activeFly.name}</strong>`;
-            
-            const healthBanner = document.getElementById('healthAlertBanner');
-            const sampleBtn = document.getElementById('btnSampleFish');
-            const keepBtn = document.getElementById('btnKeepFish');
-
-            if (currentFish.species === "Gös") {
-                healthBanner.innerText = "🚨 INVASIV PREDATOR (Gös): Gös äter lax- och öringsmolt! Ska avlivas (+100p).";
-                healthBanner.className = "bg-rose-950/90 border-rose-500/80 text-rose-300 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold";
-                healthBanner.classList.remove('hidden');
-                sampleBtn.classList.add('hidden');
-                keepBtn.innerText = "Avliva Gös (+100p)";
-            } else if (currentFish.species === "Gädda" && currentFish.size < 80) {
-                healthBanner.innerText = `⚠️ SMOLTPREDATOR (Gädda ${currentFish.size} cm < 80 cm): Behåll/avliva för smoltskydd (+${WELFARE_SCORING.keepSmallPike}p)!`;
-                healthBanner.className = "bg-amber-950/90 border-amber-500/80 text-amber-300 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold";
-                healthBanner.classList.remove('hidden');
-                sampleBtn.classList.add('hidden');
-                keepBtn.innerText = `Behåll (+${WELFARE_SCORING.keepSmallPike}p)`;
-            } else if (currentFish.species === "Abborre" && currentFish.size < 38) {
-                healthBanner.innerText = `⚠️ SMOLTPREDATOR (Abborre ${currentFish.size} cm < 38 cm): Behåll/avliva för smoltskydd (+${WELFARE_SCORING.keepSmallPerch}p)!`;
-                healthBanner.className = "bg-amber-950/90 border-amber-500/80 text-amber-300 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold";
-                healthBanner.classList.remove('hidden');
-                sampleBtn.classList.add('hidden');
-                keepBtn.innerText = `Behåll (+${WELFARE_SCORING.keepSmallPerch}p)`;
-            } else if (currentFish.healthState === "bleeding") {
-                healthBanner.innerText = "⚠️ BLÖDER FRÅN GÄLAR: Fisken överlever inte C&R och bör avlivas.";
-                healthBanner.className = "bg-rose-950/80 border-rose-500/60 text-rose-300 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold";
-                healthBanner.classList.remove('hidden');
-                sampleBtn.classList.add('hidden');
-                keepBtn.innerText = "Avliva";
-            } else if (currentFish.healthState === "sick") {
-                healthBanner.innerText = "🧪 SVAMP / SJUKDOM: Skicka prov till SVA (+140p)!";
-                healthBanner.className = "bg-purple-950/80 border-purple-500/60 text-purple-300 px-2.5 py-1.5 rounded-xl border text-[11px] font-semibold";
-                healthBanner.classList.remove('hidden');
-                sampleBtn.classList.remove('hidden');
-                keepBtn.innerText = "Behåll";
-            } else {
-                healthBanner.classList.add('hidden');
-                sampleBtn.classList.add('hidden');
-                keepBtn.innerText = "Behåll / Avliva";
+        function evaluateWelfareBonus() {
+            let bonus = 0;
+            if (currentWelfareQuestion === "hook") {
+                const el = document.getElementById('chkUnhookUnderwater');
+                if (el && el.checked) bonus += 25;
+            } else if (currentWelfareQuestion === "net") {
+                const el = document.getElementById('chkSoftNet');
+                if (el && el.checked) bonus += 20;
+            } else if (currentWelfareQuestion === "bleeding") {
+                const el = document.getElementById('chkBleedingHandled');
+                if (el && el.checked) bonus += 25;
             }
 
-            pickRandomWelfareQuestion();
-            const slider = document.getElementById('sliderAirTime');
-            if (slider) slider.value = 5;
-            updateAirTimeLabel(5);
+            const airTime = parseInt(document.getElementById('sliderAirTime').value || "0", 10);
+            if (airTime <= 5) {
+                bonus += 15;
+            } else if (airTime > 10) {
+                bonus -= 15;
+            }
 
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            if (currentFish && (currentFish.healthState === "bleeding" || currentFish.healthState === "sick")) {
+                bonus += 10;
+            }
+            return bonus;
         }
 
         async function sampleFish() {
-            const zState = gameWorld.zones[currentZoneKey];
-            const s = gameWorld.shared;
-            let pts = WELFARE_SCORING.sampleBase;
-            gameWorld.points += pts;
-            s.population = Math.max(30, s.population - 1);
-
-            addXp(30);
-
-            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-            sharedWorldData.population = s.population;
-            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
-
-            let eqSummary = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
-            if(window.saveCatchToFirebase) {
-                let genderLog = currentFish.gender ? ` (${currentFish.gender})` : "";
-                window.saveCatchToFirebase(lockedAnglerName, currentFish.species + genderLog, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, eqSummary);
-            }
-
-            zState.log.unshift({ species: currentFish.species, size: currentFish.size, gender: currentFish.gender, fly: `${activeFly.name} (${activeFly.size})`, action: `SVA-provtagning (+${pts}p)` });
+            if (!currentFish) return;
+            let fishSnapshot = { ...currentFish };
             document.getElementById('welfareModal').classList.add('hidden');
             document.getElementById('welfareModal').classList.remove('flex');
-            resetAfterCatch();
+
+            let bonus = evaluateWelfareBonus();
+            let pointsAwarded = 80 + bonus;
+            gameWorld.points += pointsAwarded;
+            addXp(35);
+
+            let genderStr = fishSnapshot.gender ? ` (${fishSnapshot.gender})` : "";
+            let logText = `Provtagning av sjuk ${fishSnapshot.species.toLowerCase()}${genderStr} (${fishSnapshot.size} cm) (+${pointsAwarded} p)`;
+            gameWorld.zones[currentZoneKey].log.unshift(logText);
+
+            if (window.logBiotopeToFirebase) {
+                window.logBiotopeToFirebase(lockedAnglerName, `Tog prov på sjuk ${fishSnapshot.species.toLowerCase()} (${fishSnapshot.size} cm)`, saveanZones[currentZoneKey].name);
+            }
+
+            showCustomAlert(`🔬 Provtagning utförd!\n\nDu tog prov på en sjuk ${fishSnapshot.species.toLowerCase()}${genderStr} (${fishSnapshot.size} cm) för att spåra svampangreppet i Säveån. (+${pointsAwarded} p & +35 XP)`, "Fiskevård & Provtagning");
             updateUI();
+            resetAfterCatch();
         }
 
         async function releaseFish() {
-            const zState = gameWorld.zones[currentZoneKey];
-            const s = gameWorld.shared;
-
-            const dynamicChk = document.getElementById('chkDynamicWelfare');
-            const answeredCorrectly = dynamicChk ? dynamicChk.checked : true;
-            const air = parseInt(document.getElementById('sliderAirTime').value, 10);
-
-            let pts = WELFARE_SCORING.baseRelease;
-            if (currentFish.size >= 70) pts += WELFARE_SCORING.over70Bonus;
-            else if (currentFish.size >= 50) pts += WELFARE_SCORING.over50Bonus;
-
-            if (answeredCorrectly && currentWelfareQuestion) {
-                pts += currentWelfareQuestion.checkedPoints;
-            }
-            if (air > 10) {
-                pts += WELFARE_SCORING.airPenalty;
-            }
-            
-            let actionStr = `C&R (+${pts}p)`;
-            if (currentFish.species === "Gös") {
-                pts = WELFARE_SCORING.releaseIntruder;
-                s.population = Math.max(30, s.population - 15);
-                actionStr = `Släppte tillbaka Gös (${pts}p - Smolt äts upp!)`;
-                showCustomAlert("🚨 DU SLÄPPTE TILLBAKA EN GÖS!\n\nGösen är en glupsk predator som äter upp lax- och öringsmolt. Den skulle ha avlivats!", "Varning");
-            } else if (currentFish.species === "Gädda" && currentFish.size < 80) {
-                pts = WELFARE_SCORING.releaseSmallPike;
-                s.population = Math.max(30, s.population - 5);
-                actionStr = `C&R Gädda <80cm (${pts}p)`;
-                showCustomAlert(`⚠️ Gäddor under 80 cm (${currentFish.size} cm) jagar aktivt smolt i strömmarna och ger +${WELFARE_SCORING.keepSmallPike}p om de behålls (${pts}p vid C&R).`, "Viltvårdstips");
-            } else if (currentFish.species === "Abborre" && currentFish.size < 38) {
-                pts = WELFARE_SCORING.releaseSmallPerch;
-                s.population = Math.max(30, s.population - 3);
-                actionStr = `C&R Abborre <38cm (${pts}p)`;
-                showCustomAlert(`⚠️ Abborrar under 38 cm (${currentFish.size} cm) äter smolt och ger +${WELFARE_SCORING.keepSmallPerch}p om de behålls (${pts}p vid C&R).`, "Viltvårdstips");
-            } else if (currentFish.healthState === "bleeding") {
-                pts = WELFARE_SCORING.bleedingReleasePenalty;
-                s.population = Math.max(30, s.population - 3);
-                actionStr = `C&R Blödande fisk (${pts}p)`;
-                showCustomAlert("⚠️ Fisken blödde ur gälarna och dog kort efter återutsättning!", "Fiskvälfärd");
-            }
-
-            let eqSummary = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
-            if(window.saveCatchToFirebase && currentFish.species !== "Gös") {
-                let genderLog = currentFish.gender ? ` (${currentFish.gender})` : "";
-                window.saveCatchToFirebase(lockedAnglerName, currentFish.species + genderLog, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, eqSummary);
-            }
-
-            gameWorld.points = Math.max(0, gameWorld.points + pts);
-
-            if (currentFish.species !== "Gös" && currentFish.healthState !== "bleeding" && air <= 10 && answeredCorrectly) {
-                addXp(currentFish.size >= 70 ? 25 : 15);
-            }
-
-            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-            sharedWorldData.population = s.population;
-            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
-
-            zState.log.unshift({ species: currentFish.species, size: currentFish.size, gender: currentFish.gender, fly: `${activeFly.name} (${activeFly.size})`, action: actionStr });
+            if (!currentFish) return;
+            let fishSnapshot = { ...currentFish };
             document.getElementById('welfareModal').classList.add('hidden');
             document.getElementById('welfareModal').classList.remove('flex');
-            resetAfterCatch();
+
+            let bonus = evaluateWelfareBonus();
+            let pointsAwarded = 40 + bonus;
+            gameWorld.points += pointsAwarded;
+            addXp(25);
+
+            let genderStr = fishSnapshot.gender ? ` (${fishSnapshot.gender})` : "";
+            let logText = `Varsam C&R: ${fishSnapshot.species.toLowerCase()}${genderStr} (${fishSnapshot.size} cm) (+${pointsAwarded} p)`;
+            gameWorld.zones[currentZoneKey].log.unshift(logText);
+
+            if (window.saveCatchToFirebase && (fishSnapshot.species === "Lax" || fishSnapshot.species === "Öring")) {
+                await window.saveCatchToFirebase(lockedAnglerName, `${fishSnapshot.species}${genderStr}`, fishSnapshot.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`);
+            }
+
+            if (window.updatePlayerPointsAtomic) {
+                await window.updatePlayerPointsAtomic(lockedAnglerName, pointsAwarded);
+            }
+
             updateUI();
+            resetAfterCatch();
         }
 
         async function keepFish() {
-            const zState = gameWorld.zones[currentZoneKey];
-            const s = gameWorld.shared;
-            
-            let eqSummary = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
-            if(window.saveCatchToFirebase && currentFish.species !== "Gös") {
-                let genderLog = currentFish.gender ? ` (${currentFish.gender})` : "";
-                window.saveCatchToFirebase(lockedAnglerName, currentFish.species + genderLog, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, eqSummary);
-            }
-
-            if (currentFish.species === "Gös") {
-                gameWorld.points += WELFARE_SCORING.keepIntruder;
-                s.population = Math.min(s.maxPop, s.population + 10);
-                addXp(25);
-                zState.log.unshift({ species: currentFish.species, size: currentFish.size, gender: currentFish.gender, fly: `${activeFly.name} (${activeFly.size})`, action: `Avlivade Gös (+${WELFARE_SCORING.keepIntruder}p - Smoltskydd!)` });
-                showCustomAlert(`✅ BRA JOBBAT! Du avlivade gösen och räddade smolten (+${WELFARE_SCORING.keepIntruder}p).`, "Viltvård");
-            } else if (currentFish.species === "Gädda" && currentFish.size < 80) {
-                gameWorld.points += WELFARE_SCORING.keepSmallPike;
-                s.population = Math.min(s.maxPop, s.population + 5);
-                addXp(20);
-                zState.log.unshift({ species: currentFish.species, size: currentFish.size, gender: currentFish.gender, fly: `${activeFly.name} (${activeFly.size})`, action: `Behöll Gädda <80cm (+${WELFARE_SCORING.keepSmallPike}p - Smoltskydd!)` });
-                showCustomAlert(`✅ BRA VILTVÅRD! Du behöll gäddan (${currentFish.size} cm < 80 cm) och skyddade smolten (+${WELFARE_SCORING.keepSmallPike}p).`, "Viltvård");
-            } else if (currentFish.species === "Abborre" && currentFish.size < 38) {
-                gameWorld.points += WELFARE_SCORING.keepSmallPerch;
-                s.population = Math.min(s.maxPop, s.population + 3);
-                addXp(15);
-                zState.log.unshift({ species: currentFish.species, size: currentFish.size, gender: currentFish.gender, fly: `${activeFly.name} (${activeFly.size})`, action: `Behöll Abborre <38cm (+${WELFARE_SCORING.keepSmallPerch}p - Smoltskydd!)` });
-                showCustomAlert(`✅ BRA VILTVÅRD! Du behöll abborren (${currentFish.size} cm < 38 cm) och skyddade smolten (+${WELFARE_SCORING.keepSmallPerch}p).`, "Viltvård");
-            } else if (currentFish.healthState === "bleeding") {
-                gameWorld.points += WELFARE_SCORING.keepBleeding;
-                s.population = Math.max(30, s.population - 2);
-                addXp(15);
-                zState.log.unshift({ species: currentFish.species, size: currentFish.size, gender: currentFish.gender, fly: `${activeFly.name} (${activeFly.size})`, action: `Skonsam avlivning (+${WELFARE_SCORING.keepBleeding}p)` });
-            } else {
-                s.population = Math.max(30, s.population - 4);
-                gameWorld.points = Math.max(0, gameWorld.points + WELFARE_SCORING.keepNormal);
-                zState.log.unshift({ species: currentFish.species, size: currentFish.size, gender: currentFish.gender, fly: `${activeFly.name} (${activeFly.size})`, action: `Behållen (${WELFARE_SCORING.keepNormal}p)` });
-            }
-
-            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-            sharedWorldData.population = s.population;
-            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
-
+            if (!currentFish) return;
+            let fishSnapshot = { ...currentFish };
             document.getElementById('welfareModal').classList.add('hidden');
             document.getElementById('welfareModal').classList.remove('flex');
-            resetAfterCatch();
+
+            let genderStr = fishSnapshot.gender ? ` (${fishSnapshot.gender})` : "";
+            let pointsChange = 0;
+
+            if (fishSnapshot.species === "Gös") {
+                pointsChange = 100;
+                gameWorld.points += 100;
+                addXp(30);
+                gameWorld.zones[currentZoneKey].log.unshift(`Avlivade/behöll glesvuxen gös (${fishSnapshot.size} cm) (+100 p)`);
+                if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Avlivade/behöll glesvuxen gös (${fishSnapshot.size} cm)`, saveanZones[currentZoneKey].name);
+            } else if (fishSnapshot.species === "Gädda" && fishSnapshot.size < 80) {
+                pointsChange = 50;
+                gameWorld.points += 50;
+                addXp(25);
+                gameWorld.zones[currentZoneKey].log.unshift(`Avlivade/behöll gädda under 80 cm (${fishSnapshot.size} cm) (+50 p)`);
+                if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Avlivade/behöll gädda < 80 cm (${fishSnapshot.size} cm)`, saveanZones[currentZoneKey].name);
+            } else if (fishSnapshot.species === "Abborre" && fishSnapshot.size < 38) {
+                pointsChange = 30;
+                gameWorld.points += 30;
+                addXp(20);
+                gameWorld.zones[currentZoneKey].log.unshift(`Avlivade/behöll abborre under 38 cm (${fishSnapshot.size} cm) (+30 p)`);
+                if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Avlivade/behöll abborre < 38 cm (${fishSnapshot.size} cm)`, saveanZones[currentZoneKey].name);
+            } else {
+                pointsChange = -20;
+                gameWorld.points = Math.max(0, gameWorld.points - 20);
+                addXp(10);
+                gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 1);
+                let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                sharedWorldData.population = gameWorld.shared.population;
+                if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
+                gameWorld.zones[currentZoneKey].log.unshift(`Behöll ${fishSnapshot.species.toLowerCase()}${genderStr} (${fishSnapshot.size} cm) (-20 p)`);
+
+                if (window.saveCatchToFirebase && (fishSnapshot.species === "Lax" || fishSnapshot.species === "Öring")) {
+                    await window.saveCatchToFirebase(lockedAnglerName, `${fishSnapshot.species}${genderStr}`, fishSnapshot.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`);
+                }
+            }
+
+            if (window.updatePlayerPointsAtomic && pointsChange !== 0) {
+                await window.updatePlayerPointsAtomic(lockedAnglerName, pointsChange);
+            }
+
             updateUI();
+            resetAfterCatch();
         }
 
         function resetAfterCatch() {
-            castLine = null;
             currentFish = null;
-            isFighting = false;
-            isPressingScreen = false;
-            document.getElementById('fightOverlay').classList.add('hidden');
-            document.getElementById('canvasNotification').classList.add('hidden');
-            document.getElementById('castStatus').innerText = "Redo för nästa kast.";
+            currentWelfareQuestion = null;
+            castLine = null;
+            document.getElementById('castStatus').innerText = "Redo för kast. Klicka för kast, klicka på gubben för Hemtagning!";
+        }
+
+        function changeFlyModal() {
+            const list = document.getElementById('flyList');
+            list.innerHTML = "";
+            flies.forEach(f => {
+                let row = document.createElement('div');
+                row.className = "bg-stone-950 p-2 rounded-xl border border-stone-800 flex flex-col gap-1.5";
+                let sizeButtonsHtml = f.sizes.map(sz => {
+                    let isSelected = (activeFly.name === f.name && activeFly.size === sz);
+                    let btnClass = isSelected ? "bg-emerald-700 text-white" : "bg-stone-800 text-stone-300 hover:bg-stone-700";
+                    return `<button type="button" onclick="selectFlyAndSize('${f.name}', '${f.category}', '${sz}')" class="${btnClass} px-2 py-0.5 rounded text-[10px] font-semibold transition">${sz}</button>`;
+                }).join("");
+
+                row.innerHTML = `
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="font-bold text-stone-200">${f.name}</span>
+                        <span class="text-[10px] text-emerald-400 font-semibold">${f.category}</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1">${sizeButtonsHtml}</div>
+                `;
+                list.appendChild(row);
+            });
+            document.getElementById('flyModal').classList.remove('hidden');
+            document.getElementById('flyModal').classList.add('flex');
+        }
+
+        function selectFlyAndSize(name, category, size) {
+            activeFly = { name, category, size };
+            closeFlyModal();
+            updateUI();
         }
 
         function renderLog() {
             const logEl = document.getElementById('catchLog');
             const zState = gameWorld.zones[currentZoneKey];
             if(!zState.log || zState.log.length === 0) {
-                logEl.innerHTML = `<p class="text-stone-500 italic">Inga fångster på ${saveanZones[currentZoneKey].name} än.</p>`;
+                logEl.innerHTML = `<p class="text-stone-500 italic">Inga fångster än. Gör ett kast!</p>`;
                 return;
             }
-            logEl.innerHTML = zState.log.map(item => `
-                <div class="border-b border-stone-900 pb-1 flex justify-between items-center text-[11px]">
-                    <div><strong class="text-stone-200">${item.species}${item.gender ? ` (${item.gender})` : ""} (${item.size}cm)</strong> <span class="text-stone-400">• ${item.fly}</span></div>
-                    <span class="text-emerald-400 font-medium">${item.action}</span>
-                </div>
-            `).join("");
-        }
-
-        // --- 9K. FLUGVALSMENY ---
-        function changeFlyModal() {
-            const modal = document.getElementById('flyModal');
-            const list = document.getElementById('flyList');
-            list.innerHTML = flies.map(f => `
-                <div class="bg-stone-950 p-2 rounded-xl border border-stone-800 flex flex-col gap-1.5">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-bold text-stone-200">${f.name}</span>
-                        <span class="text-[10px] text-stone-400">${f.category}</span>
-                    </div>
-                    <div class="flex flex-wrap gap-1">
-                        ${f.sizes.map(sz => `<button type="button" onclick="selectFly('${f.name}', '${f.category}', '${sz}')" class="bg-stone-800 hover:bg-emerald-700 text-stone-300 hover:text-white px-2 py-0.5 rounded text-[10px] font-medium transition">${sz}</button>`).join("")}
-                    </div>
-                </div>
-            `).join("");
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function selectFly(name, category, size) {
-            activeFly = { name, category, size };
-            document.getElementById('flyModal').classList.add('hidden');
-            document.getElementById('flyModal').classList.remove('flex');
-            updateUI();
+            logEl.innerHTML = zState.log.map(entry => `<div class="border-b border-stone-900 pb-0.5 text-stone-300">${entry}</div>`).join("");
         }
     </script>
 </body>
