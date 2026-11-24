@@ -17,19 +17,14 @@
             75% { transform: translate(-20px, -30px) rotate(-2deg); }
             100% { transform: translate(0px, 0px) rotate(0deg); }
         }
-        .animate-fish-rush @keyframes fightCardSway {
-            0%, 100% { transform: translate(0px, 0px) rotate(-1.6deg); }
-            25%      { transform: translate(4px, -2px) rotate(1.8deg); }
-            50%      { transform: translate(-3px, 2px) rotate(-2.1deg); }
-            75%      { transform: translate(-4px, -1px) rotate(1.4deg); }
+        .animate-fish-rush {
+            animation: fishSwimRush 1.8s infinite ease-in-out;
         }
         .fight-card-sway {
             animation: fightCardSway 0.55s ease-in-out infinite;
         }
         .fight-card-sway-intense {
             animation: fightCardSway 0.28s ease-in-out infinite;
-        } {
-            animation: fishSwimRush 1.8s infinite ease-in-out;
         }
 
         @keyframes fightGlowGreen {
@@ -4424,36 +4419,7 @@
             notif.innerHTML = `🎣 ${feelDescription}`;
             notif.classList.remove('hidden');
             setTimeout(() => { notif.classList.add('hidden'); }, 2200);
-            let lastFightVibrateAt = 0;
 
-        function syncFightFeedback(pressing, stress) {
-            const card = document.getElementById('fightCard');
-            if (!card) return;
-
-            card.classList.remove('animate-fish-rush');
-
-            if (pressing) {
-                card.classList.toggle('fight-card-sway-intense', stress >= 70);
-                card.classList.toggle('fight-card-sway', stress < 70);
-
-                if ('vibrate' in navigator) {
-                    const now = performance.now();
-                    if (now - lastFightVibrateAt > 620) {
-                        const pulseOn = stress >= 70 ? 85 : 65;
-                        const pulseOff = stress >= 70 ? 25 : 40;
-                        navigator.vibrate([pulseOn, pulseOff, pulseOn, pulseOff, pulseOn, pulseOff, pulseOn, pulseOff, pulseOn, pulseOff]);
-                        lastFightVibrateAt = now;
-                    }
-                }
-            } else {
-                card.classList.remove('fight-card-sway-intense');
-                card.classList.add('fight-card-sway');
-                lastFightVibrateAt = 0;
-                if ('vibrate' in navigator) {
-                    navigator.vibrate(0);
-                }
-            }
-        }
             startFight(size, currentFish.intruder);
         }
 
@@ -4473,7 +4439,6 @@
        function startFight(fishSize, isIntruder) {
             isFighting = true;
             isPressingScreen = false;
-            syncFightFeedback(isPressingScreen, tippetStress);
             tippetStress = 0;
 
             if (isIntruder || fishSize >= 70) {
@@ -4553,10 +4518,7 @@
                 }
 
                 document.getElementById('fightTimeText').innerText = Math.max(0, fightTimeRemaining).toFixed(1) + 's';
-                lastFightVibrateAt = 0;
-                    if ('vibrate' in navigator) navigator.vibrate(0);
-                    const cardEl = document.getElementById('fightCard');
-                    if (cardEl) cardEl.classList.remove('fight-card-sway', 'fight-card-sway-intense');
+
                 if (fightTimeRemaining <= 0) {
                     clearInterval(fightInterval);
                     isFighting = false;
