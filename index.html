@@ -212,7 +212,7 @@
                 <button type="button" onclick="closePopulationModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
             </div>
             <div class="text-xs text-stone-300 space-y-2 leading-relaxed">
-                <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, fiskepress och hemtag av fisk. Varje dag har 5 kast och med <strong>Nästa dag</strong> kan du spela upp till 7 av 7 dagar (totalt 35 kast) per verkligt datum. Varje jämn vecka på måndag (v46, v48, v50...) återställs säsongens nivå/bonusar (du börjar om på nivå 1), Hall of Fame arkiveras först och rensning sker därefter – medan total ackumulerad XP, personliga rekord (PB) och gästbok bevaras.</p>
+                <p>Säveåns gemensamma fiskbestånd fluktuerar över tid på grund av naturslitage, fiskepress och hemtag av fisk. Varje dag har 5 kast och med <strong>Nästa dag</strong> kan du spela upp till 7 av 7 dagar (totalt 35 kast) per verkligt datum. Varje jämn vecka på måndag (v46, v48, v50...) återställs spelplanen, biotopvården och säsongens nivå/bonusar (du börjar om på nivå 1), Hall of Fame arkiveras först och rensning sker därefter – medan total ackumulerad XP, personliga rekord (PB) och gästbok bevaras.</p>
                 <div class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400">
                     <strong>Tips för storfiske & viltvård:</strong>
                     <ul class="list-disc list-inside mt-1 space-y-1 text-stone-300">
@@ -746,6 +746,25 @@
         }
         window.invalidateHighscoreCache = invalidateHighscoreCache;
 
+        function normalizeSeasonKey(rawKey) {
+            if (!rawKey) return "";
+            const str = String(rawKey).trim();
+            const matchW = str.match(/^(\d{4})-?W(\d{1,2})$/i);
+            if (matchW) {
+                return `${matchW[1]}-W${String(parseInt(matchW[2], 10)).padStart(2, "0")}`;
+            }
+            const matchNum = str.match(/^(\d{4})-(\d{1,2})$/);
+            if (matchNum) {
+                return `${matchNum[1]}-W${String(parseInt(matchNum[2], 10)).padStart(2, "0")}`;
+            }
+            const matchOnlyW = str.match(/^W(\d{1,2})$/i);
+            if (matchOnlyW) {
+                return `2026-W${String(parseInt(matchOnlyW[1], 10)).padStart(2, "0")}`;
+            }
+            return str;
+        }
+        window.normalizeSeasonKey = normalizeSeasonKey;
+
         function getIsoWeekInfo(dateObj = new Date()) {
             const d = new Date(Date.UTC(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()));
             const dayNum = d.getUTCDay() || 7;
@@ -763,41 +782,6 @@
             return d;
         }
 
-        // Säsonger är alltid 14 dagar och namnges efter den jämna startveckan (t.ex. 2026-W46, 2026-W48).
-        // Udda veckor (som W47) tillhör samma 14-dagarsperiod och är aldrig egna säsonger.
-        function normalizeEvenSeasonKey(rawKey) {
-            if (!rawKey) return "";
-            const str = String(rawKey).trim();
-            let year = null;
-            let weekNum = null;
-
-            const matchW = str.match(/^(\d{4})-?W(\d{1,2})$/i);
-            if (matchW) {
-                year = parseInt(matchW[1], 10);
-                weekNum = parseInt(matchW[2], 10);
-            } else {
-                const matchNum = str.match(/^(\d{4})-(\d{1,2})$/);
-                if (matchNum) {
-                    year = parseInt(matchNum[1], 10);
-                    weekNum = parseInt(matchNum[2], 10);
-                } else {
-                    const matchOnlyW = str.match(/^W(\d{1,2})$/i);
-                    if (matchOnlyW) {
-                        year = 2026;
-                        weekNum = parseInt(matchOnlyW[1], 10);
-                    }
-                }
-            }
-
-            if (year !== null && !isNaN(weekNum) && weekNum >= 1) {
-                const evenWeek = (weekNum % 2 === 0) ? weekNum : Math.max(2, weekNum - 1);
-                return `${year}-W${String(evenWeek).padStart(2, "0")}`;
-            }
-            return str;
-        }
-        window.normalizeSeasonKey = normalizeEvenSeasonKey;
-        window.normalizeEvenSeasonKey = normalizeEvenSeasonKey;
-
         function getEvenWeekSeasonInfo(dateObj = new Date()) {
             const weekInfo = getIsoWeekInfo(dateObj);
             const mondayUtc = getMondayUtcForDate(dateObj);
@@ -807,12 +791,17 @@
                 ? mondayUtc
                 : new Date(mondayUtc.getTime() - 7 * 86400000);
             const startInfo = getIsoWeekInfo(startMondayUtc);
-            const evenSeasonId = `${startInfo.year}-W${String(startInfo.week).padStart(2, '0')}`;
+            const secondWeekDate = new Date(startMondayUtc.getTime() + 7 * 86400000);
+            const secondInfo = getIsoWeekInfo(secondWeekDate);
+
+            const w1 = `${startInfo.year}-W${String(startInfo.week).padStart(2, '0')}`;
+            const w2 = `${secondInfo.year}-W${String(secondInfo.week).padStart(2, '0')}`;
 
             return {
-                seasonId: evenSeasonId,
-                activeWeeks: [evenSeasonId],
+                seasonId: w1,
+                activeWeeks: [w1, w2],
                 startWeek: startInfo.week,
+                endWeek: secondInfo.week,
                 isEvenWeek,
                 isMonday: weekInfo.isoDay === 1,
                 currentWeek: weekInfo.week,
@@ -825,21 +814,24 @@
             const info = getEvenWeekSeasonInfo(dateObj);
             return {
                 seasonId: info.seasonId,
-                activeWeeks: [info.seasonId]
+                activeWeeks: info.activeWeeks
             };
         }
         window.getActiveSeasonWeeks = getActiveSeasonWeeks;
 
-        function getPreviousEvenSeasonKey(currentEvenSeasonId) {
-            const norm = normalizeEvenSeasonKey(currentEvenSeasonId);
+        function getPreviousSeasonWeeks(currentSeasonId) {
+            const norm = normalizeSeasonKey(currentSeasonId);
             const m = norm.match(/^(\d{4})-W(\d{2})$/);
-            if (!m) return "";
+            if (!m) return [];
             const year = Number(m[1]);
-            const evenStartWeek = Number(m[2]);
-            if (evenStartWeek <= 2) return "";
-            return `${year}-W${String(evenStartWeek - 2).padStart(2, "0")}`;
+            const startWeek = Number(m[2]);
+            const prevStart = Math.max(1, startWeek - 2);
+            return [
+                `${year}-W${String(prevStart).padStart(2, "0")}`,
+                `${year}-W${String(prevStart + 1).padStart(2, "0")}`
+            ];
         }
-        window.getPreviousEvenSeasonKey = getPreviousEvenSeasonKey;
+        window.getPreviousSeasonWeeks = getPreviousSeasonWeeks;
 
         function getCurrentWeekKey() {
             return getEvenWeekSeasonInfo(new Date()).seasonId;
@@ -862,11 +854,12 @@
 
         async function fetchHighscoresOptimized(activeSeasonIds = [], maxDocs = 100) {
             await ensureAnonymousAuth();
-            const evenSeason = normalizeEvenSeasonKey(
-                (Array.isArray(activeSeasonIds) && activeSeasonIds[0]) || getCurrentWeekKey()
-            );
+            const seasonsToQuery = (activeSeasonIds.length ? activeSeasonIds : getActiveSeasonWeeks().activeWeeks)
+                .map(s => normalizeSeasonKey(s))
+                .filter(Boolean)
+                .slice(0, 10);
 
-            const cacheKey = `${evenSeason}|${maxDocs}`;
+            const cacheKey = `${seasonsToQuery.join(",")}|${maxDocs}`;
             const now = Date.now();
             if (highscoreCache.key === cacheKey && (now - highscoreCache.ts) < 15000) {
                 return highscoreCache.rows;
@@ -874,19 +867,12 @@
 
             const q = query(
                 collection(db, "highscores"),
-                where("seasonId", "==", evenSeason),
+                where("seasonId", "in", seasonsToQuery),
                 limit(maxDocs)
             );
             const snap = await getDocs(q);
             const rows = snap.docs
-                .map(d => {
-                    const data = d.data() || {};
-                    return {
-                        id: d.id,
-                        ...data,
-                        seasonId: normalizeEvenSeasonKey(data.seasonId || data.week || evenSeason)
-                    };
-                })
+                .map(d => ({ id: d.id, ...(d.data() || {}) }))
                 .sort((a, b) => getFishMetric(b) - getFishMetric(a));
 
             highscoreCache = { key: cacheKey, ts: now, rows };
@@ -904,7 +890,7 @@
                 size: getFishMetric(r),
                 zone: r.zone || "",
                 fly: r.fly || "",
-                seasonId: normalizeEvenSeasonKey(r.seasonId || r.week || seasonId)
+                seasonId: normalizeSeasonKey(r.seasonId || r.week || seasonId)
             }));
             if (typeof renderListFn === "function") {
                 renderListFn(normalized, { seasonId, activeWeeks });
@@ -913,10 +899,10 @@
         }
         window.renderActiveHighscoreView = renderActiveHighscoreView;
 
-        function buildSeasonWinnerPayload(evenSeasonKey, catchesList, fallbackRecords = null) {
-            const normKey = normalizeEvenSeasonKey(evenSeasonKey);
+        function buildSeasonWinnerPayload(seasonKey, catchesList, fallbackRecords = null) {
+            const normKey = normalizeSeasonKey(seasonKey);
             const matchingCatches = (catchesList || []).filter(c => {
-                const sKey = normalizeEvenSeasonKey(c.seasonId || c.week || "");
+                const sKey = normalizeSeasonKey(c.seasonId || c.week || "");
                 return sKey === normKey;
             });
 
@@ -952,8 +938,8 @@
             };
         }
 
-        async function ensureEvenSeasonArchived(evenSeasonKey, allCatches = [], fallbackAllTime = null) {
-            const normKey = normalizeEvenSeasonKey(evenSeasonKey);
+        async function ensureSeasonArchived(seasonKey, allCatches = [], fallbackAllTime = null) {
+            const normKey = normalizeSeasonKey(seasonKey);
             if (!normKey) return null;
 
             const hofDocRef = doc(db, "hall_of_fame", normKey);
@@ -992,56 +978,48 @@
             if (hsSnap) {
                 hsSnap.forEach(d => {
                     const data = d.data() || {};
-                    const mappedEvenKey = normalizeEvenSeasonKey(data.seasonId || data.week || "2026-W46");
+                    const rawKey = normalizeSeasonKey(data.seasonId || data.week || "");
                     catches.push({
                         ...data,
-                        seasonId: mappedEvenKey || "2026-W46"
+                        seasonId: rawKey || "2026-W46"
                     });
                 });
             }
             const allTimeData = hofSnap && hofSnap.exists() ? (hofSnap.data() || {}) : null;
-            return ensureEvenSeasonArchived("2026-W46", catches, allTimeData);
+            return ensureSeasonArchived("2026-W46", catches, allTimeData);
         };
 
-        // 1. Arkivera Hall of Fame och vinnare för jämna säsonger först.
-        // 2. Rensa gammal data som inte tillhör aktiv jämn säsong.
         window.runEvenWeekMondayResetIfNeeded = async function(previousSeasonId, currentSeasonId) {
             await ensureAnonymousAuth();
 
-            const normCurr = normalizeEvenSeasonKey(currentSeasonId || getCurrentWeekKey());
+            const normCurr = normalizeSeasonKey(currentSeasonId || getCurrentWeekKey());
             const stateRef = doc(db, "global", "season_state");
             const stateSnap = await getDoc(stateRef);
-            const statePrev = stateSnap.exists() ? normalizeEvenSeasonKey(stateSnap.data()?.lastSeasonId || "") : "";
-            const normPrev = normalizeEvenSeasonKey(previousSeasonId || statePrev);
+            const statePrev = stateSnap.exists() ? normalizeSeasonKey(stateSnap.data()?.lastSeasonId || "") : "";
+            const normPrev = normalizeSeasonKey(previousSeasonId || statePrev);
 
             const allSnap = await getDocs(collection(db, "highscores"));
             const docsList = [];
-            allSnap.forEach(d => {
-                const rawData = d.data() || {};
-                const evenSeason = normalizeEvenSeasonKey(rawData.seasonId || rawData.week || "");
-                docsList.push({
-                    id: d.id,
-                    ...rawData,
-                    seasonId: evenSeason
-                });
-            });
+            allSnap.forEach(d => docsList.push({ id: d.id, ...(d.data() || {}) }));
 
             const allTimeSnap = await getDoc(doc(db, "hall_of_fame", "all_time_records")).catch(() => null);
             const allTimeData = allTimeSnap && allTimeSnap.exists() ? (allTimeSnap.data() || {}) : null;
 
-            // Steg 1: Arkivera alla berörda jämna säsonger (inklusive W46 och föregående jämn säsong) innan rensning
-            const evenSeasonsToArchive = new Set(["2026-W46"]);
-            if (normPrev && normPrev !== normCurr) evenSeasonsToArchive.add(normPrev);
-            const prevEven = getPreviousEvenSeasonKey(normCurr);
-            if (prevEven && prevEven !== normCurr) evenSeasonsToArchive.add(prevEven);
+            // Arkivera först kända tidigare säsonger (inklusive W46 och normPrev) innan rensning
+            const seasonsToArchive = new Set();
+            if (normPrev && normPrev !== normCurr) seasonsToArchive.add(normPrev);
+            getPreviousSeasonWeeks(normCurr).forEach(w => {
+                if (w !== normCurr) seasonsToArchive.add(w);
+            });
             docsList.forEach(item => {
-                if (item.seasonId && item.seasonId !== normCurr) {
-                    evenSeasonsToArchive.add(item.seasonId);
+                const sKey = normalizeSeasonKey(item.seasonId || item.week || "");
+                if (sKey && sKey !== normCurr) {
+                    seasonsToArchive.add(sKey);
                 }
             });
 
-            for (const evenKey of evenSeasonsToArchive) {
-                await ensureEvenSeasonArchived(evenKey, docsList, allTimeData);
+            for (const sKey of seasonsToArchive) {
+                await ensureSeasonArchived(sKey, docsList, allTimeData);
             }
 
             if (!normPrev && stateSnap.exists() && statePrev === normCurr) {
@@ -1058,16 +1036,17 @@
                 return false;
             }
 
-            // Steg 2: Rensa oviktig/gammal data först efter arkivering
+            // Först därefter rensas oviktig / gammal säsongsdata
             for (const item of docsList) {
-                if (item.seasonId && item.seasonId !== normCurr) {
+                const itemSeason = normalizeSeasonKey(item.seasonId || item.week);
+                if (itemSeason && itemSeason !== normCurr) {
                     await deleteDoc(doc(db, "highscores", item.id));
                 }
             }
 
             const bioSnap = await getDocs(collection(db, "biotope_logs"));
             for (const bDoc of bioSnap.docs) {
-                const bSeason = normalizeEvenSeasonKey(bDoc.data()?.seasonId || "");
+                const bSeason = normalizeSeasonKey(bDoc.data()?.seasonId || "");
                 if (!bSeason || bSeason !== normCurr) {
                     await deleteDoc(doc(db, "biotope_logs", bDoc.id));
                 }
@@ -1078,6 +1057,21 @@
                 seasonId: normCurr,
                 updatedAt: new Date().toISOString()
             }, { merge: true });
+
+            const freshWorld = {
+                population: 210,
+                maxPop: 380,
+                trees: 2,
+                bushes: 2,
+                damPoints: 0,
+                damTarget: scalePoints(10000),
+                laddersFixed: false,
+                flowBonus: 0,
+                flowBonusDate: getLocalDateString(),
+                seasonId: normCurr,
+                zones: {}
+            };
+            await setDoc(doc(db, "world_zones", "shared_savean"), freshWorld);
 
             await setDoc(stateRef, {
                 lastSeasonId: normCurr,
@@ -1094,7 +1088,7 @@
             await window.repairW46ArchiveIfNeeded();
             const sInfo = getEvenWeekSeasonInfo(new Date());
             const stateSnap = await getDoc(doc(db, "global", "season_state"));
-            const prevId = stateSnap.exists() ? normalizeEvenSeasonKey(stateSnap.data()?.lastSeasonId || "") : "";
+            const prevId = stateSnap.exists() ? normalizeSeasonKey(stateSnap.data()?.lastSeasonId || "") : "";
             return window.runEvenWeekMondayResetIfNeeded(prevId, sInfo.seasonId);
         }
         window.runAutoSeasonRolloverIfNeeded = runAutoSeasonRolloverIfNeeded;
@@ -1120,7 +1114,7 @@
                     species: baseSpecies,
                     zone: zoneName || "",
                     fly: flyName || "",
-                    seasonId: normalizeEvenSeasonKey(seasonId || getCurrentWeekKey()),
+                    seasonId: seasonId || getCurrentWeekKey(),
                     updatedAt: new Date().toISOString()
                 };
                 await setDoc(pbRef, {
@@ -1155,7 +1149,7 @@
                     species: rawEntry.species || (category === "salmon" ? "Lax" : "Öring"),
                     zone: rawEntry.zone || "",
                     fly: rawEntry.fly || "",
-                    seasonId: normalizeEvenSeasonKey(rawEntry.seasonId || rawEntry.week || getCurrentWeekKey())
+                    seasonId: normalizeSeasonKey(rawEntry.seasonId || rawEntry.week || getCurrentWeekKey())
                 });
             };
 
@@ -1191,9 +1185,7 @@
             }
 
             let storedAllTime = {};
-            const previousSeasonsMap = new Map();
-            const activeSeasonKey = normalizeEvenSeasonKey(getCurrentWeekKey());
-
+            const previousSeasons = [];
             if (hofSnap) {
                 hofSnap.forEach(d => {
                     const data = d.data() || {};
@@ -1206,30 +1198,23 @@
                             addCandidate("trout", 3, data.trout, data.trout.recordCatches || 1);
                         }
                     } else {
-                        const evenKey = normalizeEvenSeasonKey(data.seasonId || d.id);
-                        if (data.salmon) addCandidate("salmon", 3, { ...data.salmon, seasonId: evenKey }, 1);
-                        if (data.trout) addCandidate("trout", 3, { ...data.trout, seasonId: evenKey }, 1);
-                        if (evenKey && evenKey !== activeSeasonKey) {
-                            const prevEntry = previousSeasonsMap.get(evenKey) || {
-                                id: evenKey,
-                                seasonId: evenKey,
-                                salmon: null,
-                                trout: null
-                            };
-                            if (data.salmon && getFishMetric(data.salmon) > getFishMetric(prevEntry.salmon)) {
-                                prevEntry.salmon = data.salmon;
-                            }
-                            if (data.trout && getFishMetric(data.trout) > getFishMetric(prevEntry.trout)) {
-                                prevEntry.trout = data.trout;
-                            }
-                            previousSeasonsMap.set(evenKey, prevEntry);
+                        const sKey = normalizeSeasonKey(data.seasonId || d.id);
+                        if (data.salmon) addCandidate("salmon", 3, { ...data.salmon, seasonId: sKey }, 1);
+                        if (data.trout) addCandidate("trout", 3, { ...data.trout, seasonId: sKey }, 1);
+                        const activeSeasonKey = normalizeSeasonKey(getCurrentWeekKey());
+                        if (sKey !== activeSeasonKey) {
+                            previousSeasons.push({
+                                id: d.id,
+                                seasonId: sKey,
+                                salmon: data.salmon || null,
+                                trout: data.trout || null
+                            });
                         }
                     }
                 });
             }
 
-            const previousSeasons = Array.from(previousSeasonsMap.values())
-                .sort((a, b) => normalizeEvenSeasonKey(b.seasonId).localeCompare(normalizeEvenSeasonKey(a.seasonId)));
+            previousSeasons.sort((a, b) => normalizeSeasonKey(b.seasonId).localeCompare(normalizeSeasonKey(a.seasonId)));
 
             const pickBestForCategory = (category, fallbackStored) => {
                 const list = candidatesByCategory[category];
@@ -1256,7 +1241,7 @@
                     species: winner.species || (category === "salmon" ? "Lax" : "Öring"),
                     zone: winner.zone || storedForCat?.zone || "",
                     fly: winner.fly || storedForCat?.fly || "",
-                    seasonId: normalizeEvenSeasonKey(winner.seasonId || storedForCat?.seasonId || getCurrentWeekKey()),
+                    seasonId: winner.seasonId || storedForCat?.seasonId || getCurrentWeekKey(),
                     updatedAt: new Date().toISOString()
                 };
             };
@@ -1306,7 +1291,7 @@
                 species: caughtFish.species || currentBest?.species || (category === "salmon" ? "Lax" : "Öring"),
                 zone: caughtFish.zone || currentBest?.zone || "",
                 fly: caughtFish.fly || currentBest?.fly || "",
-                seasonId: normalizeEvenSeasonKey(caughtFish.seasonId || currentBest?.seasonId || getCurrentWeekKey()),
+                seasonId: normalizeSeasonKey(caughtFish.seasonId || currentBest?.seasonId || getCurrentWeekKey()),
                 updatedAt: new Date().toISOString()
             };
 
@@ -1465,14 +1450,14 @@
 
                 if (hofArchiveEl) {
                     if (previousSeasons.length > 0) {
-                        hofArchiveEl.innerHTML = `<span class="text-stone-300 font-semibold">Tidigare 14-dagars säsonger:</span> ` + previousSeasons.map(s => {
+                        hofArchiveEl.innerHTML = `<span class="text-stone-300 font-semibold">Tidigare säsonger:</span> ` + previousSeasons.map(s => {
                             const items = [];
                             if (s.salmon) items.push(`Lax: ${s.salmon.angler} (${s.salmon.size} cm)`);
                             if (s.trout) items.push(`Öring: ${s.trout.angler} (${s.trout.size} cm)`);
                             return `<span class="inline-block mr-2"><strong class="text-stone-300">${s.seasonId}:</strong> ${items.length ? items.join(" • ") : "Inga vinnare"}</span>`;
                         }).join("");
                     } else {
-                        hofArchiveEl.innerHTML = `<span>Inga tidigare 14-dagars säsonger arkiverade ännu.</span>`;
+                        hofArchiveEl.innerHTML = `<span>Inga tidigare säsonger arkiverade ännu.</span>`;
                     }
                 }
             } catch (e) {
@@ -1683,12 +1668,7 @@
                 const docRef = doc(db, "world_zones", "shared_savean");
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
-                    const data = docSnap.data() || {};
-                    return {
-                        ...data,
-                        seasonId: normalizeEvenSeasonKey(data.seasonId || getCurrentWeekKey()),
-                        zones: (data.zones && typeof data.zones === "object") ? data.zones : {}
-                    };
+                    return docSnap.data();
                 } else {
                     const defaultWorld = {
                         population: 210,
@@ -1703,7 +1683,7 @@
                         seasonId: getCurrentWeekKey(),
                         zones: {}
                     };
-                    await setDoc(docRef, defaultWorld, { merge: true });
+                    await setDoc(docRef, defaultWorld);
                     return defaultWorld;
                 }
             } catch (e) {
@@ -1716,24 +1696,6 @@
             try {
                 await ensureAnonymousAuth();
                 const docRef = doc(db, "world_zones", "shared_savean");
-                const existingSnap = await getDoc(docRef).catch(() => null);
-                const existingZones = (existingSnap && existingSnap.exists() && existingSnap.data()?.zones && typeof existingSnap.data().zones === "object")
-                    ? existingSnap.data().zones
-                    : {};
-
-                const mergedZones = { ...existingZones };
-                if (worldData.zones && typeof worldData.zones === "object") {
-                    for (const [zKey, zVal] of Object.entries(worldData.zones)) {
-                        if (!zVal) continue;
-                        const prevZone = existingZones[zKey] || {};
-                        mergedZones[zKey] = {
-                            gravels: Array.isArray(zVal.gravels) ? zVal.gravels : (Array.isArray(prevZone.gravels) ? prevZone.gravels : []),
-                            boulders: Array.isArray(zVal.boulders) ? zVal.boulders : (Array.isArray(prevZone.boulders) ? prevZone.boulders : []),
-                            nurseries: Array.isArray(zVal.nurseries) ? zVal.nurseries : (Array.isArray(prevZone.nurseries) ? prevZone.nurseries : [])
-                        };
-                    }
-                }
-
                 await setDoc(docRef, {
                     population: worldData.population,
                     maxPop: worldData.maxPop,
@@ -1744,8 +1706,8 @@
                     laddersFixed: worldData.laddersFixed || false,
                     flowBonus: worldData.flowBonus || 0,
                     flowBonusDate: worldData.flowBonusDate || getLocalDateString(),
-                    seasonId: normalizeEvenSeasonKey(worldData.seasonId || getCurrentWeekKey()),
-                    zones: mergedZones
+                    seasonId: worldData.seasonId || getCurrentWeekKey(),
+                    zones: worldData.zones || {}
                 }, { merge: true });
             } catch (e) {
                 console.error("Fel vid sparande av gemensam värld:", e);
@@ -1773,7 +1735,7 @@
         window.fetchBiotopeLogsFromFirebase = async function() {
             try {
                 await ensureAnonymousAuth();
-                const activeSeason = normalizeEvenSeasonKey(getCurrentWeekKey());
+                const activeSeason = normalizeSeasonKey(getCurrentWeekKey());
                 const q = query(collection(db, "biotope_logs"), orderBy("timestamp", "desc"), limit(25));
                 const querySnapshot = await getDocs(q);
                 const logContainer = document.getElementById('biotopeCloudLog');
@@ -1781,7 +1743,7 @@
                 const seasonLogs = [];
                 querySnapshot.forEach(docSnap => {
                     const data = docSnap.data() || {};
-                    const logSeason = normalizeEvenSeasonKey(data.seasonId || "");
+                    const logSeason = normalizeSeasonKey(data.seasonId || "");
                     if (!logSeason || logSeason === activeSeason) {
                         seasonLogs.push(data);
                     }
@@ -1812,7 +1774,7 @@
     <!-- === 9. HUVUDSPELLOGIK (TILLSTÅND, MINISPEL, XP, PROFIL, VÄDER, CANVAS & KAST) === -->
     <script>
         let lockedAnglerName = localStorage.getItem('savean_angler_name');
-        const SEASON_ONE_TIME_RESET_ID = "2026-W48_reset_v3";
+        const SEASON_ONE_TIME_RESET_ID = "2026-W48_reset_v2";
         const POINTS_SCALE = 1.5;
         function pts(base) {
             return Math.round((Number(base) || 0) * POINTS_SCALE);
@@ -3130,7 +3092,7 @@
             document.getElementById('populationModal').classList.remove('flex');
         }
 
-        // --- 9E. INITIALISERING, SÄSONGSRESET & MOLNSESSION ---
+        // --- 9E. INITIALISERING, ENGÅNGS-RESET FÖR NY SÄSONG & MOLNSESSION ---
         window.addEventListener('DOMContentLoaded', async () => {
             if (window.ensureAnonymousAuth) {
                 await window.ensureAnonymousAuth();
@@ -3157,7 +3119,6 @@
 
             todayStr = getLocalDateString();
             const sInfo = window.getEvenWeekSeasonInfo ? window.getEvenWeekSeasonInfo(new Date()) : { seasonId: "", isEvenWeek: false, isMonday: false };
-            const normCurrSeason = window.normalizeSeasonKey ? window.normalizeSeasonKey(sInfo.seasonId) : sInfo.seasonId;
             
             try {
                 let cloudState = await window.loadPlayerStateFromFirebase(lockedAnglerName);
@@ -3165,7 +3126,7 @@
                 let didEvenWeekReset = false;
 
                 if (window.runEvenWeekMondayResetIfNeeded) {
-                    didEvenWeekReset = await window.runEvenWeekMondayResetIfNeeded(prevSeasonId, normCurrSeason);
+                    didEvenWeekReset = await window.runEvenWeekMondayResetIfNeeded(prevSeasonId, sInfo.seasonId);
                 }
 
                 let sharedWorldData = window.loadSharedWorld ? await window.loadSharedWorld() : null;
@@ -3213,7 +3174,7 @@
                     let lastDate = cloudState.lastPlayedDate || todayStr;
                     
                     if (didEvenWeekReset) {
-                        gameWorld.seasonId = normCurrSeason;
+                        gameWorld.seasonId = sInfo.seasonId;
                         gameWorld.lastPlayedDate = todayStr;
                         gameWorld.dayOfSeason = 1;
                         gameWorld.castsRemaining = 5;
@@ -3222,10 +3183,11 @@
                         gameWorld.laddersFixed = false;
                         gameWorld.shared.flowBonus = 0;
                         gameWorld.shared.flowBonusDate = todayStr;
+                        gameWorld.zones = createFreshZones();
                         await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
-                        showCustomAlert("🏆 Ny 14-dagars säsong! Hall of Fame och vinnare är arkiverade först och gammal säsongsdata rensad därefter. Biotopvården på spelplanen är bevarad.", "Ny Säsong");
+                        showCustomAlert("🏆 Ny 14-dagarsperiod! Hall of Fame och säsongsvinnare är arkiverade först och gammal data rensad därefter. Du börjar om på nivå 1 (total XP, PB & gästbok bevarade).", "Ny Säsong");
                     } else if (lastDate === todayStr) {
-                        gameWorld.seasonId = normCurrSeason;
+                        gameWorld.seasonId = sInfo.seasonId;
                         gameWorld.dayOfSeason = cloudState.dayOfSeason || 1;
                         gameWorld.castsRemaining = cloudState.castsRemaining !== undefined ? Math.max(0, cloudState.castsRemaining) : 5;
                         gameWorld.lastPlayedDate = todayStr;
@@ -3235,7 +3197,7 @@
                         let diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
                         if (isNaN(diffDays) || diffDays < 1) diffDays = 1;
 
-                        gameWorld.seasonId = normCurrSeason;
+                        gameWorld.seasonId = sInfo.seasonId;
                         gameWorld.lastPlayedDate = todayStr;
                         gameWorld.castsRemaining = 5; 
                         gameWorld.dayOfSeason = 1; 
@@ -3256,7 +3218,7 @@
                         await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
                     }
                 } else {
-                    gameWorld.seasonId = normCurrSeason;
+                    gameWorld.seasonId = sInfo.seasonId;
                     gameWorld.lastPlayedDate = todayStr;
                     gameWorld.castsRemaining = 5;
                     gameWorld.dayOfSeason = 1;
@@ -3273,28 +3235,41 @@
                     }
                     const preservedTotalXp = Math.max(Number(gameWorld.totalXp) || 0, Number(gameWorld.xp) || 0);
                     gameWorld.appliedSeasonResets[SEASON_ONE_TIME_RESET_ID] = true;
-                    gameWorld.seasonId = normCurrSeason;
+                    gameWorld.seasonId = sInfo.seasonId;
                     gameWorld.lastPlayedDate = todayStr;
                     gameWorld.dayOfSeason = 1;
                     gameWorld.castsRemaining = 5;
                     gameWorld.points = pts(700);
                     gameWorld.xp = 0;
                     gameWorld.totalXp = preservedTotalXp;
+                    gameWorld.laddersFixed = false;
+                    gameWorld.zones = createFreshZones();
                     clearTodayMiniGameLocks();
+
+                    gameWorld.shared = {
+                        population: 210,
+                        maxPop: 380,
+                        trees: 2,
+                        bushes: 2,
+                        damPoints: 0,
+                        damTarget: pts(10000),
+                        flowBonus: 0,
+                        flowBonusDate: todayStr
+                    };
 
                     if (window.saveSharedWorld) {
                         await window.saveSharedWorld({
-                            population: gameWorld.shared.population,
-                            maxPop: gameWorld.shared.maxPop,
-                            trees: gameWorld.shared.trees,
-                            bushes: gameWorld.shared.bushes,
-                            damPoints: gameWorld.shared.damPoints || 0,
-                            damTarget: gameWorld.shared.damTarget || pts(10000),
-                            laddersFixed: gameWorld.laddersFixed || false,
+                            population: 210,
+                            maxPop: 380,
+                            trees: 2,
+                            bushes: 2,
+                            damPoints: 0,
+                            damTarget: pts(10000),
+                            laddersFixed: false,
                             flowBonus: 0,
                             flowBonusDate: todayStr,
-                            seasonId: normCurrSeason,
-                            zones: gameWorld.zones
+                            seasonId: sInfo.seasonId,
+                            zones: {}
                         });
                     }
                     await window.savePlayerStateToFirebase(lockedAnglerName, gameWorld);
@@ -3547,7 +3522,6 @@
             const zState = gameWorld.zones[currentZoneKey];
             const discount = getDiscountMultiplier();
             const sInfo = window.getEvenWeekSeasonInfo ? window.getEvenWeekSeasonInfo(new Date()) : { seasonId: "" };
-            const normSeason = window.normalizeSeasonKey ? window.normalizeSeasonKey(sInfo.seasonId) : sInfo.seasonId;
 
             recomputeCurrentFlow();
 
@@ -3613,7 +3587,7 @@
                     flyCounts: gameWorld.flyCounts,
                     castsRemaining: gameWorld.castsRemaining,
                     dayOfSeason: gameWorld.dayOfSeason,
-                    seasonId: normSeason,
+                    seasonId: sInfo.seasonId,
                     equipment: gameWorld.equipment,
                     lastPlayedDate: todayStr,
                     completedMiniGames: gameWorld.completedMiniGames,
@@ -3718,7 +3692,6 @@
         }
 
         async function saveCurrentZoneBiotopeToCloud() {
-            const normSeason = window.normalizeSeasonKey ? window.normalizeSeasonKey(getCurrentWeekKey()) : getCurrentWeekKey();
             let sharedWorldData = await window.loadSharedWorld() || {
                 population: gameWorld.shared.population,
                 maxPop: gameWorld.shared.maxPop,
@@ -3729,15 +3702,15 @@
                 laddersFixed: gameWorld.laddersFixed || false,
                 flowBonus: gameWorld.shared.flowBonus || 0,
                 flowBonusDate: gameWorld.shared.flowBonusDate || getLocalDateString(),
-                seasonId: normSeason,
+                seasonId: getCurrentWeekKey(),
                 zones: {}
             };
-            sharedWorldData.seasonId = normSeason;
+            sharedWorldData.seasonId = getCurrentWeekKey();
             sharedWorldData.zones = sharedWorldData.zones || {};
             sharedWorldData.zones[currentZoneKey] = {
-                gravels: Array.isArray(gameWorld.zones[currentZoneKey].gravels) ? gameWorld.zones[currentZoneKey].gravels : [],
-                boulders: Array.isArray(gameWorld.zones[currentZoneKey].boulders) ? gameWorld.zones[currentZoneKey].boulders : [],
-                nurseries: Array.isArray(gameWorld.zones[currentZoneKey].nurseries) ? gameWorld.zones[currentZoneKey].nurseries : []
+                gravels: gameWorld.zones[currentZoneKey].gravels || [],
+                boulders: gameWorld.zones[currentZoneKey].boulders || [],
+                nurseries: gameWorld.zones[currentZoneKey].nurseries || []
             };
             if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
         }
@@ -4490,105 +4463,152 @@
             } else if (rareBigLowFlowRoll && (species === "Lax" || species === "Öring")) {
                 size = species === "Lax"
                     ? Math.floor(82 + Math.random() * 26)
-                    : Math.floor(62 + Math.random() * 22);
-            } else if (species === "Lax") {
-                size = Math.floor(Math.random() * 65) + 45;
-            } else if (species === "Öring") {
-                size = Math.floor(Math.random() * 45) + 25;
+                    : Math.floor(58 + Math.random() * 16);
             } else {
-                size = Math.floor(Math.random() * 50) + 25;
+                let baseSize = species === "Lax" ? 75 : (species === "Gädda" ? 70 : (species === "Öring" ? 40 : 30));
+                let synergy = gravelBonus === 0 ? 0.2 : Math.min(1.0, boulderBonus / Math.max(1, gravelBonus));
+                let rawBiotopeBonus = (gravelBonus * synergy * 0.4) + (boulderBonus * 0.6) + (gameWorld.laddersFixed ? 6 : 0) + (gameWorld.dayOfSeason * 0.6);
+                let biotopeSizeBonus = Math.min(10, rawBiotopeBonus);
+
+                let highFlowBonus = (species === "Lax" && currentFlowVal >= 20.0) ? Math.floor(Math.random() * 14) : 0;
+
+                let sizeRoll = Math.random();
+                let trophyChanceAdd = (isRiseBonus && (gravelBonus + boulderBonus >= 3)) ? (sizeRoll < 0.12 ? Math.random() * 22 : Math.random() * 8) : (sizeRoll < 0.04 ? Math.random() * 15 : Math.random() * 6);
+
+                size = Math.floor(baseSize + trophyChanceAdd + biotopeSizeBonus + highFlowBonus);
+
+                let isLightRod = rodSpecStr.includes("#6");
+                let isOptimalConditions = gameWorld.laddersFixed && gravelBonus > 0 && boulderBonus > 0 && nurseryBonus > 0 && currentFlowVal >= 20.0;
+                
+                if (species === "Öring" && isOptimalConditions && Math.random() < 0.15) {
+                    size = Math.floor(71 + Math.random() * 7);
+                } else if (species === "Öring" && size > 70 && !isOptimalConditions) {
+                    size = 69;
+                }
+
+                if (species === "Lax" && !isLightRod && isOptimalConditions && Math.random() < 0.02) {
+                    size = 125;
+                } else if (species === "Lax" && size > 122) {
+                    size = 122;
+                }
             }
 
-            let isBleeding = Math.random() < 0.25;
-            let isExhausted = Math.random() < 0.35;
-            let isBigGame = (species === "Lax" || species === "Öring" || species === "Gädda");
+            let healthState = "normal";
+            let canGetFungus = (species === "Lax" || species === "Öring");
+            let healthRoll = Math.random();
+            if (healthRoll < 0.08) {
+                healthState = "bleeding";
+            } else if (canGetFungus && healthRoll < 0.14) {
+                healthState = "sick";
+            }
 
-            let fullSpeciesLabel = gender ? `${species} (${gender})` : species;
+            currentFish = { species, size, gender, healthState, intruder: species === "Gös" };
+            
+            let feelDescription = currentFish.intruder ? "HUGG! En glesvuxen fisk hugger – det känns inte som en laxartad!" : (size > 75 ? "STORT HUGG! Tunga, kraftfulla ryck!" : "HUGG! En pigg fisk har tagit flugan!");
+            if (isRiseBonus) feelDescription = "⚡ VAKHUGG! " + feelDescription;
+            if (rareBigLowFlowRoll) feelDescription = `✨ LÅGVATTENS-TRÄFF (${activeFly.size})! ` + feelDescription;
 
-            currentFish = { 
-                species: fullSpeciesLabel,
-                baseSpecies: species,
-                gender: gender,
-                size, 
-                isBleeding, 
-                isExhausted, 
-                isBigGame, 
-                isRiseBonus,
-                rareBigLowFlowRoll
-            };
+            document.getElementById('castStatus').innerHTML = `<span class="text-emerald-400 font-bold">${feelDescription}</span>`;
 
             if ("vibrate" in navigator) navigator.vibrate([150, 50, 150]);
 
-            if (!isBigGame) {
-                showWelfareModal();
-                return;
-            }
+            startFightMechanic();
+        }
 
+        function startFightMechanic() {
             isFighting = true;
             isPressingScreen = false;
             tippetStress = 0;
-            
-            let duration = 4.0 + Math.random() * 2.0;
-            if (species === "Lax" && size > 80) duration = 7.5;
-            totalFightDuration = duration;
-            fightTimeRemaining = duration;
 
-            document.getElementById('fightOverlay').classList.remove('hidden');
-            document.getElementById('fightOverlay').classList.add('flex');
-            document.getElementById('fightTitle').innerText = `Drillning: ${fullSpeciesLabel} (${size} cm) – Håll inne!`;
-            document.getElementById('castStatus').innerText = "Håll inne fingret/musen för att pressa! Släpp om mätaren blir röd!";
+            let isSmallHook = ["8#", "10#", "12#", "14#", "16#"].includes(activeFly.size);
+            let isLargeFish = currentFish.size > 65;
 
-            let titleObj = getTitleAndProgress(gameWorld.xp);
-            let hasKnotControl = titleObj.levelIndex >= 4;
+            let baseDuration = 4.0 + (currentFish.size / 30);
+            if (isSmallHook && isLargeFish) {
+                baseDuration = Math.max(2.5, baseDuration * 0.72);
+            }
+            fightTimeRemaining = baseDuration;
+            totalFightDuration = baseDuration;
+
+            const overlay = document.getElementById('fightOverlay');
+            const titleEl = document.getElementById('fightTitle');
+            titleEl.innerText = (isSmallHook && isLargeFish)
+                ? "Drillning (Klen tafs!) – Var försiktig!"
+                : "Drillning – Håll inne fingret!";
+
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+
+            if (fightInterval) clearInterval(fightInterval);
 
             fightInterval = setInterval(() => {
                 if (!isFighting) return;
-                fightTimeRemaining -= 0.05;
 
-                let rodMod = isTooLightRodForSalmon ? 1.45 : (rodSpecStr.includes("#10/11") || rodSpecStr.includes("#9/10") ? 0.78 : 1.0);
-                let sizeFactor = (size / 55);
-                let knotMod = hasKnotControl ? 0.88 : 1.0;
+                let isSmallHookTick = ["8#", "10#", "12#", "14#", "16#"].includes(activeFly.size);
+                let isLargeFishTick = currentFish.size > 65;
 
-                if (isPressingScreen) {
-                    tippetStress += (2.8 * sizeFactor * rodMod * knotMod);
-                    fightTimeRemaining -= 0.03;
-                } else {
-                    tippetStress = Math.max(0, tippetStress - 2.2);
+                let titleObj = getTitleAndProgress(gameWorld.xp);
+                let knotMasterReduction = titleObj.levelIndex >= 4 ? 0.88 : 1.0;
+
+                let rodSpecStr = gameWorld.equipment.spec;
+                let isTwoHanded = rodSpecStr.includes("Tvåhands") || rodSpecStr.includes("Switch");
+                let rodStressModifier = isTwoHanded ? 0.75 : 1.0;
+
+                let stressSpeed = 26 * rodStressModifier * knotMasterReduction;
+                if (isSmallHookTick && isLargeFishTick) {
+                    stressSpeed *= 1.35;
                 }
 
-                if (Math.random() < 0.08) tippetStress += 6 * sizeFactor;
-                tippetStress = Math.min(100, Math.max(0, tippetStress));
+                let decaySpeed = 22;
 
-                const stressBar = document.getElementById('stressBar');
-                const stressText = document.getElementById('stressValueText');
-                const fightTimeText = document.getElementById('fightTimeText');
-
-                stressText.innerText = `${Math.round(tippetStress)}%`;
-                stressBar.style.width = `${tippetStress}%`;
-                fightTimeText.innerText = `${Math.max(0, fightTimeRemaining).toFixed(1)}s`;
-
-                if (tippetStress >= 80) {
-                    stressBar.className = "bg-rose-500 h-full transition-all duration-75 rounded-full";
-                    stressText.className = "text-rose-400 font-bold animate-pulse";
-                } else if (tippetStress >= 45) {
-                    stressBar.className = "bg-amber-500 h-full transition-all duration-75 rounded-full";
-                    stressText.className = "text-amber-400 font-bold";
+                if (isPressingScreen) {
+                    tippetStress = Math.min(100, tippetStress + stressSpeed * 0.05);
                 } else {
-                    stressBar.className = "bg-emerald-500 h-full transition-all duration-75 rounded-full";
-                    stressText.className = "text-emerald-400 font-bold";
+                    tippetStress = Math.max(0, tippetStress - decaySpeed * 0.05);
+                }
+
+                fightTimeRemaining -= 0.05;
+
+                let stressBar = document.getElementById('stressBar');
+                let stressVal = document.getElementById('stressValueText');
+                let timeText = document.getElementById('fightTimeText');
+                let fightCard = document.getElementById('fightCard');
+
+                stressVal.innerText = Math.round(tippetStress) + "%";
+                stressBar.style.width = tippetStress + "%";
+                timeText.innerText = Math.max(0, fightTimeRemaining).toFixed(1) + "s";
+
+                if (tippetStress < 45) {
+                    stressBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-75";
+                } else if (tippetStress < 75) {
+                    stressBar.className = "bg-amber-400 h-full rounded-full transition-all duration-75";
+                } else {
+                    stressBar.className = "bg-rose-600 h-full rounded-full transition-all duration-75 animate-pulse";
+                }
+
+                if (isFighting && Math.random() < 0.08) {
+                    fightCard.style.transform = `translate(${(Math.random()-0.5)*14}px, ${(Math.random()-0.5)*14}px) rotate(${(Math.random()-0.5)*6}deg)`;
+                } else {
+                    fightCard.style.transform = "";
                 }
 
                 if (tippetStress >= 100) {
                     clearInterval(fightInterval);
                     isFighting = false;
                     isPressingScreen = false;
-                    document.getElementById('fightOverlay').classList.add('hidden');
-                    document.getElementById('fightOverlay').classList.remove('flex');
+                    overlay.classList.add('hidden');
+                    overlay.classList.remove('flex');
                     castLine = null;
                     currentFish = null;
-                    if ("vibrate" in navigator) navigator.vibrate([500, 100, 500]);
-                    showCustomAlert(`💥 TAFSEN GICK AV!\n\nTafsstressen nådde 100% under drillningen av ${fullSpeciesLabel} (${size} cm).`, "Tafsbrott");
-                    document.getElementById('castStatus').innerText = "Tafsen gick av! Knyt ny tafs och gör ett nytt kast.";
+
+                    if ("vibrate" in navigator) navigator.vibrate([400, 100, 400, 100, 400]);
+
+                    let tafsMessage = isSmallHookTick && isLargeFishTick
+                        ? "💥 TAFSEN GICK AV! Att drilla en stor fisk på en liten fluga/tunn tafs kräver extra mjuk hand."
+                        : "💥 TAFSEN GICK AV! Du höll inne för länge eller för hårt när fisken gjorde rusningar.";
+
+                    document.getElementById('castStatus').innerHTML = `<span class="text-rose-400 font-bold">💥 Tafsen gick av!</span>`;
+                    showCustomAlert(tafsMessage, "Tafsbrott");
                     return;
                 }
 
@@ -4596,306 +4616,417 @@
                     clearInterval(fightInterval);
                     isFighting = false;
                     isPressingScreen = false;
-                    document.getElementById('fightOverlay').classList.add('hidden');
-                    document.getElementById('fightOverlay').classList.remove('flex');
+                    overlay.classList.add('hidden');
+                    overlay.classList.remove('flex');
                     castLine = null;
-                    showWelfareModal();
+                    openWelfareModal(currentFish);
                 }
             }, 50);
         }
 
-        // --- 9J. FISKVÄLFÄRD (C&R), LOGGBÖCKER & FLUGVAL ---
-        function showWelfareModal() {
-            if(!currentFish) return;
+        // --- 9J. FISKVÄLFÄRD, BLÖDER I MUNNEN, C&R & AVLIVNING ---
+        function updateAirTimeLabel(val) {
+            document.getElementById('lblAirTime').innerText = `${val}s`;
+        }
 
-            document.getElementById('caughtFishDetails').innerText = `Fångst: ${currentFish.species} (${currentFish.size} cm) • Med ${activeFly.name} (${activeFly.size})`;
+        function getSingleWelfareQuestion(fish) {
+            if (!fish) return null;
+            if (fish.intruder) {
+                return {
+                    id: "intruder_gos",
+                    question: "Inkräktare i ån: Hur bör gösen hanteras?",
+                    options: [
+                        "Avliva/ta hand om gösen för att skydda laxfisk",
+                        "Släppa tillbaka gösen i strömfåran",
+                        "Flytta den till ett lekgrusparti"
+                    ],
+                    correctIndex: 0,
+                    bonusPoints: pts(100),
+                    wrongPenalty: pts(60)
+                };
+            }
+            if (fish.healthState === "bleeding") {
+                return {
+                    id: "bleeding_mouth",
+                    question: "Fisken blöder i munnen – vad är mest ansvarsfullt?",
+                    options: [
+                        "Avliva/behålla istället för att släppa en svårt blödande fisk",
+                        "Gör varsam C&R och släpp genast tillbaka den",
+                        "Hålla den ovanför vattnet för att inspektera gälarna"
+                    ],
+                    correctIndex: 0,
+                    bonusPoints: pts(50),
+                    wrongPenalty: pts(80)
+                };
+            }
+            if (fish.healthState === "sick") {
+                return {
+                    id: "fungus_care",
+                    question: "Synlig svampinfektion – vad rekommenderas vid hantering?",
+                    options: [
+                        "Hantera snabbt i vattnet och undvik lång luftexponering",
+                        "Hålla fisken länge ovan ytan för fotografering",
+                        "Flytta den till en annan sträcka med händerna"
+                    ],
+                    correctIndex: 0,
+                    bonusPoints: pts(50),
+                    wrongPenalty: pts(60)
+                };
+            }
+            if (fish.gender === "Hona" || fish.size > 65) {
+                return {
+                    id: "spawner_care",
+                    question: "Viktig lekfisk – hur skyddar du återväxten bäst?",
+                    options: [
+                        "Kort lufttid, stöd under buken och varsam C&R",
+                        "Lyfta fisken i gälarna för vägning",
+                        "Behålla den oavsett beståndsläget"
+                    ],
+                    correctIndex: 0,
+                    bonusPoints: pts(50),
+                    wrongPenalty: pts(70)
+                };
+            }
+            return {
+                id: "general_cr",
+                question: "Vad ger bäst överlevnad vid återutsättning?",
+                options: [
+                    "Kort tid i luften, blöta händer och stöd tills den simmar iväg",
+                    "Torra händer och lång lufttid på land",
+                    "Kasta ut fisken i hård ström direkt"
+                ],
+                correctIndex: 0,
+                bonusPoints: pts(40),
+                wrongPenalty: pts(50)
+            };
+        }
 
-            let badge = document.getElementById('healthBadge');
-            badge.classList.remove('hidden');
-            
-            if (currentFish.baseSpecies === "Gös") {
-                badge.innerText = "⚠️ Främmande / Predator i ån";
-                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-950 text-amber-300 border border-amber-500/40";
-            } else if (currentFish.isBleeding) {
+        function openWelfareModal(fish) {
+            let genderStr = fish.gender ? ` (${fish.gender})` : "";
+            document.getElementById('caughtFishDetails').innerText = `${fish.species}${genderStr} – ${fish.size} cm`;
+            const slider = document.getElementById('sliderAirTime');
+            slider.value = 5;
+            updateAirTimeLabel(5);
+
+            const badge = document.getElementById('healthBadge');
+            badge.classList.add('hidden');
+            badge.className = "hidden text-[10px] font-bold px-2 py-0.5 rounded-lg";
+            if (fish.healthState === "bleeding") {
                 badge.innerText = "🩸 Blöder i munnen";
-                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-lg bg-rose-950 text-rose-400 border border-rose-500/40";
-            } else if (currentFish.isExhausted) {
-                badge.innerText = "💨 Utmattad";
-                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-950 text-amber-400 border border-amber-500/40";
-            } else {
-                badge.innerText = "💚 Pigg & Vital";
-                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-500/40";
-            }
-
-            let questions = [];
-            if (currentFish.baseSpecies === "Gös") {
-                questions.push({
-                    id: 'gos_invasive',
-                    prompt: "Gös i Säveån hotar lax- och öringsyngel. Hur hanterar du fångsten?",
-                    options: [
-                        { text: "Avliva & behåll för viltvård (+150 p)", isCorrect: true },
-                        { text: "Släpp tillbaka gösen i ån (-120 p)", isCorrect: false }
-                    ]
-                });
-            }
-            if (currentFish.isBleeding) {
-                questions.push({
-                    id: 'bleeding_action',
-                    prompt: "Fisken blöder i munnen. Hur hanterar du detta bäst?",
-                    options: [
-                        { text: "Behåll / avliva skadad fisk (+75 p)", isCorrect: true },
-                        { text: "Släpp tillbaka med C&R (-120 p)", isCorrect: false }
-                    ]
-                });
-            }
-            if (currentFish.isExhausted) {
-                questions.push({
-                    id: 'exhausted_action',
-                    prompt: "Fisken är utmattad efter drillningen. Vad gör du?",
-                    options: [
-                        { text: "Återhämta varsamt mot strömmen (C&R)", isCorrect: true },
-                        { text: "Kasta i fisken direkt i vattnet", isCorrect: false }
-                    ]
-                });
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-lg bg-rose-950 text-rose-300 border border-rose-500/50";
+                badge.classList.remove('hidden');
+            } else if (fish.healthState === "sick") {
+                badge.innerText = "🦠 Svampangrepp";
+                badge.className = "text-[10px] font-bold px-2 py-0.5 rounded-lg bg-amber-950 text-amber-300 border border-amber-500/50";
+                badge.classList.remove('hidden');
             }
 
             const qContainer = document.getElementById('dynamicSingleQuestionContainer');
-            currentWelfareQuestion = null;
-
-            if (questions.length > 0) {
-                currentWelfareQuestion = questions[0];
-                let optionsHtml = currentWelfareQuestion.options.map((opt, idx) => `
-                    <label class="flex items-center gap-1.5 bg-stone-900/90 px-2 py-1 rounded-lg border border-stone-800 cursor-pointer hover:bg-stone-800 text-[11px] text-stone-200">
-                        <input type="radio" name="welfareSingleQ" value="${idx}" ${idx === 0 ? 'checked' : ''} class="accent-emerald-500">
-                        <span>${opt.text}</span>
-                    </label>
-                `).join('');
-
+            currentWelfareQuestion = getSingleWelfareQuestion(fish);
+            if (currentWelfareQuestion) {
                 qContainer.innerHTML = `
-                    <div class="bg-stone-950 px-2.5 py-2 rounded-xl border border-stone-800 flex flex-col gap-1.5">
-                        <p class="font-semibold text-amber-300 text-[11px] leading-snug">${currentWelfareQuestion.prompt}</p>
-                        <div class="flex flex-col gap-1">${optionsHtml}</div>
+                    <div class="bg-stone-900 px-2.5 py-2 rounded-xl border border-stone-800 text-[11px] flex flex-col gap-1">
+                        <p class="font-semibold text-amber-300 leading-snug">${currentWelfareQuestion.question}</p>
+                        ${currentWelfareQuestion.options.map((opt, idx) => `
+                            <label class="flex items-start gap-1.5 text-stone-300 cursor-pointer leading-tight">
+                                <input type="radio" name="welfareSingleOpt" value="${idx}" class="mt-0.5 accent-emerald-500" ${idx === 0 ? 'checked' : ''}>
+                                <span>${opt}</span>
+                            </label>
+                        `).join('')}
                     </div>
                 `;
             } else {
                 qContainer.innerHTML = "";
             }
 
-            document.getElementById('sliderAirTime').value = 5;
-            document.getElementById('lblAirTime').innerText = "5s";
-
             const btnSample = document.getElementById('btnSampleFish');
-            if (currentFish.baseSpecies === "Lax" || currentFish.baseSpecies === "Öring") {
+            if ((fish.species === "Lax" || fish.species === "Öring") && fish.size > 60) {
                 btnSample.classList.remove('hidden');
             } else {
                 btnSample.classList.add('hidden');
             }
-
             document.getElementById('welfareModal').classList.remove('hidden');
             document.getElementById('welfareModal').classList.add('flex');
         }
 
-        function updateAirTimeLabel(val) {
-            document.getElementById('lblAirTime').innerText = `${val}s`;
+        function evaluateSingleWelfareQuestion() {
+            if (!currentWelfareQuestion) return { deltaPoints: 0, text: "" };
+            const selected = document.querySelector('input[name="welfareSingleOpt"]:checked');
+            const chosenIdx = selected ? parseInt(selected.value, 10) : -1;
+            if (chosenIdx === currentWelfareQuestion.correctIndex) {
+                return {
+                    deltaPoints: currentWelfareQuestion.bonusPoints,
+                    text: `Rätt svar på fiskevårdsfrågan (+${currentWelfareQuestion.bonusPoints} p).`
+                };
+            }
+            return {
+                deltaPoints: -currentWelfareQuestion.wrongPenalty,
+                text: `Tveksamt val på fiskevårdsfrågan (-${currentWelfareQuestion.wrongPenalty} p).`
+            };
         }
 
-        function evaluateSingleQuestion() {
-            if (!currentWelfareQuestion) return { answeredCorrectly: true, extraPoints: 0, extraXp: 0 };
-            const selected = document.querySelector('input[name="welfareSingleQ"]:checked');
-            const idx = selected ? parseInt(selected.value, 10) : 0;
-            const chosenOpt = currentWelfareQuestion.options[idx] || currentWelfareQuestion.options[0];
-            if (chosenOpt && chosenOpt.isCorrect) {
-                return { answeredCorrectly: true, extraPoints: pts(50), extraXp: 10 };
-            }
-            return { answeredCorrectly: false, extraPoints: 0, extraXp: 0 };
+        function computeSurvivalChance(fish, airTimeSec) {
+            let chance = 95 - (airTimeSec * 4.5);
+            if (fish.healthState === "bleeding") chance -= 45;
+            if (fish.healthState === "sick") chance -= 25;
+            if (parseFloat(weatherData.waterTemp) > 15) chance -= 15;
+            return Math.max(5, Math.min(99, Math.round(chance)));
         }
 
         async function releaseFish() {
-            if(!currentFish) return;
+            if (isActionLocked) return;
+            isActionLocked = true;
+            const airTime = parseInt(document.getElementById('sliderAirTime').value) || 0;
+            const qEval = evaluateSingleWelfareQuestion();
 
-            if (currentFish.baseSpecies === "Gös") {
-                gameWorld.points = Math.max(0, gameWorld.points - pts(80));
-                addCatchLog(`Släppte tillbaka främmande Gös (${currentFish.size} cm) – -${pts(80)} p`);
-                showCustomAlert(`⚠️ Gös släpptes tillbaka! Gös i Säveån är en främmande predator som hotar lax- och öringsyngel (-${pts(80)} p).`, "Viltvård");
-                resetAfterCatch();
-                updateUI();
-                return;
-            }
-
-            if (currentFish.isBleeding) {
-                gameWorld.points = Math.max(0, gameWorld.points - pts(80));
-                addCatchLog(`Släppte blödande ${currentFish.species} (${currentFish.size} cm) – -${pts(80)} p`);
-                showCustomAlert(`🩸 Fisken blödde i munnen och släpptes med C&R (-${pts(80)} p). Skadad fisk bör avlivas varsamt om den inte kan återhämta sig.`, "Fiskvälfärd");
-                resetAfterCatch();
-                updateUI();
-                return;
-            }
-
-            const qEval = evaluateSingleQuestion();
-            let airSec = parseInt(document.getElementById('sliderAirTime').value, 10);
-
-            let survivalProb = 0.96;
-            if (airSec > 10) survivalProb -= (airSec - 10) * 0.08;
-            if (currentFish.isExhausted) survivalProb -= 0.12;
-            if (!qEval.answeredCorrectly) survivalProb -= 0.10;
-            survivalProb = Math.max(0.15, Math.min(0.99, survivalProb));
-
-            let survived = Math.random() < survivalProb;
-            let earned = pts(40) + (currentFish.isRiseBonus ? pts(20) : 0) + qEval.extraPoints;
-
-            if (survived) {
-                gameWorld.points += earned;
-                addXp(25 + qEval.extraXp);
-                gameWorld.shared.population = Math.min(gameWorld.shared.maxPop, gameWorld.shared.population + 1);
-
-                addCatchLog(`Varsam C&R: ${currentFish.species} (${currentFish.size} cm) på ${activeFly.name} (${activeFly.size}) – +${earned} p`);
-
-                if (currentFish.baseSpecies === "Lax" || currentFish.baseSpecies === "Öring") {
-                    if (window.saveCatchToFirebase) {
-                        window.saveCatchToFirebase(lockedAnglerName, currentFish.species, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`);
-                    }
+            try {
+                if (currentFish.intruder) {
+                    const penalty = pts(100);
+                    gameWorld.points = Math.max(0, gameWorld.points - penalty);
+                    addLogEntry(`⚠️ Släppte inkräktargös (${currentFish.size} cm) – sämre balans (-${penalty} p).`);
+                    showCustomAlert(`⚠️ Du släppte tillbaka en gös (${currentFish.size} cm)! Som inkräktare i strömmande laxvatten kan gösen konkurrera med lax och öring (-${penalty} p).`, "Inkräktare Släppt");
+                    resetAfterCatch();
+                    updateUI();
+                    return;
                 }
 
-                let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-                sharedWorldData.population = gameWorld.shared.population;
-                if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+                if (currentFish.healthState === "bleeding") {
+                    const bleedCrPenalty = pts(120);
+                    gameWorld.points = Math.max(0, gameWorld.points - bleedCrPenalty + qEval.deltaPoints);
+                    addLogEntry(`🩸 Varsam C&R på fisk som blöder i munnen (${currentFish.species}, ${currentFish.size} cm) – minuspoäng (-${bleedCrPenalty} p).`);
+                    showCustomAlert(`🩸 Varsam C&R på en fisk som blöder i munnen ger minuspoäng (-${bleedCrPenalty} p)! Vid blödning i munnen är det bättre att avliva/behålla fisken än att släppa tillbaka den. ${qEval.text}`, "Blöder i munnen");
+                    resetAfterCatch();
+                    updateUI();
+                    return;
+                }
 
-                showCustomAlert(`💚 Varsam C&R lyckades! ${currentFish.species} (${currentFish.size} cm) simmade piggt iväg (+${earned} p).`, "Lyckad C&R");
-            } else {
-                let penalty = pts(50);
-                gameWorld.points = Math.max(0, gameWorld.points - penalty);
-                addXp(10);
-                gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 2);
+                let survivalChance = computeSurvivalChance(currentFish, airTime);
+                let survived = (Math.random() * 100) < survivalChance;
 
-                addCatchLog(`Misslyckad C&R: ${currentFish.species} (${currentFish.size} cm) klarade sig ej – -${penalty} p`);
+                if (survived) {
+                    const baseCr = pts(100);
+                    let bonus = (currentFish.size > 65 ? pts(50) : pts(20)) + (airTime <= 5 ? pts(30) : 0);
+                    let totalGain = baseCr + bonus + qEval.deltaPoints;
+                    gameWorld.points = Math.max(0, gameWorld.points + totalGain);
+                    
+                    gameWorld.shared.population = Math.min(gameWorld.shared.maxPop, gameWorld.shared.population + 1);
+                    addXp(25);
 
-                let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-                sharedWorldData.population = gameWorld.shared.population;
-                if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+                    let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                    sharedWorldData.population = gameWorld.shared.population;
+                    if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-                showCustomAlert(`💔 Fisken (${currentFish.species}, ${currentFish.size} cm) återhämtade sig tyvärr inte efter ${airSec}s ovan ytan (-${penalty} p).`, "Fiskvälfärd");
+                    if (window.saveCatchToFirebase) {
+                        let fullSpeciesName = currentFish.gender ? `${currentFish.species} (${currentFish.gender})` : currentFish.species;
+                        let eqStr = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
+                        await window.saveCatchToFirebase(lockedAnglerName, fullSpeciesName, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, eqStr);
+                    }
+
+                    let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+                    addLogEntry(`Varsam C&R: ${currentFish.species}${genderStr} (${currentFish.size} cm, ${airTime}s luft) – överlevde (${survivalChance}%), +${totalGain} p`);
+                    showCustomAlert(`Fisken simmade iväg med god chans (${survivalChance}% överlevnad)! +${totalGain} p ${qEval.text}`, "Varsam C&R");
+                } else {
+                    const lossPen = pts(40);
+                    gameWorld.points = Math.max(0, gameWorld.points - lossPen + qEval.deltaPoints);
+                    gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 1);
+                    
+                    let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                    sharedWorldData.population = gameWorld.shared.population;
+                    if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
+                    let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+                    addLogEntry(`Återutsättning misslyckades: ${currentFish.species}${genderStr} (${currentFish.size} cm, ${airTime}s luft) – överlevde inte (${survivalChance}%), -${lossPen} p`);
+                    showCustomAlert(`Tyvärr klarade sig inte fisken efter ${airTime}s ovan ytan (${survivalChance}% överlevnadskans). Beståndet minskar med 1 fisk och du förlorar ${lossPen} p. ${qEval.text}`, "Fisk Förlorad");
+                }
+
+                resetAfterCatch();
+                updateUI();
+            } finally {
+                setTimeout(() => { isActionLocked = false; }, 500);
             }
-
-            resetAfterCatch();
-            updateUI();
         }
 
         async function keepFish() {
-            if(!currentFish) return;
+            if (isActionLocked) return;
+            isActionLocked = true;
+            const qEval = evaluateSingleWelfareQuestion();
 
-            if (currentFish.baseSpecies === "Gös") {
-                const gosReward = pts(100);
-                gameWorld.points += gosReward;
-                addXp(25);
-                addCatchLog(`Avlivade/behöll främmande Gös (${currentFish.size} cm) – +${gosReward} p (viltvård)`);
-                showCustomAlert(`🎯 Utmärkt viltvård! Genom att avliva och behålla gösen (${currentFish.size} cm) skyddade du Säveåns lax- och öringbestånd (+${gosReward} p).`, "Predatorvård");
-                resetAfterCatch();
-                updateUI();
-                return;
-            }
+            try {
+                if (currentFish.intruder) {
+                    const gosBonus = pts(100);
+                    gameWorld.points = Math.max(0, gameWorld.points + gosBonus + qEval.deltaPoints);
+                    gameWorld.shared.population = Math.min(gameWorld.shared.maxPop, gameWorld.shared.population + 1);
+                    addXp(25);
 
-            if (currentFish.isBleeding) {
-                const bleedReward = pts(50);
-                gameWorld.points += bleedReward;
-                addXp(20);
-                addCatchLog(`Avlivade/behöll blödande ${currentFish.species} (${currentFish.size} cm) – +${bleedReward} p`);
-                showCustomAlert(`🩹 Korrekt hantering! Fisken blödde i munnen och avlivades/behölls varsamt (+${bleedReward} p).`, "Fiskvälfärd");
-                resetAfterCatch();
-                updateUI();
-                return;
-            }
+                    let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                    sharedWorldData.population = gameWorld.shared.population;
+                    if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
-            const qEval = evaluateSingleQuestion();
-            let keepCost = pts(35);
+                    if (window.saveCatchToFirebase) {
+                        let eqStr = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
+                        await window.saveCatchToFirebase(lockedAnglerName, currentFish.species, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, eqStr);
+                    }
 
-            if (gameWorld.points < keepCost) {
-                showCustomAlert(`Du behöver minst ${keepCost} p för att behålla fisken, eller släpp den med varsam C&R!`, "Poäng saknas");
-                return;
-            }
-
-            gameWorld.points -= keepCost;
-            addXp(15 + qEval.extraXp);
-            gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 1);
-
-            addCatchLog(`Behöll ${currentFish.species} (${currentFish.size} cm) – -${keepCost} p`);
-
-            if (currentFish.baseSpecies === "Lax" || currentFish.baseSpecies === "Öring") {
-                if (window.saveCatchToFirebase) {
-                    window.saveCatchToFirebase(lockedAnglerName, currentFish.species, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`);
+                    addLogEntry(`Avlivade inkräktargös (${currentFish.size} cm) – +${gosBonus} p för fiskevård`);
+                    showCustomAlert(`🎯 Bra jobbat! Du tog upp och avlivade en gös (${currentFish.size} cm) som utgjorde ett hot mot laxfiskbeståndet! +${gosBonus} p ${qEval.text}`, "Fiskevård");
+                    resetAfterCatch();
+                    updateUI();
+                    return;
                 }
+
+                if (currentFish.healthState === "bleeding") {
+                    const bleedKeepGain = pts(50);
+                    gameWorld.points = Math.max(0, gameWorld.points + bleedKeepGain + qEval.deltaPoints);
+                    gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 1);
+                    addXp(20);
+
+                    let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                    sharedWorldData.population = gameWorld.shared.population;
+                    if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
+                    if (window.saveCatchToFirebase) {
+                        let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+                        let eqStr = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
+                        await window.saveCatchToFirebase(lockedAnglerName, `${currentFish.species}${genderStr}`, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, eqStr);
+                    }
+
+                    let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+                    addLogEntry(`Avlivade fisk som blöder i munnen (${currentFish.species}${genderStr}, ${currentFish.size} cm) – +${bleedKeepGain} p (bestånd -1)`);
+                    showCustomAlert(`🩸 Ansvarsfullt val! Fisken blödde i munnen – du avlivade/behöll den i stället för att släppa en skadad fisk. Du får +${bleedKeepGain} p (beståndet minskar med 1 fisk). ${qEval.text}`, "Blöder i munnen");
+                    resetAfterCatch();
+                    updateUI();
+                    return;
+                }
+
+                if((currentFish.species === "Lax" || currentFish.species === "Öring") && (currentFish.size > 65 || currentFish.gender === "Hona")) {
+                    const penalty = pts(250);
+                    gameWorld.points = Math.max(0, gameWorld.points - penalty + qEval.deltaPoints);
+                    gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 1);
+                    
+                    let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                    sharedWorldData.population = gameWorld.shared.population;
+                    if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
+                    if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, `Tog hem en stor ${currentFish.species} (${currentFish.size} cm)`, saveanZones[currentZoneKey].name);
+                    
+                    let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+                    addLogEntry(`⚠️ FISKEVÅRDSBROTT: Behöll ${currentFish.species}${genderStr} (${currentFish.size} cm) – ${penalty} p`);
+                    showCustomAlert(`Du har tagit hem en stor ${currentFish.species}${genderStr} (${currentFish.size} cm) – viktig för lek och återväxt! Det kostar dig ${penalty} poäng. ${qEval.text}`, "Fiskevårdsbrott");
+                } else {
+                    const baseKeep = pts(60);
+                    gameWorld.points = Math.max(0, gameWorld.points + baseKeep + qEval.deltaPoints);
+                    gameWorld.shared.population = Math.max(30, gameWorld.shared.population - 1);
+                    addXp(15);
+
+                    let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                    sharedWorldData.population = gameWorld.shared.population;
+                    if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
+                    if (window.saveCatchToFirebase) {
+                        let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+                        let eqStr = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
+                        await window.saveCatchToFirebase(lockedAnglerName, `${currentFish.species}${genderStr}`, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, eqStr);
+                    }
+
+                    let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+                    addLogEntry(`Behöll ${currentFish.species}${genderStr} (${currentFish.size} cm) – +${baseKeep} p`);
+                }
+
+                resetAfterCatch();
+                updateUI();
+            } finally {
+                setTimeout(() => { isActionLocked = false; }, 500);
             }
-
-            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-            sharedWorldData.population = gameWorld.shared.population;
-            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
-
-            showCustomAlert(`🐟 Du behöll ${currentFish.species} (${currentFish.size} cm) (-${keepCost} p). Beståndet i ån påverkades något.`, "Fångst Behållen");
-            resetAfterCatch();
-            updateUI();
         }
 
         async function sampleFish() {
-            if(!currentFish) return;
-            const sampleReward = pts(40);
-            gameWorld.points += sampleReward;
-            addXp(20);
+            if (isActionLocked) return;
+            isActionLocked = true;
+            const qEval = evaluateSingleWelfareQuestion();
 
-            addCatchLog(`Biologisk provtagning på ${currentFish.species} (${currentFish.size} cm) – +${sampleReward} p`);
-            showCustomAlert(`🔬 Provtagning utförd på ${currentFish.species} (${currentFish.size} cm)! Forskningen får värdefull data om vandring och kondition (+${sampleReward} p).`, "Forskning & Biologi");
+            try {
+                const sampleGain = pts(80);
+                gameWorld.points = Math.max(0, gameWorld.points + sampleGain + qEval.deltaPoints);
+                addXp(20);
 
-            resetAfterCatch();
-            updateUI();
+                if (window.saveCatchToFirebase) {
+                    let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+                    let eqStr = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
+                    await window.saveCatchToFirebase(lockedAnglerName, `${currentFish.species}${genderStr}`, currentFish.size, `${activeFly.name} (${activeFly.size})`, saveanZones[currentZoneKey].name, eqStr);
+                }
+
+                let genderStr = currentFish.gender ? ` (${currentFish.gender})` : "";
+                addLogEntry(`Forskning/provtagning på ${currentFish.species}${genderStr} (${currentFish.size} cm) – +${sampleGain} p`);
+                showCustomAlert(`Provtagning slutförd! +${sampleGain} poäng tilldelade. ${qEval.text}`, "Forskning");
+                resetAfterCatch();
+                updateUI();
+            } finally {
+                setTimeout(() => { isActionLocked = false; }, 500);
+            }
         }
 
         function resetAfterCatch() {
             currentFish = null;
             currentWelfareQuestion = null;
-            castLine = null;
-            isFighting = false;
-            isPressingScreen = false;
-            document.getElementById('fightOverlay').classList.add('hidden');
-            document.getElementById('fightOverlay').classList.remove('flex');
             document.getElementById('welfareModal').classList.add('hidden');
             document.getElementById('welfareModal').classList.remove('flex');
         }
 
-        function addCatchLog(msg) {
-            const zState = gameWorld.zones[currentZoneKey];
-            zState.log = zState.log || [];
-            zState.log.unshift(`[${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}] ${msg}`);
-            if(zState.log.length > 20) zState.log.pop();
-            renderLog();
-        }
-
-        function renderLog() {
-            const zState = gameWorld.zones[currentZoneKey];
-            const logEl = document.getElementById('catchLog');
-            if (!zState.log || zState.log.length === 0) {
-                logEl.innerHTML = `<p class="text-stone-500 italic">Inga fångster än. Gör ett kast!</p>`;
-                return;
-            }
-            logEl.innerHTML = zState.log.map(entry => `<div class="border-b border-stone-900 pb-0.5 text-[10px]">${entry}</div>`).join("");
-        }
-
+        // --- 9K. FLUGVAL & LOGGBOK ---
         function changeFlyModal() {
-            const list = document.getElementById('flyList');
-            list.innerHTML = "";
+            let listEl = document.getElementById('flyList');
+            listEl.innerHTML = "";
             flies.forEach(f => {
                 let row = document.createElement('div');
-                row.className = "bg-stone-950 p-2 rounded-xl border border-stone-800 flex flex-col gap-1.5";
-                let sizesHtml = f.sizes.map(s => `<button type="button" onclick="selectFly('${f.name}', '${f.category}', '${s}')" class="bg-stone-900 hover:bg-emerald-700 text-stone-200 hover:text-white px-2 py-0.5 rounded-lg text-[10px] font-bold border border-stone-800 transition">${s}</button>`).join(" ");
-                row.innerHTML = `<div class="flex justify-between items-center text-xs"><span class="font-bold text-stone-200">${f.name}</span><span class="text-[10px] text-emerald-400">${f.category}</span></div><div class="flex flex-wrap gap-1">${sizesHtml}</div>`;
-                list.appendChild(row);
+                row.className = "bg-stone-950 p-2 rounded-xl border border-stone-800 flex flex-col gap-1";
+                
+                let top = document.createElement('div');
+                top.className = "flex justify-between items-center text-xs";
+                top.innerHTML = `<span class="font-bold text-stone-200">${f.name}</span><span class="text-[10px] text-emerald-400">${f.category}</span>`;
+                
+                let sizesDiv = document.createElement('div');
+                sizesDiv.className = "flex gap-1.5 flex-wrap mt-1";
+                f.sizes.forEach(s => {
+                    let btn = document.createElement('button');
+                    btn.type = "button";
+                    let isSelected = (activeFly.name === f.name && activeFly.size === s);
+                    btn.className = isSelected ? "bg-emerald-600 text-white px-2 py-0.5 rounded-lg text-[10px] font-bold" : "bg-stone-800 hover:bg-stone-700 text-stone-300 px-2 py-0.5 rounded-lg text-[10px]";
+                    btn.innerText = s;
+                    btn.onclick = () => {
+                        activeFly = { name: f.name, category: f.category, size: s };
+                        closeFlyModal();
+                        updateUI();
+                    };
+                    sizesDiv.appendChild(btn);
+                });
+
+                row.appendChild(top);
+                row.appendChild(sizesDiv);
+                listEl.appendChild(row);
             });
             document.getElementById('flyModal').classList.remove('hidden');
             document.getElementById('flyModal').classList.add('flex');
         }
 
-        function selectFly(name, category, size) {
-            activeFly = { name, category, size };
-            closeFlyModal();
-            updateUI();
+        function addLogEntry(text) {
+            const zState = gameWorld.zones[currentZoneKey];
+            zState.log = zState.log || [];
+            zState.log.unshift(text);
+            renderLog();
         }
+
+        function renderLog() {
+            const logEl = document.getElementById('catchLog');
+            const zState = gameWorld.zones[currentZoneKey];
+            const log = zState.log || [];
+            if(log.length === 0) {
+                logEl.innerHTML = `<p class="text-stone-500 italic">Inga fångster än på ${saveanZones[currentZoneKey].name}. Gör ett kast!</p>`;
+                return;
+            }
+            logEl.innerHTML = log.map(entry => `<div class="border-b border-stone-900 pb-1 text-[11px] text-stone-300">${entry}</div>`).join("");
+        }
+
+        resizeCanvas();
     </script>
 </body>
 </html>
