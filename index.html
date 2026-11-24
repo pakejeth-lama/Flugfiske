@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flugfiskarens Ekosystem – Säveån Open World</title>
+    <title>Flugfiskarens Ekosystem – Säveån Open World (v2.7)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- === 1. ANIMATIONER & LAYOUT-STILAR === -->
     <style>
@@ -4489,55 +4489,65 @@
                 const dt = Math.min(0.15, (now - lastTick) / 1000);
                 lastTick = now;
 
-                let baseSensitivity = isHeavy ? (isLightRod ? 84 : 62) : 44;
-                if (isIntruder) baseSensitivity = 68;
+                let baseSensitivity = isHeavy ? (isLightRod ? 142 : 112) : 84;
+                if (isIntruder) baseSensitivity = 122;
 
                 if (isPressingScreen) {
                     // Sekunderna går ENDAST medan du håller inne
                     fightTimeRemaining = Math.max(0, fightTimeRemaining - dt);
 
-                    // Känsligare mätare med tydligare naturliga ryck när du håller inne
-                    const rushSurge = (Math.random() - 0.32) * 38;
-                    const climbRate = Math.max(12, (baseSensitivity + rushSurge) * flowStressMultiplier * lineControlBonus);
+                    // Mer känslig tafsmätare med tydliga ryck i strömmen
+                    const rushSurge = (Math.random() - 0.28) * 76;
+                    const climbRate = Math.max(28, (baseSensitivity + rushSurge) * flowStressMultiplier * lineControlBonus);
                     tippetStress = Math.min(100, tippetStress + climbRate * dt);
 
                     if ('vibrate' in navigator) {
                         const nowMs = performance.now();
-                        const vibIntervalMs = tippetStress >= 75 ? 90 : (tippetStress >= 38 ? 135 : 200);
+                        const vibIntervalMs = tippetStress >= 75 ? 55 : (tippetStress >= 35 ? 85 : 125);
                         if (!window._lastFightVibMs || (nowMs - window._lastFightVibMs) >= vibIntervalMs) {
                             window._lastFightVibMs = nowMs;
-                            navigator.vibrate(tippetStress >= 75 ? 60 : 38);
+                            const pulseMs = tippetStress >= 75 ? 110 : (tippetStress >= 35 ? 80 : 55);
+                            navigator.vibrate(pulseMs);
                         }
                     }
                 } else {
-                    // När du släpper står tiden still och stressen sjunker mer responsivt med små ryck
-                    const releaseSurge = (Math.random() - 0.45) * 14;
-                    const dropRate = Math.max(18, (isHeavy ? 62 : 76) + releaseSurge);
+                    // När du släpper står tiden still och tafsmätaren sjunker med levande återhämtning
+                    const releaseSurge = (Math.random() - 0.40) * 30;
+                    const dropRate = Math.max(32, (isHeavy ? 104 : 122) + releaseSurge);
                     tippetStress = Math.max(0, tippetStress - dropRate * dt);
+
+                    if ('vibrate' in navigator && tippetStress > 5) {
+                        const nowMs = performance.now();
+                        if (!window._lastReleaseVibMs || (nowMs - window._lastReleaseVibMs) >= 160) {
+                            window._lastReleaseVibMs = nowMs;
+                            navigator.vibrate(28);
+                        }
+                    }
                 }
 
-                document.getElementById('stressValueText').innerText = Math.round(tippetStress) + '%';
+                const roundedStress = Math.round(tippetStress);
+                document.getElementById('stressValueText').innerText = roundedStress + '%';
                 const bar = document.getElementById('stressBar');
-                bar.style.width = tippetStress + '%';
+                bar.style.width = tippetStress.toFixed(1) + '%';
                 updateFightGlowBorder(tippetStress);
                 if (fightCardEl) {
-                    const isHard = tippetStress >= 60;
+                    const isHard = tippetStress >= 55;
                     fightCardEl.classList.toggle('fight-stream-sway-hard', isHard);
                     fightCardEl.classList.toggle('fight-stream-sway', !isHard);
                     const flowVal = Math.max(4, parseFloat(weatherData.flow) || 14);
-                    const flowFactor = Math.min(1.75, Math.max(0.85, flowVal / 15));
-                    const t = now * 0.001 * (isHard ? 2.55 : 1.65) * flowFactor;
-                    const ampX = (isHard ? 52 : 36) * Math.min(1.35, flowFactor);
+                    const flowFactor = Math.min(1.8, Math.max(0.85, flowVal / 15));
+                    const t = now * 0.001 * (isHard ? 2.65 : 1.75) * flowFactor;
+                    const ampX = (isHard ? 54 : 38) * Math.min(1.35, flowFactor);
                     const ampY = isHard ? 22 : 14;
                     const swayX = Math.sin(t * 1.65) * ampX + Math.cos(t * 0.9) * (ampX * 0.42);
                     const swayY = Math.cos(t * 2.2) * ampY + Math.sin(t * 1.15) * 6.5;
-                    const rotDeg = (Math.sin(t * 2.6) * (isHard ? 6.4 : 4.1)).toFixed(2);
+                    const rotDeg = (Math.sin(t * 2.6) * (isHard ? 6.5 : 4.2)).toFixed(2);
                     fightCardEl.style.transform = `translate3d(${swayX.toFixed(1)}px, ${swayY.toFixed(1)}px, 0) rotate(${rotDeg}deg)`;
                 }
 
-                if (tippetStress < 38) bar.className = 'bg-emerald-500 h-full transition-all duration-75';
-                else if (tippetStress < 75) bar.className = 'bg-amber-400 h-full transition-all duration-75';
-                else bar.className = 'bg-rose-500 h-full transition-all duration-75';
+                if (tippetStress < 35) bar.className = 'bg-emerald-500 h-full';
+                else if (tippetStress < 70) bar.className = 'bg-amber-400 h-full';
+                else bar.className = 'bg-rose-500 h-full';
 
                 if (tippetStress >= 100) {
                     clearInterval(fightInterval);
@@ -4570,7 +4580,7 @@
                     if ('vibrate' in navigator) navigator.vibrate([200, 50, 200]);
                     showWelfareModal();
                 }
-            }, 40);
+            }, 16);
         }
 
         // --- 9J. FÅNGSTDAGBOK, C&R-VÄLFÄRD & FLUGVAL ---
