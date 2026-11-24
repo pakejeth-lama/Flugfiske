@@ -4489,29 +4489,30 @@
                 const dt = Math.min(0.15, (now - lastTick) / 1000);
                 lastTick = now;
 
-                let baseSensitivity = isHeavy ? (isLightRod ? 68 : 48) : 34;
-                if (isIntruder) baseSensitivity = 54;
+                let baseSensitivity = isHeavy ? (isLightRod ? 84 : 62) : 44;
+                if (isIntruder) baseSensitivity = 68;
 
                 if (isPressingScreen) {
                     // Sekunderna går ENDAST medan du håller inne
                     fightTimeRemaining = Math.max(0, fightTimeRemaining - dt);
 
-                    // Känsligare mätare med små naturliga ryck
-                    const rushSurge = (Math.random() - 0.35) * 28;
-                    const climbRate = Math.max(8, (baseSensitivity + rushSurge) * flowStressMultiplier * lineControlBonus);
+                    // Känsligare mätare med tydligare naturliga ryck när du håller inne
+                    const rushSurge = (Math.random() - 0.32) * 38;
+                    const climbRate = Math.max(12, (baseSensitivity + rushSurge) * flowStressMultiplier * lineControlBonus);
                     tippetStress = Math.min(100, tippetStress + climbRate * dt);
 
                     if ('vibrate' in navigator) {
                         const nowMs = performance.now();
-                        const vibIntervalMs = tippetStress >= 75 ? 95 : (tippetStress >= 38 ? 140 : 210);
+                        const vibIntervalMs = tippetStress >= 75 ? 90 : (tippetStress >= 38 ? 135 : 200);
                         if (!window._lastFightVibMs || (nowMs - window._lastFightVibMs) >= vibIntervalMs) {
                             window._lastFightVibMs = nowMs;
-                            navigator.vibrate(tippetStress >= 75 ? 55 : 35);
+                            navigator.vibrate(tippetStress >= 75 ? 60 : 38);
                         }
                     }
                 } else {
-                    // När du släpper står tiden still och stressen sjunker
-                    const dropRate = isHeavy ? 42 : 52;
+                    // När du släpper står tiden still och stressen sjunker mer responsivt med små ryck
+                    const releaseSurge = (Math.random() - 0.45) * 14;
+                    const dropRate = Math.max(18, (isHeavy ? 62 : 76) + releaseSurge);
                     tippetStress = Math.max(0, tippetStress - dropRate * dt);
                 }
 
@@ -4520,17 +4521,17 @@
                 bar.style.width = tippetStress + '%';
                 updateFightGlowBorder(tippetStress);
                 if (fightCardEl) {
-                    const isHard = tippetStress >= 65;
+                    const isHard = tippetStress >= 60;
                     fightCardEl.classList.toggle('fight-stream-sway-hard', isHard);
                     fightCardEl.classList.toggle('fight-stream-sway', !isHard);
                     const flowVal = Math.max(4, parseFloat(weatherData.flow) || 14);
-                    const flowFactor = Math.min(1.6, Math.max(0.75, flowVal / 16));
-                    const t = now * 0.001 * (isHard ? 2.1 : 1.25) * flowFactor;
-                    const ampX = (isHard ? 36 : 24) * Math.min(1.25, flowFactor);
-                    const ampY = isHard ? 14 : 9;
-                    const swayX = Math.sin(t * 1.45) * ampX + Math.cos(t * 0.65) * (ampX * 0.35);
-                    const swayY = Math.cos(t * 1.9) * ampY + Math.sin(t * 0.85) * 4;
-                    const rotDeg = (Math.sin(t * 2.2) * (isHard ? 4.2 : 2.6)).toFixed(2);
+                    const flowFactor = Math.min(1.75, Math.max(0.85, flowVal / 15));
+                    const t = now * 0.001 * (isHard ? 2.55 : 1.65) * flowFactor;
+                    const ampX = (isHard ? 52 : 36) * Math.min(1.35, flowFactor);
+                    const ampY = isHard ? 22 : 14;
+                    const swayX = Math.sin(t * 1.65) * ampX + Math.cos(t * 0.9) * (ampX * 0.42);
+                    const swayY = Math.cos(t * 2.2) * ampY + Math.sin(t * 1.15) * 6.5;
+                    const rotDeg = (Math.sin(t * 2.6) * (isHard ? 6.4 : 4.1)).toFixed(2);
                     fightCardEl.style.transform = `translate3d(${swayX.toFixed(1)}px, ${swayY.toFixed(1)}px, 0) rotate(${rotDeg}deg)`;
                 }
 
