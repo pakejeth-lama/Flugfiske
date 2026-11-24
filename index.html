@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flugfiskarens Ekosystem – Säveån Open World (v2.7)</title>
+    <title>Flugfiskarens Ekosystem – Säveån Open World (v2.8)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- === 1. ANIMATIONER & LAYOUT-STILAR === -->
     <style>
@@ -4451,11 +4451,11 @@
             isPressingScreen = false;
             tippetStress = 0;
 
-            if (isIntruder || fishSize >= 70) {
-                totalFightDuration = 3.0;
-            } else {
-                totalFightDuration = 6.0;
-            }
+            // Dynamisk drillningstid: ju större fisk (och tuffare ström/intruder), desto fler sekunder
+            const sizeRatio = Math.max(0, Math.min(1, (fishSize - 15) / 110));
+            const baseSeconds = 2.5 + (sizeRatio * 6.5); // ~2.5s för liten fisk upp till ~9.0s för stor fisk
+            const heavyBonus = (fishSize >= 70 ? 0.8 : 0) + (isIntruder ? 0.7 : 0);
+            totalFightDuration = Number(Math.min(10.0, baseSeconds + heavyBonus).toFixed(1));
             fightTimeRemaining = totalFightDuration;
 
             updateFightGlowBorder(0);
@@ -4891,3 +4891,4 @@
     </script>
 </body>
 </html>
+
