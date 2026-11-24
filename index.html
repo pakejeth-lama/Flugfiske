@@ -121,16 +121,27 @@
         }
 
         @keyframes fightStreamSway {
-            0%, 100% { transform: translate(0px, 0px) rotate(-1.5deg); }
-            25%      { transform: translate(6px, -2px) rotate(1.8deg); }
-            50%      { transform: translate(-5px, 3px) rotate(-2deg); }
-            75%      { transform: translate(-6px, -1px) rotate(1.5deg); }
+            0%   { transform: translate(-24px, -6px) rotate(-2.4deg); }
+            25%  { transform: translate(22px, -11px) rotate(2.6deg); }
+            50%  { transform: translate(26px, 9px) rotate(-2.2deg); }
+            75%  { transform: translate(-20px, 11px) rotate(2.5deg); }
+            100% { transform: translate(-24px, -6px) rotate(-2.4deg); }
+        }
+        @keyframes fightStreamSwayHard {
+            0%   { transform: translate(-30px, -10px) rotate(-3.4deg); }
+            20%  { transform: translate(28px, -13px) rotate(3.6deg); }
+            40%  { transform: translate(-18px, 12px) rotate(-3.2deg); }
+            60%  { transform: translate(31px, 8px) rotate(3.1deg); }
+            80%  { transform: translate(-26px, -4px) rotate(-3.5deg); }
+            100% { transform: translate(-30px, -10px) rotate(-3.4deg); }
         }
         .fight-stream-sway {
-            animation: fightStreamSway 0.65s ease-in-out infinite;
+            animation: fightStreamSway 1.65s ease-in-out infinite;
+            will-change: transform;
         }
         .fight-stream-sway-hard {
-            animation: fightStreamSway 0.34s ease-in-out infinite;
+            animation: fightStreamSwayHard 0.85s ease-in-out infinite;
+            will-change: transform;
         }
     </style>
 </head>
@@ -176,22 +187,22 @@
         </div>
     </div>
 
-    <div id="playerProfileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div id="playerProfileCard" class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5">
-            <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
-                <h3 id="profilePlayerName" class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+    <div id="playerProfileModal" onclick="if (event.target === this) closePlayerProfileModal();" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[95] p-3 overflow-y-auto overscroll-contain">
+        <div id="playerProfileCard" class="bg-stone-900 border border-amber-500/50 rounded-2xl max-w-xs w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[85vh] my-auto">
+            <div class="flex justify-between items-center border-b border-stone-800 pb-2 shrink-0">
+                <h3 id="profilePlayerName" class="text-sm font-bold text-amber-400 flex items-center gap-1.5 truncate pr-2">
                     <span>👤</span> Spelarprofil
                 </h3>
-                <button type="button" onclick="closePlayerProfileModal()" class="text-stone-400 hover:text-stone-200 text-xs font-bold px-2 py-1">✕</button>
+                <button type="button" onclick="closePlayerProfileModal()" aria-label="Stäng profil" class="bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-stone-700 shrink-0">✕</button>
             </div>
-            <div class="flex flex-col gap-2 text-xs">
-                <div id="profileXpSummary" class="bg-stone-950 p-2 rounded-xl border border-stone-800 text-[11px] text-emerald-400"></div>
-                <span class="font-bold text-emerald-400 text-[11px]">🏆 Personliga Rekord (PB):</span>
-                <div id="profilePbList" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 space-y-1 text-[11px]">
+            <div class="flex flex-col gap-2 text-xs overflow-y-auto overscroll-contain pr-0.5 flex-1 min-h-0" style="-webkit-overflow-scrolling: touch;">
+                <div id="profileXpSummary" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 text-[11px] text-emerald-400 shrink-0"></div>
+                <span class="font-bold text-emerald-400 text-[11px] shrink-0">🏆 Personliga Rekord (PB):</span>
+                <div id="profilePbList" class="bg-stone-950 p-2.5 rounded-xl border border-stone-800 space-y-1.5 text-[11px] overflow-y-auto max-h-48" style="-webkit-overflow-scrolling: touch;">
                     <p class="text-stone-500 italic text-center">Laddar rekord...</p>
                 </div>
             </div>
-            <button type="button" onclick="closePlayerProfileModal()" class="w-full bg-stone-800 hover:bg-stone-700 text-stone-300 py-1.5 rounded-xl text-xs font-semibold">Stäng</button>
+            <button type="button" onclick="closePlayerProfileModal()" class="w-full bg-amber-600 hover:bg-amber-500 text-stone-950 py-2 rounded-xl text-xs font-bold shadow transition shrink-0">Stäng</button>
         </div>
     </div>
 
@@ -2888,6 +2899,15 @@
             document.getElementById('playerProfileModal').classList.add('hidden');
             document.getElementById('playerProfileModal').classList.remove('flex');
         }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const profModal = document.getElementById('playerProfileModal');
+                if (profModal && !profModal.classList.contains('hidden')) {
+                    closePlayerProfileModal();
+                }
+            }
+        });
 
         function showCustomAlert(text, title = "Meddelande") {
             document.getElementById('customAlertTitle').innerHTML = `<span>💬</span> ${title}`;
