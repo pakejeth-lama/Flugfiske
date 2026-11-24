@@ -2604,12 +2604,14 @@
                 }
             }
 
-            cnv.addEventListener('mousedown', onDown);
-            window.addEventListener('mousemove', onMove);
-            window.addEventListener('mouseup', onUp);
-            cnv.addEventListener('touchstart', onDown, { passive: false });
-            window.addEventListener('touchmove', onMove, { passive: false });
-            window.addEventListener('touchend', onUp);
+            window.addEventListener('mousedown', () => { if (isFighting) isPressingScreen = true; });
+        window.addEventListener('mouseup', () => { isPressingScreen = false; });
+        window.addEventListener('touchstart', (e) => {
+            if (isFighting) { isPressingScreen = true; e.preventDefault(); }
+        }, { passive: false });
+        window.addEventListener('touchend', () => { isPressingScreen = false; });
+        window.addEventListener('touchcancel', () => { isPressingScreen = false; });
+        window.addEventListener('blur', () => { isPressingScreen = false; });
         })();
 
         async function stopCastMeter(evaluateResult) {
@@ -4428,7 +4430,7 @@
             }
         }
 
-        function startFight(fishSize, isIntruder) {
+       function startFight(fishSize, isIntruder) {
             isFighting = true;
             isPressingScreen = false;
             tippetStress = 0;
@@ -4443,68 +4445,85 @@
             updateFightGlowBorder(0);
             document.getElementById('fightOverlay').classList.remove('hidden');
             document.getElementById('fightOverlay').classList.add('flex');
-            document.getElementById('fightTimeText').innerText = fightTimeRemaining.toFixed(1) + "s";
-            
+            document.getElementById('fightTimeText').innerText = fightTimeRemaining.toFixed(1) + 's';
+
             let isHeavy = fishSize >= 70;
             let currentFlowVal = parseFloat(weatherData.flow);
             let rodSpecStr = gameWorld.equipment.spec;
-            let isLightRod = rodSpecStr.includes("#6") || rodSpecStr.includes("#7");
+            let isLightRod = rodSpecStr.includes('#6') || rodSpecStr.includes('#7');
 
             let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
             let lineControlBonus = (titleObj.isLegend || titleObj.levelIndex >= 4) ? 0.88 : 1.0;
+            let flowStressMultiplier = currentFlowVal > 14 ? 1.55 : 1.05;
 
-            let flowStressMultiplier = currentFlowVal > 14 ? 1.5 : 1.0;
+            let lastTick = performance.now();
 
             fightInterval = setInterval(() => {
-                if (!isFighting || isAnyModalOpen()) return;
-
-                let stressRate = isHeavy ? (isLightRod ? 2.4 : 1.6) : 1.1;
-                if (isIntruder) stressRate *= 1.5;
-
-                if(isPressingScreen) {
-                    tippetStress += (stressRate * flowStressMultiplier * lineControlBonus);
-                } else {
-                    tippetStress -= 2.2;
+                if (!isFighting || isAnyModalOpen()) {
+                    lastTick = performance.now();
+                    return;
                 }
 
-                tippetStress = Math.max(0, Math.min(100, tippetStress));
-                
-                document.getElementById('stressValueText').innerText = Math.round(tippetStress) + "%";
-                const bar = document.getElementById('stressBar');
-                bar.style.width = tippetStress + "%";
-                updateFightGlowBorder(tippetStress);
-                
-                if(tippetStress < 38) bar.className = "bg-emerald-500 h-full transition-all duration-75";
-                else if(tippetStress < 75) bar.className = "bg-amber-400 h-full transition-all duration-75";
-                else bar.className = "bg-rose-500 h-full transition-all duration-75";
+                const now = performance.now();
+                const dt = Math.min(0.15, (now - lastTick) / 1000);
+                lastTick = now;
 
-                if(tippetStress >= 100) {
+                let baseSensitivity = isHeavy ? (isLightRod ? 68 : 48) : 34;
+                if (isIntruder) baseSensitivity = 54;
+
+                if (isPressingScreen) {
+                    // Sekunderna går ENDAST medan du håller inne
+                    fightTimeRemaining = Math.max(0, fightTimeRemaining - dt);
+
+                    // Känsligare mätare med små naturliga ryck
+                    const rushSurge = (Math.random() - 0.35) * 28;
+                    const climbRate = Math.max(8, (baseSensitivity + rushSurge) * flowStressMultiplier * lineControlBonus);
+                    tippetStress = Math.min(100, tippetStress + climbRate * dt);
+                } else {
+                    // När du släpper står tiden still och stressen sjunker
+                    const dropRate = isHeavy ? 42 : 52;
+                    tippetStress = Math.max(0, tippetStress - dropRate * dt);
+                }
+
+                document.getElementById('stressValueText').innerText = Math.round(tippetStress) + '%';
+                const bar = document.getElementById('stressBar');
+                bar.style.width = tippetStress + '%';
+                updateFightGlowBorder(tippetStress);
+
+                if (tippetStress < 38) bar.className = 'bg-emerald-500 h-full transition-all duration-75';
+                else if (tippetStress < 75) bar.className = 'bg-amber-400 h-full transition-all duration-75';
+                else bar.className = 'bg-rose-500 h-full transition-all duration-75';
+
+                if (tippetStress >= 100) {
                     clearInterval(fightInterval);
                     isFighting = false;
+                    isPressingScreen = false;
                     document.getElementById('fightOverlay').classList.add('hidden');
                     document.getElementById('fightOverlay').classList.remove('flex');
-                    
-                    if ("vibrate" in navigator) navigator.vibrate([800, 100, 800, 100, 800]);
-                    
-                    let breakReason = isIntruder ? "Den starka fisken gjorde en blixtrusning och tafsen brast!" : (isHeavy ? "Storfisken rusade och sprängde tafsen!" : "Tafsen gick av på grund av för hårt tryck!");
-                    showCustomAlert(`💥 KRAK! ${breakReason}`, "Tafsbrott");
+
+                    if ('vibrate' in navigator) navigator.vibrate([800, 100, 800, 100, 800]);
+
+                    let breakReason = isIntruder
+                        ? 'Den starka fisken gjorde en blixtrusning och tafsen brast!'
+                        : (isHeavy ? 'Storfisken rusade och sprängde tafsen!' : 'Tafsen gick av på grund av för hårt tryck!');
+                    showCustomAlert(`💥 KRAK! ${breakReason}`, 'Tafsbrott');
                     resetAfterCatch();
                     return;
                 }
 
-                fightTimeRemaining -= 0.05;
-                document.getElementById('fightTimeText').innerText = Math.max(0, fightTimeRemaining).toFixed(1) + "s";
+                document.getElementById('fightTimeText').innerText = Math.max(0, fightTimeRemaining).toFixed(1) + 's';
 
-                if(fightTimeRemaining <= 0) {
+                if (fightTimeRemaining <= 0) {
                     clearInterval(fightInterval);
                     isFighting = false;
+                    isPressingScreen = false;
                     document.getElementById('fightOverlay').classList.add('hidden');
                     document.getElementById('fightOverlay').classList.remove('flex');
-                    
-                    if ("vibrate" in navigator) navigator.vibrate([200, 50, 200]);
+
+                    if ('vibrate' in navigator) navigator.vibrate([200, 50, 200]);
                     showWelfareModal();
                 }
-            }, 50);
+            }, 40);
         }
 
         // --- 9J. FÅNGSTDAGBOK, C&R-VÄLFÄRD & FLUGVAL ---
