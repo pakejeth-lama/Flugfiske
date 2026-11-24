@@ -4497,6 +4497,15 @@
                     const rushSurge = (Math.random() - 0.35) * 28;
                     const climbRate = Math.max(8, (baseSensitivity + rushSurge) * flowStressMultiplier * lineControlBonus);
                     tippetStress = Math.min(100, tippetStress + climbRate * dt);
+
+                    if ('vibrate' in navigator) {
+                        const nowMs = performance.now();
+                        const vibIntervalMs = tippetStress >= 75 ? 95 : (tippetStress >= 38 ? 140 : 210);
+                        if (!window._lastFightVibMs || (nowMs - window._lastFightVibMs) >= vibIntervalMs) {
+                            window._lastFightVibMs = nowMs;
+                            navigator.vibrate(tippetStress >= 75 ? 55 : 35);
+                        }
+                    }
                 } else {
                     // När du släpper står tiden still och stressen sjunker
                     const dropRate = isHeavy ? 42 : 52;
