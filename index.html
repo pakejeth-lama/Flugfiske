@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flugfiskarens Ekosystem – Säveån Open World (v2.9)</title>
+    <title>Flugfiskarens Ekosystem – Säveån Open World (v2.10)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- === 1. ANIMATIONER & LAYOUT-STILAR === -->
     <style>
@@ -2463,42 +2463,74 @@
             return crossings;
         }
 
+        function buildSolvableTangleLayout(w, h) {
+            const cx = w / 2;
+            const cy = h / 2;
+            const outerRx = Math.min(w * 0.38, 128);
+            const outerRy = Math.min(h * 0.34, 62);
+            const innerRx = outerRx * 0.44;
+            const innerRy = outerRy * 0.44;
+            const rot = (Math.random() - 0.5) * 0.35;
+            const cosR = Math.cos(rot);
+            const sinR = Math.sin(rot);
+
+            const rotatePt = (dx, dy) => ({
+                x: Math.max(18, Math.min(w - 18, cx + dx * cosR - dy * sinR)),
+                y: Math.max(18, Math.min(h - 18, cy + dx * sinR + dy * cosR))
+            });
+
+            // 8 noder i två inre/yttre ringar utan korsningar i grundlayouten
+            const basePts = [];
+            for (let i = 0; i < 4; i++) {
+                const ang = (i / 4) * Math.PI * 2 - Math.PI / 4;
+                basePts.push(rotatePt(Math.cos(ang) * outerRx, Math.sin(ang) * outerRy));
+            }
+            for (let i = 0; i < 4; i++) {
+                const ang = (i / 4) * Math.PI * 2 - Math.PI / 4;
+                basePts.push(rotatePt(Math.cos(ang) * innerRx, Math.sin(ang) * innerRy));
+            }
+            return basePts;
+        }
+
         function initTanglePuzzle() {
             const cnv = document.getElementById('tangleCanvas');
             const w = cnv ? cnv.width : 340;
             const h = cnv ? cnv.height : 190;
-            const cx = w / 2;
-            const cy = h / 2;
-
             const alreadyDone = isMiniGameCompletedToday('tangle');
+
+            // Planär 8-nodsgraf som alltid går att lösa genom att dra noder
             tangleEdges = [
-                [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0],
+                [0, 1], [1, 2], [2, 3], [3, 0],
+                [4, 5], [5, 6], [6, 7], [7, 4],
                 [0, 4], [1, 5], [2, 6], [3, 7]
             ];
 
+            const cleanLayout = buildSolvableTangleLayout(w, h);
             if (alreadyDone) {
-                tangleNodes = [
-                    { x: cx - 115, y: cy - 55 },
-                    { x: cx + 115, y: cy - 55 },
-                    { x: cx + 115, y: cy + 55 },
-                    { x: cx - 115, y: cy + 55 },
-                    { x: cx - 45,  y: cy - 22 },
-                    { x: cx + 45,  y: cy - 22 },
-                    { x: cx + 45,  y: cy + 22 },
-                    { x: cx - 45,  y: cy + 22 }
-                ];
-            } else {
-                const rx = w * 0.36;
-                const ry = h * 0.36;
-                const nCount = 8;
-                tangleNodes = [];
-                for (let i = 0; i < nCount; i++) {
-                    const ang = (i / nCount) * Math.PI * 2 - Math.PI / 2;
-                    tangleNodes.push({
-                        x: cx + Math.cos(ang) * rx,
-                        y: cy + Math.sin(ang) * ry
-                    });
+                tangleNodes = cleanLayout;
+                drawTangleCanvas();
+                return;
+            }
+
+            // Slumpa startpositioner och garantera minst 2 korsningar (och alltid lösbar genom dragning)
+            for (let attempt = 0; attempt < 25; attempt++) {
+                const perm = [0, 1, 2, 3, 4, 5, 6, 7];
+                for (let i = perm.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    const tmp = perm[i];
+                    perm[i] = perm[j];
+                    perm[j] = tmp;
                 }
+                tangleNodes = perm.map(idx => {
+                    const base = cleanLayout[idx];
+                    const jitterX = (Math.random() - 0.5) * 34;
+                    const jitterY = (Math.random() - 0.5) * 24;
+                    return {
+                        x: Math.max(18, Math.min(w - 18, base.x + jitterX)),
+                        y: Math.max(18, Math.min(h - 18, base.y + jitterY))
+                    };
+                });
+                if (countTangleCrossings() >= 2) break;
             }
             drawTangleCanvas();
         }
@@ -2527,6 +2559,7 @@
             tangleEdges.forEach(([i, j], idx) => {
                 const n1 = tangleNodes[i];
                 const n2 = tangleNodes[j];
+                if (!n1 || !n2) return;
                 const isBad = !alreadyDone && tangleEdges.some(([k, l], idx2) => {
                     if (idx2 <= idx) return false;
                     return segmentsIntersect(n1, n2, tangleNodes[k], tangleNodes[l]);
@@ -2542,12 +2575,31 @@
             tangleNodes.forEach((pt, idx) => {
                 tctx.fillStyle = alreadyDone ? '#10b981' : (idx === draggedNodeIdx ? '#fbbf24' : '#38bdf8');
                 tctx.beginPath();
-                tctx.arc(pt.x, pt.y, 7.5, 0, Math.PI * 2);
+                tctx.arc(pt.x, pt.y, 8.5, 0, Math.PI * 2);
                 tctx.fill();
                 tctx.strokeStyle = '#0f172a';
                 tctx.lineWidth = 2;
                 tctx.stroke();
             });
+        }
+
+        let tangleSolvedLock = false;
+
+        async function checkAndCompleteTangleIfSolved() {
+            if (tangleSolvedLock || isMiniGameCompletedToday('tangle')) return;
+            if (tangleNodes.length === 8 && countTangleCrossings() === 0) {
+                tangleSolvedLock = true;
+                try {
+                    await markMiniGameCompletedToday('tangle');
+                    gameWorld.points += 25;
+                    addXp(15);
+                    updateUI();
+                    closeMinigamesModal();
+                    triggerPuzzleWaveSweep();
+                } finally {
+                    tangleSolvedLock = false;
+                }
+            }
         }
 
         (function bindTangleEvents() {
@@ -2573,7 +2625,7 @@
                 evt.stopPropagation();
                 const p = getPt(evt);
                 let bestIdx = -1;
-                let bestDist = 24;
+                let bestDist = 28;
                 tangleNodes.forEach((n, idx) => {
                     const d = Math.hypot(n.x - p.x, n.y - p.y);
                     if (d <= bestDist) {
@@ -2590,9 +2642,10 @@
                 if (evt.cancelable) evt.preventDefault();
                 evt.stopPropagation();
                 const p = getPt(evt);
-                tangleNodes[draggedNodeIdx].x = Math.max(12, Math.min(cnv.width - 12, p.x));
-                tangleNodes[draggedNodeIdx].y = Math.max(12, Math.min(cnv.height - 12, p.y));
+                tangleNodes[draggedNodeIdx].x = Math.max(14, Math.min(cnv.width - 14, p.x));
+                tangleNodes[draggedNodeIdx].y = Math.max(14, Math.min(cnv.height - 14, p.y));
                 drawTangleCanvas();
+                checkAndCompleteTangleIfSolved();
             }
 
             async function endDrag(evt) {
@@ -2600,14 +2653,7 @@
                     if (evt && evt.cancelable) evt.preventDefault();
                     draggedNodeIdx = -1;
                     drawTangleCanvas();
-                    if (!isMiniGameCompletedToday('tangle') && countTangleCrossings() === 0) {
-                        await markMiniGameCompletedToday('tangle');
-                        gameWorld.points += 25;
-                        addXp(15);
-                        updateUI();
-                        closeMinigamesModal();
-                        triggerPuzzleWaveSweep();
-                    }
+                    await checkAndCompleteTangleIfSolved();
                 }
             }
 
@@ -3794,29 +3840,6 @@
 
             let time = Date.now() * 0.002;
 
-            // Djupfåra och subtil bottentextur (älvstenar & grusbankar)
-            let channelGrad = ctx.createLinearGradient(0, 24, 0, canvas.height - 16);
-            channelGrad.addColorStop(0.0, 'rgba(217, 179, 120, 0.14)');
-            channelGrad.addColorStop(0.28, 'rgba(6, 78, 110, 0.10)');
-            channelGrad.addColorStop(0.55, 'rgba(2, 32, 54, 0.24)');
-            channelGrad.addColorStop(0.82, 'rgba(6, 78, 110, 0.12)');
-            channelGrad.addColorStop(1.0, 'rgba(217, 179, 120, 0.16)');
-            ctx.fillStyle = channelGrad;
-            ctx.fillRect(0, 24, canvas.width, Math.max(0, canvas.height - 40));
-
-            ctx.save();
-            for (let i = 0; i < 18; i++) {
-                let sx = ((i * 97 + flowOffset * 0.35) % (canvas.width + 80)) - 40;
-                let sy = 38 + ((i * 43) % Math.max(30, canvas.height - 64));
-                let rX = 7 + (i % 5) * 3.5;
-                let rY = 4 + (i % 3) * 2;
-                ctx.fillStyle = i % 2 === 0 ? 'rgba(15, 23, 42, 0.16)' : 'rgba(180, 155, 115, 0.13)';
-                ctx.beginPath();
-                ctx.ellipse(sx, sy, rX, rY, 0.25, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.restore();
-            
             ctx.fillStyle = 'rgba(255, 255, 255, 0.09)';
             for (let i = 0; i < 5; i++) {
                 let bx = (canvas.width * 0.22 * i) + Math.sin(time * 0.8 + i) * 80;
@@ -4158,37 +4181,13 @@
                 ctx.stroke();
 
                 let bobbing = Math.sin(Date.now() * 0.015) * 3;
-                let flyX = castLine.x;
-                let flyY = castLine.y + bobbing;
-
                 ctx.save();
-                // Kontrastskugga och vattenring runt flugan
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-                ctx.lineWidth = 1.2;
+                ctx.shadowColor = '#ff4500';
+                ctx.shadowBlur = 12;
+                ctx.fillStyle = '#ff5722';
                 ctx.beginPath();
-                ctx.arc(flyX, flyY, 8.5 + Math.sin(Date.now() * 0.012) * 1.5, 0, Math.PI * 2);
-                ctx.stroke();
-
-                // Varm glödande aura bakom flugan
-                let glowGrad = ctx.createRadialGradient(flyX, flyY, 1, flyX, flyY, 16);
-                glowGrad.addColorStop(0.0, 'rgba(254, 249, 195, 0.95)');
-                glowGrad.addColorStop(0.45, 'rgba(251, 191, 36, 0.65)');
-                glowGrad.addColorStop(1.0, 'rgba(245, 158, 11, 0)');
-                ctx.fillStyle = glowGrad;
-                ctx.beginPath();
-                ctx.arc(flyX, flyY, 16, 0, Math.PI * 2);
+                ctx.arc(castLine.x, castLine.y + bobbing, 4, 0, Math.PI * 2);
                 ctx.fill();
-
-                ctx.shadowColor = '#fde047';
-                ctx.shadowBlur = 14;
-                ctx.fillStyle = activeFly.category === 'Torrfluga' ? '#fef08a' : '#fb923c';
-                ctx.beginPath();
-                ctx.arc(flyX, flyY, 4.5, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.strokeStyle = '#7c2d12';
-                ctx.lineWidth = 1.2;
-                ctx.stroke();
                 ctx.restore();
 
                 if(!isFighting && !paused) {
