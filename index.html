@@ -946,40 +946,25 @@
             const statePrev = stateSnap.exists() ? normalizeSeasonKey(stateSnap.data()?.lastSeasonId || "") : "";
             const normPrev = normalizeSeasonKey(previousSeasonId || statePrev);
 
-            const allSnap = await getDocs(collection(db, "highscores"));
-            const docsList = [];
-            allSnap.forEach(d => docsList.push({ id: d.id, ...(d.data() || {}) }));
-
-            const hasOddOrForeignSeasonDocs = docsList.some(item => {
-                const rawS = String(item.seasonId || item.week || "").trim();
-                const normS = normalizeSeasonKey(rawS);
-                return rawS !== normS || (normS && normS !== normCurr);
-            });
-
-            const hofSnap = await getDocs(collection(db, "hall_of_fame"));
-            const hasOddHofDoc = hofSnap.docs.some(d => {
-                if (d.id === "all_time_records") return false;
-                const m = d.id.match(/W(\d{1,2})/i);
-                return m && parseInt(m[1], 10) % 2 !== 0;
-            });
-
-            if (!normPrev && stateSnap.exists() && statePrev === normCurr && !hasOddOrForeignSeasonDocs && !hasOddHofDoc) {
-                return false;
-            }
-            if (!normPrev && !hasOddOrForeignSeasonDocs && !hasOddHofDoc) {
+            if (!normPrev) {
                 await setDoc(stateRef, {
                     lastSeasonId: normCurr,
                     updatedAt: new Date().toISOString()
                 }, { merge: true });
                 return false;
             }
-            if (normPrev === normCurr && !hasOddOrForeignSeasonDocs && !hasOddHofDoc) {
+
+            if (normPrev === normCurr) {
                 return false;
             }
 
+            const allSnap = await getDocs(collection(db, "highscores"));
+            const docsList = [];
+            allSnap.forEach(d => docsList.push({ id: d.id, ...(d.data() || {}) }));
+
             const prevEvenCandidates = docsList.filter(c => {
                 const normS = normalizeSeasonKey(c.seasonId || c.week);
-                return normS && normS !== normCurr && (!normPrev || normS === normPrev);
+                return normS && normS !== normCurr && normS === normPrev;
             });
 
             const bestSalmon = prevEvenCandidates
@@ -993,10 +978,9 @@
             if (bestSalmon) await updateAllTimeHallOfFameIfRecord({ ...bestSalmon, seasonId: normalizeSeasonKey(bestSalmon.seasonId || bestSalmon.week) }, false);
             if (bestTrout) await updateAllTimeHallOfFameIfRecord({ ...bestTrout, seasonId: normalizeSeasonKey(bestTrout.seasonId || bestTrout.week) }, false);
 
-            const archiveKey = normPrev || (prevEvenCandidates[0] ? normalizeSeasonKey(prevEvenCandidates[0].seasonId || prevEvenCandidates[0].week) : "");
-            if (archiveKey && archiveKey !== normCurr) {
-                await setDoc(doc(db, "hall_of_fame", archiveKey), {
-                    seasonId: archiveKey,
+            if (normPrev && normPrev !== normCurr) {
+                await setDoc(doc(db, "hall_of_fame", normPrev), {
+                    seasonId: normPrev,
                     archivedAt: new Date().toISOString(),
                     salmon: bestSalmon ? {
                         angler: bestSalmon.angler || "Okänd",
@@ -1011,39 +995,28 @@
                         fly: bestTrout.fly || ""
                     } : null
                 }, { merge: true });
-            }
 
-            for (const hDoc of hofSnap.docs) {
-                if (hDoc.id === "all_time_records") continue;
-                const m = hDoc.id.match(/W(\d{1,2})/i);
-                if (m && parseInt(m[1], 10) % 2 !== 0) {
-                    await deleteDoc(doc(db, "hall_of_fame", hDoc.id));
+                for (const item of docsList) {
+                    const normS = normalizeSeasonKey(item.seasonId || item.week);
+                    if (normS && normS !== normCurr) {
+                        await deleteDoc(doc(db, "highscores", item.id));
+                    }
                 }
-            }
 
-            for (const item of docsList) {
-                const rawS = String(item.seasonId || item.week || "").trim();
-                const normS = normalizeSeasonKey(rawS);
-                if (rawS !== normS || (normS && normS !== normCurr)) {
-                    await deleteDoc(doc(db, "highscores", item.id));
+                const bioSnap = await getDocs(collection(db, "biotope_logs"));
+                for (const bDoc of bioSnap.docs) {
+                    const bSeason = normalizeSeasonKey(bDoc.data()?.seasonId || "");
+                    if (!bSeason || bSeason !== normCurr) {
+                        await deleteDoc(doc(db, "biotope_logs", bDoc.id));
+                    }
                 }
-            }
 
-            const bioSnap = await getDocs(collection(db, "biotope_logs"));
-            for (const bDoc of bioSnap.docs) {
-                const bSeason = normalizeSeasonKey(bDoc.data()?.seasonId || "");
-                if (!bSeason || bSeason !== normCurr) {
-                    await deleteDoc(doc(db, "biotope_logs", bDoc.id));
-                }
-            }
+                await setDoc(doc(db, "global", "stats"), {
+                    totalRestored: 0,
+                    seasonId: normCurr,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true });
 
-            await setDoc(doc(db, "global", "stats"), {
-                totalRestored: 0,
-                seasonId: normCurr,
-                updatedAt: new Date().toISOString()
-            }, { merge: true });
-
-            if (normPrev && normPrev !== normCurr) {
                 const freshWorld = {
                     population: 210,
                     maxPop: 380,
@@ -1062,12 +1035,12 @@
 
             await setDoc(stateRef, {
                 lastSeasonId: normCurr,
-                archivedSeasonId: archiveKey || stateSnap.data()?.archivedSeasonId || "",
+                archivedSeasonId: normPrev || stateSnap.data()?.archivedSeasonId || "",
                 updatedAt: new Date().toISOString()
             }, { merge: true });
 
             invalidateHighscoreCache();
-            return Boolean(normPrev && normPrev !== normCurr);
+            return true;
         };
 
         async function runAutoSeasonRolloverIfNeeded() {
@@ -1637,7 +1610,7 @@
                 let html = "";
                 visitors.forEach(v => {
                     let xp = v.xp || 0;
-                    let prestige = v.prestige || 0;
+                    let prestige = applyOneTimePrestigeFix(v.prestige || 0, v.name);
                     let titleObj = getTitleAndProgress(xp, prestige);
                     let titleDisplay = prestige > 0 ? `${titleObj.title}<sup>${prestige}</sup>` : titleObj.title;
 
@@ -2496,25 +2469,37 @@
             const h = cnv ? cnv.height : 190;
             const cx = w / 2;
             const cy = h / 2;
-            const rx = w * 0.36;
-            const ry = h * 0.36;
 
             const alreadyDone = isMiniGameCompletedToday('tangle');
-            tangleNodes = [];
-            const nCount = 8;
-            const tangledOrder = [0, 3, 6, 1, 4, 7, 2, 5];
-            const order = alreadyDone ? [0, 1, 2, 3, 4, 5, 6, 7] : tangledOrder;
-            for (let i = 0; i < nCount; i++) {
-                const ang = (order[i] / nCount) * Math.PI * 2;
-                tangleNodes.push({
-                    x: cx + Math.cos(ang) * rx,
-                    y: cy + Math.sin(ang) * ry
-                });
-            }
             tangleEdges = [
                 [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0],
                 [0, 4], [1, 5], [2, 6], [3, 7]
             ];
+
+            if (alreadyDone) {
+                tangleNodes = [
+                    { x: cx - 115, y: cy - 55 },
+                    { x: cx + 115, y: cy - 55 },
+                    { x: cx + 115, y: cy + 55 },
+                    { x: cx - 115, y: cy + 55 },
+                    { x: cx - 45,  y: cy - 22 },
+                    { x: cx + 45,  y: cy - 22 },
+                    { x: cx + 45,  y: cy + 22 },
+                    { x: cx - 45,  y: cy + 22 }
+                ];
+            } else {
+                const rx = w * 0.36;
+                const ry = h * 0.36;
+                const nCount = 8;
+                tangleNodes = [];
+                for (let i = 0; i < nCount; i++) {
+                    const ang = (i / nCount) * Math.PI * 2 - Math.PI / 2;
+                    tangleNodes.push({
+                        x: cx + Math.cos(ang) * rx,
+                        y: cy + Math.sin(ang) * ry
+                    });
+                }
+            }
             drawTangleCanvas();
         }
 
@@ -2686,6 +2671,20 @@
         }
 
         // --- 9C. XP, TITLAR & PRESTIGE ---
+        function applyOneTimePrestigeFix(rawPrestige, syncName) {
+            const p = Number(rawPrestige) || 0;
+            const fixFlagKey = "fff_one_time_prestige_to_2_done";
+            if (p > 10 && !localStorage.getItem(fixFlagKey)) {
+                localStorage.setItem(fixFlagKey, "1");
+                if (syncName && window.savePlayerStateToFirebase) {
+                    window.savePlayerStateToFirebase(syncName, { prestige: 2 });
+                }
+                return 2;
+            }
+            return p > 10 ? 2 : Math.max(0, Math.floor(p));
+        }
+
+
         function getTitleAndProgress(xp, prestige) {
             const p = prestige || 0;
             if (p > 0) {
@@ -2845,7 +2844,7 @@
             }
 
             let xp = targetPlayerState.xp || 0;
-            let prestige = targetPlayerState.prestige || 0;
+            let prestige = applyOneTimePrestigeFix(targetPlayerState.prestige || 0, anglerName);
             let titleObj = getTitleAndProgress(xp, prestige);
             let prestigeDisplay = prestige > 0 ? `<span>Legendar<sup>${prestige}</sup></span>` : "";
 
@@ -3142,7 +3141,7 @@
                     if (cloudState.equipment) gameWorld.equipment = cloudState.equipment;
                     gameWorld.points = cloudState.points !== undefined ? cloudState.points : 700;
                     gameWorld.xp = cloudState.xp !== undefined ? cloudState.xp : 0;
-                    gameWorld.prestige = cloudState.prestige !== undefined ? cloudState.prestige : 0;
+                    gameWorld.prestige = cloudState.prestige !== undefined ? applyOneTimePrestigeFix(cloudState.prestige, lockedAnglerName) : 0;
                     gameWorld.flyCounts = cloudState.flyCounts !== undefined ? cloudState.flyCounts : {};
                     if (cloudState.completedMiniGames && typeof cloudState.completedMiniGames === 'object') {
                         gameWorld.completedMiniGames = cloudState.completedMiniGames;
@@ -3794,6 +3793,29 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             let time = Date.now() * 0.002;
+
+            // Djupfåra och subtil bottentextur (älvstenar & grusbankar)
+            let channelGrad = ctx.createLinearGradient(0, 24, 0, canvas.height - 16);
+            channelGrad.addColorStop(0.0, 'rgba(217, 179, 120, 0.14)');
+            channelGrad.addColorStop(0.28, 'rgba(6, 78, 110, 0.10)');
+            channelGrad.addColorStop(0.55, 'rgba(2, 32, 54, 0.24)');
+            channelGrad.addColorStop(0.82, 'rgba(6, 78, 110, 0.12)');
+            channelGrad.addColorStop(1.0, 'rgba(217, 179, 120, 0.16)');
+            ctx.fillStyle = channelGrad;
+            ctx.fillRect(0, 24, canvas.width, Math.max(0, canvas.height - 40));
+
+            ctx.save();
+            for (let i = 0; i < 18; i++) {
+                let sx = ((i * 97 + flowOffset * 0.35) % (canvas.width + 80)) - 40;
+                let sy = 38 + ((i * 43) % Math.max(30, canvas.height - 64));
+                let rX = 7 + (i % 5) * 3.5;
+                let rY = 4 + (i % 3) * 2;
+                ctx.fillStyle = i % 2 === 0 ? 'rgba(15, 23, 42, 0.16)' : 'rgba(180, 155, 115, 0.13)';
+                ctx.beginPath();
+                ctx.ellipse(sx, sy, rX, rY, 0.25, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
             
             ctx.fillStyle = 'rgba(255, 255, 255, 0.09)';
             for (let i = 0; i < 5; i++) {
@@ -4136,11 +4158,38 @@
                 ctx.stroke();
 
                 let bobbing = Math.sin(Date.now() * 0.015) * 3;
+                let flyX = castLine.x;
+                let flyY = castLine.y + bobbing;
 
-                ctx.fillStyle = activeFly.category === 'Torrfluga' ? '#f59e0b' : '#c2410c';
+                ctx.save();
+                // Kontrastskugga och vattenring runt flugan
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+                ctx.lineWidth = 1.2;
                 ctx.beginPath();
-                ctx.arc(castLine.x, castLine.y + bobbing, 3.5, 0, Math.PI * 2);
+                ctx.arc(flyX, flyY, 8.5 + Math.sin(Date.now() * 0.012) * 1.5, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Varm glödande aura bakom flugan
+                let glowGrad = ctx.createRadialGradient(flyX, flyY, 1, flyX, flyY, 16);
+                glowGrad.addColorStop(0.0, 'rgba(254, 249, 195, 0.95)');
+                glowGrad.addColorStop(0.45, 'rgba(251, 191, 36, 0.65)');
+                glowGrad.addColorStop(1.0, 'rgba(245, 158, 11, 0)');
+                ctx.fillStyle = glowGrad;
+                ctx.beginPath();
+                ctx.arc(flyX, flyY, 16, 0, Math.PI * 2);
                 ctx.fill();
+
+                ctx.shadowColor = '#fde047';
+                ctx.shadowBlur = 14;
+                ctx.fillStyle = activeFly.category === 'Torrfluga' ? '#fef08a' : '#fb923c';
+                ctx.beginPath();
+                ctx.arc(flyX, flyY, 4.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = '#7c2d12';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+                ctx.restore();
 
                 if(!isFighting && !paused) {
                     let baseDriftSpeed = 0.4 + (currentFlow * 0.04);
