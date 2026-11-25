@@ -3669,9 +3669,7 @@
                     if (extremeDrought) {
                         let totalShade = gameWorld.shared.trees + gameWorld.shared.bushes;
                         if (totalShade > 4) {
-                            showCustomAlert("☀️ EXTREM TORKA!
-
-Vattnet värms upp, men dina utplacerade kantträd och buskar ger viktig skugga som skyddar fiskbeståndet från värmestress!", "Väderlarm");
+                            showCustomAlert("☀️ EXTREM TORKA!\n\nVattnet värms upp, men dina utplacerade kantträd och buskar ger viktig skugga som skyddar fiskbeståndet från värmestress!", "Väderlarm");
                         } else {
                             let removedFish = Math.floor(gameWorld.shared.population * 0.4);
                             gameWorld.shared.population = Math.max(30, gameWorld.shared.population - removedFish);
@@ -3683,9 +3681,7 @@ Vattnet värms upp, men dina utplacerade kantträd och buskar ger viktig skugga 
                             if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
                             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `☀️ EXTREM TORKA! Minskat bestånd pga brist på skugga!`, saveanZones[key].name);
-                            showCustomAlert(`☀️ EXTREM TORKA!
-
-En extrem värmebölja har drabbat Säveån! Bristen på skuggande kantträd och buskar har slagit ut ${removedFish} fiskar.`, "Naturkatastrof");
+                            showCustomAlert(`☀️ EXTREM TORKA!\n\nEn extrem värmebölja har drabbat Säveån! Bristen på skuggande kantträd och buskar har slagit ut ${removedFish} fiskar.`, "Naturkatastrof");
                         }
                     }
 
@@ -3708,9 +3704,7 @@ En extrem värmebölja har drabbat Säveån! Bristen på skuggande kantträd och
                         if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
                         if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `⚠️ EXTREMT HÖGFLÖDE! ${gravelsLost} oskyddade lekgruspartier spolades bort.`, saveanZones[key].name);
-                        showCustomAlert(`⚠️ EXTREMT HÖGFLÖDE!
-
-Ett kraftigt oväder drog fram! Oskyddat lekgrus saknade tillräckligt med ståndstenar som brytare och ${gravelsLost} partier spolades bort av strömmen.`, "Naturkatastrof");
+                        showCustomAlert(`⚠️ EXTREMT HÖGFLÖDE!\n\nEtt kraftigt oväder drog fram! Oskyddat lekgrus saknade tillräckligt med ståndstenar som brytare och ${gravelsLost} partier spolades bort av strömmen.`, "Naturkatastrof");
                     }
 
                     let gCount = (zState.gravels || []).length;
