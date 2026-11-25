@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flugfiskarens Ekosystem – Säveån Open World (v2.8)</title>
+    <title>Flugfiskarens Ekosystem – Säveån Open World (v2.9)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- === 1. ANIMATIONER & LAYOUT-STILAR === -->
     <style>
@@ -2568,36 +2568,51 @@
         (function bindTangleEvents() {
             const cnv = document.getElementById('tangleCanvas');
             if (!cnv) return;
+            cnv.style.touchAction = 'none';
 
             function getPt(evt) {
                 const rect = cnv.getBoundingClientRect();
-                const src = evt.touches && evt.touches[0] ? evt.touches[0] : evt;
-                const scaleX = cnv.width / rect.width;
-                const scaleY = cnv.height / rect.height;
+                const touchSrc = (evt.touches && evt.touches[0]) || (evt.changedTouches && evt.changedTouches[0]);
+                const src = touchSrc || evt;
+                const scaleX = rect.width > 0 ? (cnv.width / rect.width) : 1;
+                const scaleY = rect.height > 0 ? (cnv.height / rect.height) : 1;
                 return {
                     x: (src.clientX - rect.left) * scaleX,
                     y: (src.clientY - rect.top) * scaleY
                 };
             }
 
-            function onDown(evt) {
+            function beginDrag(evt) {
                 if (isMiniGameCompletedToday('tangle')) return;
+                if (evt.cancelable) evt.preventDefault();
+                evt.stopPropagation();
                 const p = getPt(evt);
-                draggedNodeIdx = tangleNodes.findIndex(n => Math.hypot(n.x - p.x, n.y - p.y) <= 14);
+                let bestIdx = -1;
+                let bestDist = 24;
+                tangleNodes.forEach((n, idx) => {
+                    const d = Math.hypot(n.x - p.x, n.y - p.y);
+                    if (d <= bestDist) {
+                        bestDist = d;
+                        bestIdx = idx;
+                    }
+                });
+                draggedNodeIdx = bestIdx;
                 drawTangleCanvas();
             }
 
-            function onMove(evt) {
+            function moveDrag(evt) {
                 if (draggedNodeIdx < 0 || isMiniGameCompletedToday('tangle')) return;
-                if (evt.touches) evt.preventDefault();
+                if (evt.cancelable) evt.preventDefault();
+                evt.stopPropagation();
                 const p = getPt(evt);
                 tangleNodes[draggedNodeIdx].x = Math.max(12, Math.min(cnv.width - 12, p.x));
                 tangleNodes[draggedNodeIdx].y = Math.max(12, Math.min(cnv.height - 12, p.y));
                 drawTangleCanvas();
             }
 
-            async function onUp() {
+            async function endDrag(evt) {
                 if (draggedNodeIdx >= 0) {
+                    if (evt && evt.cancelable) evt.preventDefault();
                     draggedNodeIdx = -1;
                     drawTangleCanvas();
                     if (!isMiniGameCompletedToday('tangle') && countTangleCrossings() === 0) {
@@ -2611,14 +2626,15 @@
                 }
             }
 
-            window.addEventListener('mousedown', () => { if (isFighting) isPressingScreen = true; });
-        window.addEventListener('mouseup', () => { isPressingScreen = false; });
-        window.addEventListener('touchstart', (e) => {
-            if (isFighting) { isPressingScreen = true; e.preventDefault(); }
-        }, { passive: false });
-        window.addEventListener('touchend', () => { isPressingScreen = false; });
-        window.addEventListener('touchcancel', () => { isPressingScreen = false; });
-        window.addEventListener('blur', () => { isPressingScreen = false; });
+            cnv.addEventListener('pointerdown', beginDrag);
+            window.addEventListener('pointermove', moveDrag, { passive: false });
+            window.addEventListener('pointerup', endDrag);
+            window.addEventListener('pointercancel', endDrag);
+
+            cnv.addEventListener('touchstart', beginDrag, { passive: false });
+            window.addEventListener('touchmove', moveDrag, { passive: false });
+            window.addEventListener('touchend', endDrag, { passive: false });
+            window.addEventListener('touchcancel', endDrag, { passive: false });
         })();
 
         async function stopCastMeter(evaluateResult) {
@@ -4891,4 +4907,3 @@
     </script>
 </body>
 </html>
-
