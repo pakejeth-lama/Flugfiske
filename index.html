@@ -4604,15 +4604,21 @@
                         } else {
                             castLine.currentX += (dx/dist) * speed;
                             castLine.currentY += (dy/dist) * speed;
-                            if (checkObstacleSnag(castLine.currentX, castLine.currentY)) {}
+                            const snagReason = checkObstacleSnag(castLine.currentX, castLine.currentY);
+                            if (snagReason) {
+                                castLine = null;
+                                setTimeout(() => triggerSnagLineBreak(snagReason), 0);
+                            }
                         }
                     } else if (castLine.state === 'drifting') {
                         castLine.currentX += (0.55 + currentFlow * 0.025) * flowMultiplier;
                         castLine.currentY += Math.sin(Date.now() * 0.006) * 0.4;
                         castLine.driftTimer++;
 
-                        if (checkObstacleSnag(castLine.currentX, castLine.currentY)) {
-                            // Tafsen gick av vid hinder
+                        const driftSnagReason = checkObstacleSnag(castLine.currentX, castLine.currentY);
+                        if (driftSnagReason) {
+                            castLine = null;
+                            setTimeout(() => triggerSnagLineBreak(driftSnagReason), 0);
                         } else if (castLine.driftTimer >= castLine.nextBiteCheck && !currentFish) {
                             castLine.nextBiteCheck += 64;
                             checkBite(false);
@@ -4817,31 +4823,29 @@
         }
 
         function checkObstacleSnag(x, y) {
-            if (!castLine || currentFish || isFighting) return false;
-            if (currentFlow >= 14 && singleDriftLog) {
+            if (!castLine || currentFish || isFighting) return null;
+            const activeFlow = parseFloat(weatherData.flow) || 0;
+            if (activeFlow >= 14 && singleDriftLog) {
                 const distLog = Math.hypot(x - singleDriftLog.x, y - singleDriftLog.y);
                 if (distLog < 34) {
-                    triggerSnagLineBreak("🪵 Flugan fastnade i drivveden och tafsen gick av!");
-                    return true;
+                    return "🪵 Flugan fastnade i drivveden och tafsen gick av!";
                 }
             }
             if (currentZoneKey === 'dickson') {
                 const dicksonBlockX = canvas.width / 3;
                 if (Math.hypot(x - dicksonBlockX, y - 35) < 48) {
-                    triggerSnagLineBreak("🪨 Flugan fastnade i stenen vid Dickson och tafsen gick av!");
-                    return true;
+                    return "🪨 Flugan fastnade i stenen vid Dickson och tafsen gick av!";
                 }
             }
             if (currentZoneKey === 'kahogsforsen') {
                 const rocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
                 for (const r of rocks) {
                     if (Math.hypot(x - r.x, y - r.y) < 30) {
-                        triggerSnagLineBreak("🪨 Flugan fastnade i stenarna i Kåhögsforsen och tafsen gick av!");
-                        return true;
+                        return "🪨 Flugan fastnade i stenarna i Kåhögsforsen och tafsen gick av!";
                     }
                 }
             }
-            return false;
+            return null;
         }
 
         function checkBite(isStripTug = false) {
