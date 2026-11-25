@@ -1441,7 +1441,7 @@
 
                 if (hofArchiveEl) {
                     if (previousSeasons.length > 0) {
-                        hofArchiveEl.innerHTML = `<span class="text-stone-300 font-semibold">Tidigare säsonger (jämna veckor):</span> ` + previousSeasons.map(s => {
+                        hofArchiveEl.innerHTML = `<span class="text-stone-300 font-semibold">Tidigare säsonger:</span> ` + previousSeasons.map(s => {
                             const items = [];
                             if (s.salmon) items.push(`Lax: ${s.salmon.angler} (${s.salmon.size} cm)`);
                             if (s.trout) items.push(`Öring: ${s.trout.angler} (${s.trout.size} cm)`);
@@ -4604,23 +4604,16 @@
                         } else {
                             castLine.currentX += (dx/dist) * speed;
                             castLine.currentY += (dy/dist) * speed;
+                            if (checkObstacleSnag(castLine.currentX, castLine.currentY)) {}
                         }
                     } else if (castLine.state === 'drifting') {
                         castLine.currentX += (0.55 + currentFlow * 0.025) * flowMultiplier;
                         castLine.currentY += Math.sin(Date.now() * 0.006) * 0.4;
                         castLine.driftTimer++;
 
-                        if (currentFlow >= 14 && singleDriftLog) {
-                            let distToLog = Math.hypot(castLine.currentX - singleDriftLog.x, castLine.currentY - singleDriftLog.y);
-                            if (distToLog < 28) {
-                                castLine.currentX += 2.2;
-                                if (Math.random() < 0.04) {
-                                    document.getElementById('castStatus').innerText = "🪵 Drivved passerar! Linan påverkas av strömmen.";
-                                }
-                            }
-                        }
-
-                        if (castLine.driftTimer >= castLine.nextBiteCheck && !currentFish) {
+                        if (checkObstacleSnag(castLine.currentX, castLine.currentY)) {
+                            // Tafsen gick av vid hinder
+                        } else if (castLine.driftTimer >= castLine.nextBiteCheck && !currentFish) {
                             castLine.nextBiteCheck += 64;
                             checkBite(false);
                         }
@@ -4801,6 +4794,56 @@
             return isNaN(n) ? 8 : n;
         }
 
+        function triggerSnagLineBreak(reasonText) {
+            if (!castLine && !currentFish && !isFighting) return;
+            castLine = null;
+            currentFish = null;
+            isFighting = false;
+            isPressingScreen = false;
+            resetFightWindowRocking();
+            if (fightInterval) {
+                clearInterval(fightInterval);
+                fightInterval = null;
+            }
+            const fOverlay = document.getElementById('fightOverlay');
+            if (fOverlay) {
+                fOverlay.classList.add('hidden');
+                fOverlay.classList.remove('flex');
+            }
+            const statusEl = document.getElementById('castStatus');
+            if (statusEl) statusEl.innerText = reasonText;
+            showPostCatchPopup(reasonText, "Tafs av");
+            updateUI();
+        }
+
+        function checkObstacleSnag(x, y) {
+            if (!castLine || currentFish || isFighting) return false;
+            if (currentFlow >= 14 && singleDriftLog) {
+                const distLog = Math.hypot(x - singleDriftLog.x, y - singleDriftLog.y);
+                if (distLog < 34) {
+                    triggerSnagLineBreak("🪵 Flugan fastnade i drivveden och tafsen gick av!");
+                    return true;
+                }
+            }
+            if (currentZoneKey === 'dickson') {
+                const dicksonBlockX = canvas.width / 3;
+                if (Math.hypot(x - dicksonBlockX, y - 35) < 48) {
+                    triggerSnagLineBreak("🪨 Flugan fastnade i stenen vid Dickson och tafsen gick av!");
+                    return true;
+                }
+            }
+            if (currentZoneKey === 'kahogsforsen') {
+                const rocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
+                for (const r of rocks) {
+                    if (Math.hypot(x - r.x, y - r.y) < 30) {
+                        triggerSnagLineBreak("🪨 Flugan fastnade i stenarna i Kåhögsforsen och tafsen gick av!");
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         function checkBite(isStripTug = false) {
             if(wildlifeDisturbance) return;
             if(!castLine || castLine.state !== 'drifting' || currentFish || isFighting) return;
@@ -4820,19 +4863,17 @@
             let synergy = gCount === 0 ? 0.2 : Math.min(1.0, bCount / Math.max(1, gCount));
 
             // Biotopkvalitet (0.0 -> ~1.0) styr huggfrekvens, stora fiskar och återväxt
-            let zoneBiotopeMeasures = gCount + bCount + nCount;
-            let biotopeRaw = (gCount * synergy * 0.15) + (bCount * 0.14) + (nCount * 0.12) + (Math.max(0, tCount - 2) * 0.035) + (Math.max(0, buCount - 2) * 0.03) + (gameWorld.laddersFixed ? 0.24 : 0);
+            let biotopeRaw = (gCount * synergy * 0.14) + (bCount * 0.12) + (nCount * 0.10) + ((tCount + buCount) * 0.025) + (gameWorld.laddersFixed ? 0.22 : 0);
             let biotopeQuality = Math.min(1.0, Math.max(0.0, biotopeRaw));
-            let noZoneBiotopeFactor = zoneBiotopeMeasures === 0 ? 0.42 : Math.min(1.0, 0.58 + biotopeQuality * 0.52);
 
             // Vattenflöde: lågt flöde (< 10 m³/s) gynnar små flugor (10#–16#)
             let lowFlowSmallFlyBoost = (flowVal < 10 && isSmallFly);
             let smallFlyMultiplier = lowFlowSmallFlyBoost ? 1.42 : (isSmallFly ? 0.85 : 1.0);
 
-            let popFactor = Math.min(1.25, Math.max(0.16, (s.population || 100) / 270));
-            // Lägre nappchans där biotopvårdsåtgärder saknas; tydligare respons vid aktiva 30px-ryck
-            let baseChance = isStripTug ? 0.20 : 0.068;
-            let biteChance = Math.min(0.42, Math.max(0.012, baseChance * popFactor * noZoneBiotopeFactor * (0.36 + biotopeQuality * 0.86) * smallFlyMultiplier));
+            let popFactor = Math.min(1.25, Math.max(0.18, (s.population || 100) / 260));
+            // Lägre passiv huggrisk så du hinner tricksa/ta hem flugan, med tydligare nappchans vid ryck
+            let baseChance = isStripTug ? 0.21 : 0.075;
+            let biteChance = Math.min(0.42, Math.max(0.025, baseChance * popFactor * (0.52 + biotopeQuality * 0.68) * smallFlyMultiplier));
 
             if (Math.random() > biteChance) return;
 
@@ -4846,42 +4887,37 @@
             let size = 40;
 
             let salmonProb = (isHeavyRod && salmonAllowedFly)
-                ? Math.min(0.50, (0.20 + biotopeQuality * 0.16 + Math.max(0, (flowVal - 12) * 0.008)) * (lowFlowSmallFlyBoost ? 1.15 : 1.0))
+                ? Math.min(0.52, (0.24 + biotopeQuality * 0.14 + Math.max(0, (flowVal - 12) * 0.008)) * (lowFlowSmallFlyBoost ? 1.15 : 1.0))
                 : 0;
-
-            // Större fiskar oavsett art är svårare att hitta (starkare skevhet mot mindre/medelstor fisk, särskilt utan biotopvård)
-            let trophyRarityExp = 1.65 - biotopeQuality * 0.45 + (zoneBiotopeMeasures === 0 ? 0.35 : 0);
 
             if (salmonProb > 0 && roll < salmonProb) {
                 species = "Lax";
-                // Maxgräns 125 cm, där de allra största (115–125 cm) är extra svåra att hitta
+                // Maxgräns 125 cm, där 120–125 cm är extremt sällsynt även vid bra biotopvård och högt flöde
                 let highFlowBiotopeDrive = Math.min(1.0, Math.max(0.0, biotopeQuality * 0.65 + Math.max(0, (flowVal - 10) / 25) * 0.45));
-                let minLen = Math.round(50 + highFlowBiotopeDrive * 16 + (lowFlowSmallFlyBoost ? 3 : 0));
-                let spanLen = Math.max(14, 125 - minLen);
-                let skewed = Math.pow(Math.random(), 2.85 - highFlowBiotopeDrive * 0.55 + (zoneBiotopeMeasures === 0 ? 0.35 : 0));
+                let minLen = Math.round(52 + highFlowBiotopeDrive * 22 + (lowFlowSmallFlyBoost ? 4 : 0));
+                let spanLen = Math.max(12, 125 - minLen);
+                let skewed = Math.pow(Math.random(), 2.35 - highFlowBiotopeDrive * 0.55);
                 size = Math.min(125, Math.max(50, Math.floor(minLen + skewed * spanLen)));
             } else if (roll < salmonProb + (lowFlowSmallFlyBoost ? 0.42 : 0.34)) {
                 species = "Öring";
+                // Öring styrs av biotop och flöde; ~75–77 cm inträffar bara extremt sällan vid hög biotopkvalitet/flöde
                 let troutDrive = Math.min(1.0, Math.max(0.0, biotopeQuality * 0.65 + Math.max(0, (flowVal - 10) / 26) * 0.4));
-                let minTrout = Math.round(26 + troutDrive * 11 + (lowFlowSmallFlyBoost ? 2 : 0));
-                let maxTroutCap = Math.min(77, Math.round(54 + troutDrive * 23));
-                let skewedTrout = Math.pow(Math.random(), 3.65 - troutDrive * 0.65 + (zoneBiotopeMeasures === 0 ? 0.35 : 0));
+                let minTrout = Math.round(28 + troutDrive * 14 + (lowFlowSmallFlyBoost ? 3 : 0));
+                let maxTroutCap = Math.min(77, Math.round(56 + troutDrive * 21));
+                let skewedTrout = Math.pow(Math.random(), 3.2 - troutDrive * 0.65);
                 size = Math.min(77, Math.max(26, Math.floor(minTrout + skewedTrout * Math.max(8, maxTroutCap - minTrout))));
             } else if (roll < 0.84) {
                 species = "Abborre";
-                let perchBase = 15 + biotopeQuality * 5;
-                let maxPerchSpan = 24 + biotopeQuality * 6;
-                size = Math.floor(perchBase + Math.pow(Math.random(), trophyRarityExp + 0.35) * maxPerchSpan);
+                let perchBase = 16 + biotopeQuality * 6;
+                size = Math.floor(perchBase + Math.pow(Math.random(), 1.6) * 24);
             } else if (roll < 0.93) {
                 species = "Gädda";
-                let pikeBase = 48 + biotopeQuality * 10;
-                let maxPikeSpan = 38 + biotopeQuality * 8;
-                size = Math.floor(pikeBase + Math.pow(Math.random(), trophyRarityExp + 0.4) * maxPikeSpan);
+                let pikeBase = 50 + biotopeQuality * 12;
+                size = Math.floor(pikeBase + Math.pow(Math.random(), 1.7) * 38);
             } else {
                 species = "Gös";
-                let zanderBase = 38 + biotopeQuality * 8;
-                let maxZanderSpan = 28 + biotopeQuality * 7;
-                size = Math.floor(zanderBase + Math.pow(Math.random(), trophyRarityExp + 0.35) * maxZanderSpan);
+                let zanderBase = 40 + biotopeQuality * 10;
+                size = Math.floor(zanderBase + Math.pow(Math.random(), 1.6) * 28);
             }
 
             let hasFungus = (species === "Lax" || species === "Öring") && Math.random() < 0.18;
@@ -4981,17 +5017,8 @@
             isPressingScreen = false;
             tippetStress = 0;
 
-            let speciesTopSize = 75;
-            if (currentFish.species === "Lax") speciesTopSize = 125;
-            else if (currentFish.species === "Öring") speciesTopSize = 77;
-            else if (currentFish.species === "Gädda") speciesTopSize = 95;
-            else if (currentFish.species === "Gös") speciesTopSize = 75;
-            else if (currentFish.species === "Abborre") speciesTopSize = 45;
-
-            let relativeSizeRatio = Math.max(0.25, Math.min(1.15, currentFish.size / speciesTopSize));
-            let trophyFightBonus = Math.pow(relativeSizeRatio, 1.85) * 4.4;
-            let sizeFactor = Math.max(0.85, Math.min(1.85, currentFish.size / 68));
-            totalFightDuration = Number((3.6 + sizeFactor * 1.9 + trophyFightBonus).toFixed(1));
+            let sizeFactor = Math.max(0.85, Math.min(1.65, currentFish.size / 68));
+            totalFightDuration = Number((4.0 + sizeFactor * 2.2).toFixed(1));
             fightTimeRemaining = totalFightDuration;
 
             const titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
@@ -5025,7 +5052,7 @@
                     tippetStress += (90 * sizeFactor * bigFishStressDamp * surge * knotMasteryFactor) * dt;
                     fightTimeRemaining = Math.max(0, fightTimeRemaining - dt);
                 } else {
-                    tippetStress = Math.max(0, tippetStress - 68 * dt);
+                    tippetStress = Math.max(0, tippetStress - 42 * dt);
                 }
 
                 updateFightVisuals();
@@ -5124,7 +5151,7 @@
         // --- 9K. C&R, HEMTAGNING & DAGBÖCKER ---
         function openWelfareModal() {
             if (!currentFish) return;
-            let detailsText = `Du landade en ${currentFish.species} på ${currentFish.size} cm (${currentFish.fly}) vid ${currentFish.zone}!`;
+            let detailsText = `Du landade en ${currentFish.species} på ${currentFish.size} cm vid ${currentFish.zone}!`;
             if (currentFish.hasFungus) {
                 detailsText += ` ⚠️ Fisken har synliga tecken på svampangrepp!`;
             }
@@ -5235,6 +5262,20 @@
                 pointsEarned = 45;
                 xpEarned = 20;
                 statusMsg = `Tog hem/avlivade gös (${sz} cm) – uppskattad fångst och fiskevård! +${pointsEarned} p.`;
+            } else if (String(sp).toLowerCase().includes("lax")) {
+                if (sz < 70) {
+                    pointsEarned = 25;
+                    xpEarned = 12;
+                    statusMsg = `Behöll lax under 70 cm (${sz} cm) – +${pointsEarned} poäng, men beståndet minskar.`;
+                } else if (!currentFish.hasFungus) {
+                    pointsEarned = -25;
+                    xpEarned = 5;
+                    statusMsg = `Behöll frisk lax över 70 cm (${sz} cm) – ${pointsEarned} poäng och beståndet minskar!`;
+                } else {
+                    pointsEarned = 15;
+                    xpEarned = 10;
+                    statusMsg = `Behöll lax med svampangrepp (${sz} cm). +${pointsEarned} poäng, beståndet minskar.`;
+                }
             } else {
                 pointsEarned = 15;
                 xpEarned = 10;
