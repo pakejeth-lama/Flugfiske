@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Flugfiskarens Ekosystem – Säveån Open World (v2.11)</title>
+    <title>Flugfiskarens Ekosystem – Säveån Open World (v2.13)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- === 1. ANIMATIONER & LAYOUT-STILAR === -->
     <style>
@@ -126,6 +126,45 @@
         .fight-stream-sway-hard {
             will-change: transform;
         }
+
+        @keyframes nymphGlowPulse {
+            0%, 100% {
+                filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.9)) drop-shadow(0 0 14px rgba(56, 189, 248, 0.65));
+            }
+            50% {
+                filter: drop-shadow(0 0 11px rgba(254, 240, 138, 1)) drop-shadow(0 0 22px rgba(34, 211, 238, 0.9));
+            }
+        }
+        .nymph-glow-canvas {
+            animation: nymphGlowPulse 1.5s ease-in-out infinite;
+        }
+
+        /* Liggande mobil: större minispelsruta och bredare 9x5-omlöp */
+        @media (orientation: landscape) and (max-height: 540px) {
+            #minigamesModal {
+                padding: 0.35rem;
+            }
+            #minigamesCard {
+                max-width: min(96vw, 860px) !important;
+                max-height: 96vh !important;
+                padding: 0.6rem 0.75rem !important;
+                gap: 0.4rem !important;
+            }
+            #flowGridContainer {
+                gap: 0.25rem !important;
+                padding: 0.4rem !important;
+            }
+            #flowGridContainer > button {
+                height: 2.05rem !important;
+            }
+            #tangleCanvas {
+                height: 9.5rem !important;
+            }
+            #driftCanvas {
+                height: 10.5rem !important;
+            }
+        }
+
     </style>
 </head>
 <body class="bg-stone-900 text-stone-100 min-h-screen flex flex-col select-none">
@@ -309,9 +348,9 @@
         </div>
     </div>
 
-    <!-- === 4. MINISPELSMODAL (OMLÖP, LINTRASSEL, BOTTENDRIFT) === -->
-    <div id="minigamesModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-3">
-        <div id="minigamesCard" class="bg-stone-900 border border-emerald-500/50 rounded-2xl max-w-md w-full p-4 shadow-2xl flex flex-col gap-2.5 max-h-[92vh] overflow-y-auto">
+    <!-- === 4. MINISPELSMODAL (9x5 OMLÖP, LINTRASSEL & BOTTENDRIFT) === -->
+    <div id="minigamesModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-50 p-2 sm:p-3">
+        <div id="minigamesCard" class="bg-stone-900 border border-emerald-500/50 rounded-2xl max-w-2xl landscape:max-w-3xl w-full p-3.5 sm:p-4 shadow-2xl flex flex-col gap-2.5 max-h-[94vh] landscape:max-h-[96vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b border-stone-800 pb-1.5">
                 <div>
                     <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-1.5">
@@ -325,14 +364,14 @@
             <div class="grid grid-cols-3 gap-1.5 text-[11px]" id="miniGameStepTabs"></div>
 
             <div id="miniGamePanel_flow" class="hidden flex-col gap-2 bg-stone-950 p-3 rounded-xl border border-stone-800 text-xs">
-                <div class="flex justify-between items-center">
-                    <span class="font-bold text-amber-300">🏞️ Flödesschema – Omlöpsbäck (5×5)</span>
-                    <span class="text-[10px] text-cyan-300 font-semibold">+4,5 m³/s (idag) • +25 p / +15 XP</span>
+                <div class="flex justify-between items-center gap-2">
+                    <span class="font-bold text-amber-300">🏞️ Flödesschema – Omlöpsbäck (9×5)</span>
+                    <span class="text-[10px] text-cyan-300 font-semibold shrink-0">+4,5 m³/s (idag) • +25 p / +15 XP</span>
                 </div>
                 <p id="flowStatusDesc" class="text-[11px] text-stone-400 leading-snug">
                     Vrid bäckbitarna så vattnet slingrar sig från <strong class="text-sky-400">IN</strong> till <strong class="text-emerald-400">UT</strong>. Matchande bäckskarvar kopplas ihop!
                 </p>
-                <div id="flowGridContainer" class="grid grid-cols-5 gap-1 bg-gradient-to-b from-emerald-950/60 via-stone-900 to-emerald-950/60 p-2 rounded-2xl border border-emerald-800/60 shadow-inner"></div>
+                <div id="flowGridContainer" class="grid grid-cols-9 gap-1 sm:gap-1.5 bg-gradient-to-b from-emerald-950/70 via-stone-900 to-emerald-950/70 p-2 sm:p-2.5 rounded-2xl border border-emerald-800/70 shadow-inner"></div>
                 <div id="flowActionButtons" class="flex gap-2">
                     <button type="button" onclick="checkFlowPuzzle()" class="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded-lg text-[11px] font-bold transition">
                         Kontrollera omlöp
@@ -351,7 +390,7 @@
                 <p id="tangleStatusDesc" class="text-[11px] text-stone-400 leading-snug">
                     Dra de 8 punkterna tills inga linjer korsar varandra – då rätas trasslet ut automatiskt!
                 </p>
-                <canvas id="tangleCanvas" width="340" height="190" class="w-full h-44 bg-stone-900 rounded-xl border border-stone-800 cursor-grab active:cursor-grabbing"></canvas>
+                <canvas id="tangleCanvas" width="520" height="230" class="w-full h-48 sm:h-56 landscape:h-40 bg-stone-900 rounded-xl border border-stone-800 cursor-grab active:cursor-grabbing"></canvas>
                 <div class="flex justify-between items-center text-[10px]">
                     <span id="tangleCrossingStatus" class="text-amber-300 font-semibold">Korsande linjer: beräknar...</span>
                     <button type="button" id="btnResetTangle" onclick="initTanglePuzzle()" class="bg-stone-800 hover:bg-stone-700 text-stone-300 px-2.5 py-1 rounded-lg font-semibold transition">
@@ -361,14 +400,14 @@
             </div>
 
             <div id="miniGamePanel_drift" class="hidden flex-col gap-2 bg-stone-950 p-3 rounded-xl border border-stone-800 text-xs">
-                <div class="flex justify-between items-center">
-                    <span class="font-bold text-amber-300">🪨 Bottendrift – Nymf förbi hinder</span>
-                    <span class="text-[10px] text-emerald-400 font-semibold">+25 p / +15 XP</span>
+                <div class="flex justify-between items-center gap-2">
+                    <span class="font-bold text-amber-300">🪨 Bottendrift – Glödande nymf förbi hinder</span>
+                    <span class="text-[10px] text-emerald-400 font-semibold shrink-0">+25 p / +15 XP</span>
                 </div>
                 <p id="driftMiniStatusDesc" class="text-[11px] text-stone-400 leading-snug">
-                    Nymfen driver med strömmen från vänster till höger. Håll nere (eller använd upp/ner) för att styra förbi bottenstenarna till målfickan!
+                    Den glödande nymfen driver med strömmen från vänster till höger. Håll nere (eller använd upp/ner) för att styra förbi bottenstenarna till målfickan!
                 </p>
-                <canvas id="driftCanvas" width="340" height="185" class="w-full h-44 bg-stone-900 rounded-xl border border-stone-800 cursor-pointer"></canvas>
+                <canvas id="driftCanvas" width="560" height="240" class="w-full h-52 sm:h-60 landscape:h-44 bg-stone-900 rounded-xl border border-cyan-500/30 cursor-pointer nymph-glow-canvas"></canvas>
                 <div class="flex justify-between items-center gap-2 text-[10px]">
                     <span id="driftMiniStatusText" class="text-cyan-300 font-semibold truncate">Tryck start eller klicka/håll på banan för att styra nymfen.</span>
                     <button type="button" id="btnStartDriftMiniGame" onclick="startOrRestartDriftGame()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold transition shrink-0">
@@ -1842,7 +1881,8 @@
         let dailyMiniGameOrder = [];
         let activeMiniGameStep = 0;
 
-        const FLOW_GRID_SIZE = 5;
+        const FLOW_COLS = 9;
+        const FLOW_ROWS = 5;
         let flowInRow = 1;
         let flowOutRow = 3;
         let flowCells = [];
@@ -1856,9 +1896,9 @@
         let driftLastTick = 0;
         let driftHoldingSteer = false;
         let driftKeyDir = 0;
-        let driftNymph = { x: 26, y: 92, vy: 0, radius: 6.5 };
+        let driftNymph = { x: 36, y: 120, vy: 0, radius: 7.5, trail: [] };
         let driftObstacles = [];
-        let driftTargetPocket = { x: 304, y: 92, radius: 18 };
+        let driftTargetPocket = { x: 514, y: 120, radius: 20 };
         let driftSolvedLock = false;
 
         const saveanZones = {
@@ -1905,7 +1945,7 @@
         const ctx = canvas.getContext('2d');
         let castLine = null;
 
-        // --- 9B. DAGLIGA MINISPEL (OMLÖPSBÄCK, LINTRASSEL & BOTTENDRIFT) ---
+        // --- 9B. DAGLIGA MINISPEL (9x5 OMLÖPSBÄCK, LINTRASSEL & BOTTENDRIFT) ---
         function getMiniGameLocalKey(playerName = lockedAnglerName, dateStr = todayStr) {
             return `savean_minigames_${playerName || 'guest'}_${dateStr}`;
         }
@@ -2068,7 +2108,7 @@
                         </div>
                     `;
                 } else {
-                    flowDesc.innerHTML = `Vrid bäckbitarna så vattnet slingrar sig från <strong class="text-sky-400">IN</strong> till <strong class="text-emerald-400">UT</strong>. Matchande bäckskarvar kopplas ihop!`;
+                    flowDesc.innerHTML = `Vrid bäckbitarna på 9×5-omlöpet så vattnet slingrar sig från <strong class="text-sky-400">IN</strong> till <strong class="text-emerald-400">UT</strong>. Matchande bäckskarvar kopplas ihop!`;
                     flowBtns.innerHTML = `
                         <button type="button" onclick="checkFlowPuzzle()" class="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded-lg text-[11px] font-bold transition">
                             Kontrollera omlöp
@@ -2102,7 +2142,7 @@
             if (driftDesc) {
                 driftDesc.innerHTML = driftDone
                     ? `<span class="text-emerald-400 font-bold">🔒 Klarat för idag (${todayStr})!</span> Du kan spela bottendrift igen nästa datum.`
-                    : `Nymfen driver med strömmen från vänster till höger. Håll nere (eller använd upp/ner) för att styra förbi bottenstenarna till målfickan!`;
+                    : `Den glödande nymfen driver med strömmen från vänster till höger. Håll nere (eller använd upp/ner) för att styra förbi bottenstenarna till målfickan!`;
             }
             if (btnDrift) {
                 btnDrift.disabled = driftDone;
@@ -2144,13 +2184,14 @@
         }
 
         function initFlowPuzzle(randomize) {
-            const N = FLOW_GRID_SIZE;
-            flowInRow = Math.floor(Math.random() * N);
-            flowOutRow = Math.floor(Math.random() * N);
+            const C = FLOW_COLS;
+            const R = FLOW_ROWS;
+            flowInRow = Math.floor(Math.random() * R);
+            flowOutRow = Math.floor(Math.random() * R);
 
             const oppDir = [2, 3, 0, 1];
             const pathSet = new Set();
-            const solDirs = Array.from({ length: N }, () => Array.from({ length: N }, () => new Set()));
+            const solDirs = Array.from({ length: R }, () => Array.from({ length: C }, () => new Set()));
 
             solDirs[flowInRow][0].add(3);
             pathSet.add(`${flowInRow},0`);
@@ -2158,16 +2199,16 @@
             let curR = flowInRow;
             let curC = 0;
 
-            while (curC < N - 1) {
+            while (curC < C - 1) {
                 const candidates = [];
-                if (curC + 1 < N && !pathSet.has(`${curR},${curC + 1}`)) {
-                    candidates.push({ nr: curR, nc: curC + 1, d: 1, weight: 3 });
+                if (curC + 1 < C && !pathSet.has(`${curR},${curC + 1}`)) {
+                    candidates.push({ nr: curR, nc: curC + 1, d: 1, weight: 3.2 });
                 }
                 if (curR > 0 && !pathSet.has(`${curR - 1},${curC}`)) {
-                    candidates.push({ nr: curR - 1, nc: curC, d: 0, weight: 1.5 });
+                    candidates.push({ nr: curR - 1, nc: curC, d: 0, weight: 1.6 });
                 }
-                if (curR + 1 < N && !pathSet.has(`${curR + 1},${curC}`)) {
-                    candidates.push({ nr: curR + 1, nc: curC, d: 2, weight: 1.5 });
+                if (curR + 1 < R && !pathSet.has(`${curR + 1},${curC}`)) {
+                    candidates.push({ nr: curR + 1, nc: curC, d: 2, weight: 1.6 });
                 }
 
                 if (candidates.length === 0) {
@@ -2178,7 +2219,7 @@
                         curR += stepR;
                         solDirs[curR][curC].add(oppDir[d]);
                         pathSet.add(`${curR},${curC}`);
-                    } else if (curC + 1 < N) {
+                    } else if (curC + 1 < C) {
                         solDirs[curR][curC].add(1);
                         curC += 1;
                         solDirs[curR][curC].add(3);
@@ -2213,7 +2254,7 @@
                 pathSet.add(`${curR},${curC}`);
             }
 
-            solDirs[flowOutRow][N - 1].add(1);
+            solDirs[flowOutRow][C - 1].add(1);
 
             const pairTemplates = [
                 [0, 1], [1, 2], [2, 3], [3, 0], [0, 2], [1, 3]
@@ -2222,9 +2263,9 @@
             const alreadyDone = isMiniGameCompletedToday('flow');
 
             flowCells = [];
-            for (let r = 0; r < N; r++) {
+            for (let r = 0; r < R; r++) {
                 const rowArr = [];
-                for (let c = 0; c < N; c++) {
+                for (let c = 0; c < C; c++) {
                     let baseDirs = Array.from(solDirs[r][c]);
                     if (baseDirs.length < 2) {
                         const tpl = pairTemplates[Math.floor(Math.random() * pairTemplates.length)];
@@ -2252,8 +2293,8 @@
             renderFlowGrid();
         }
 
-        function buildCreekChannelSvg5x5(r, c, dirs, active, matchedDirs) {
-            const N = FLOW_GRID_SIZE;
+        function buildCreekChannelSvg9x5(r, c, dirs, active, matchedDirs) {
+            const C = FLOW_COLS;
             const bankMossColor = active ? "#14532d" : "#1c1917";
             const gravelBankColor = active ? "#78716c" : "#44403c";
             const creekBedColor = active ? "#0369a1" : "#1e293b";
@@ -2306,7 +2347,7 @@
 
             let matchBadges = "";
             dirs.forEach(d => {
-                const isPortMatch = (r === flowInRow && c === 0 && d === 3) || (r === flowOutRow && c === N - 1 && d === 1);
+                const isPortMatch = (r === flowInRow && c === 0 && d === 3) || (r === flowOutRow && c === C - 1 && d === 1);
                 if (matchedDirs.has(d) || isPortMatch) {
                     const pt = edgePts[d];
                     const mx = pt.x + (30 - pt.x) * 0.2;
@@ -2321,7 +2362,7 @@
             });
 
             return `
-                <svg class="w-7 h-7 sm:w-8 sm:h-8 overflow-visible" viewBox="0 0 60 60">
+                <svg class="w-6 h-6 sm:w-8 sm:h-8 overflow-visible" viewBox="0 0 60 60">
                     ${bankDecor}
                     ${channelLayers}
                     ${matchBadges}
@@ -2332,21 +2373,22 @@
         function renderFlowGrid() {
             const container = document.getElementById('flowGridContainer');
             if (!container) return;
-            const N = FLOW_GRID_SIZE;
+            const C = FLOW_COLS;
+            const R = FLOW_ROWS;
             const oppDir = [2, 3, 0, 1];
             const dr = [-1, 0, 1, 0];
             const dc = [0, 1, 0, -1];
 
-            const cellMatchedDirs = Array.from({ length: N }, () =>
-                Array.from({ length: N }, () => new Set())
+            const cellMatchedDirs = Array.from({ length: R }, () =>
+                Array.from({ length: C }, () => new Set())
             );
 
-            for (let r = 0; r < N; r++) {
-                for (let c = 0; c < N; c++) {
+            for (let r = 0; r < R; r++) {
+                for (let c = 0; c < C; c++) {
                     for (const d of flowCells[r][c].dirs) {
                         const nr = r + dr[d];
                         const nc = c + dc[d];
-                        if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
+                        if (nr >= 0 && nr < R && nc >= 0 && nc < C) {
                             if (flowCells[nr][nc].dirs.includes(oppDir[d])) {
                                 cellMatchedDirs[r][c].add(d);
                             }
@@ -2355,7 +2397,7 @@
                 }
             }
 
-            const energized = Array.from({ length: N }, () => Array(N).fill(false));
+            const energized = Array.from({ length: R }, () => Array(C).fill(false));
             const queue = [];
             if (flowCells[flowInRow][0].dirs.includes(3)) {
                 energized[flowInRow][0] = true;
@@ -2366,7 +2408,7 @@
                 for (const d of flowCells[cr][cc].dirs) {
                     const nr = cr + dr[d];
                     const nc = cc + dc[d];
-                    if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
+                    if (nr >= 0 && nr < R && nc >= 0 && nc < C) {
                         if (!energized[nr][nc] && flowCells[nr][nc].dirs.includes(oppDir[d])) {
                             energized[nr][nc] = true;
                             queue.push([nr, nc]);
@@ -2377,15 +2419,15 @@
 
             const alreadyDone = isMiniGameCompletedToday('flow');
             let html = "";
-            for (let r = 0; r < N; r++) {
-                for (let c = 0; c < N; c++) {
+            for (let r = 0; r < R; r++) {
+                for (let c = 0; c < C; c++) {
                     const dirs = flowCells[r][c].dirs;
                     const active = energized[r][c];
                     const matched = cellMatchedDirs[r][c];
                     const hasPairMatch = matched.size > 0;
 
                     const isIn = (r === flowInRow && c === 0);
-                    const isOut = (r === flowOutRow && c === N - 1);
+                    const isOut = (r === flowOutRow && c === C - 1);
                     const badge = isIn
                         ? `<span class="text-[7px] font-extrabold text-sky-200 bg-sky-950/90 px-1 rounded border border-sky-400/50">IN</span>`
                         : (isOut ? `<span class="text-[7px] font-extrabold text-emerald-200 bg-emerald-950/90 px-1 rounded border border-emerald-400/50">UT</span>` : ``);
@@ -2395,9 +2437,9 @@
                         : (hasPairMatch ? 'border-emerald-600/60' : 'border-stone-800');
 
                     html += `
-                        <button type="button" onclick="rotateFlowCell(${r},${c})" class="bg-gradient-to-br from-emerald-950/45 via-stone-900 to-stone-950 ${alreadyDone ? 'cursor-default' : 'hover:from-emerald-900/40 hover:to-stone-900'} border ${borderClass} rounded-lg h-10 sm:h-11 flex items-center justify-center relative transition">
+                        <button type="button" onclick="rotateFlowCell(${r},${c})" class="bg-gradient-to-br from-emerald-950/45 via-stone-900 to-stone-950 ${alreadyDone ? 'cursor-default' : 'hover:from-emerald-900/40 hover:to-stone-900'} border ${borderClass} rounded-lg h-10 sm:h-12 flex items-center justify-center relative transition">
                             ${badge ? `<div class="absolute top-0.5 left-0.5 z-10 pointer-events-none">${badge}</div>` : ``}
-                            ${buildCreekChannelSvg5x5(r, c, dirs, active, matched)}
+                            ${buildCreekChannelSvg9x5(r, c, dirs, active, matched)}
                         </button>
                     `;
                 }
@@ -2428,11 +2470,12 @@
                 showCustomAlert(`Du har redan klarat omlöpet idag (${todayStr}).`, "Datumlås");
                 return;
             }
-            const N = FLOW_GRID_SIZE;
+            const C = FLOW_COLS;
+            const R = FLOW_ROWS;
             const oppDir = [2, 3, 0, 1];
             const dr = [-1, 0, 1, 0];
             const dc = [0, 1, 0, -1];
-            const visited = Array.from({ length: N }, () => Array(N).fill(false));
+            const visited = Array.from({ length: R }, () => Array(C).fill(false));
             const queue = [];
             if (flowCells[flowInRow][0].dirs.includes(3)) {
                 visited[flowInRow][0] = true;
@@ -2443,7 +2486,7 @@
                 for (const d of flowCells[cr][cc].dirs) {
                     const nr = cr + dr[d];
                     const nc = cc + dc[d];
-                    if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
+                    if (nr >= 0 && nr < R && nc >= 0 && nc < C) {
                         if (!visited[nr][nc] && flowCells[nr][nc].dirs.includes(oppDir[d])) {
                             visited[nr][nc] = true;
                             queue.push([nr, nc]);
@@ -2452,7 +2495,7 @@
                 }
             }
 
-            const connectedToOutlet = visited[flowOutRow][N - 1] && flowCells[flowOutRow][N - 1].dirs.includes(1);
+            const connectedToOutlet = visited[flowOutRow][C - 1] && flowCells[flowOutRow][C - 1].dirs.includes(1);
             if (connectedToOutlet) {
                 todayStr = getLocalDateString();
                 await markMiniGameCompletedToday('flow');
@@ -2507,8 +2550,8 @@
         function buildSolvableTangleLayout(w, h) {
             const cx = w / 2;
             const cy = h / 2;
-            const outerRx = Math.min(w * 0.38, 128);
-            const outerRy = Math.min(h * 0.34, 62);
+            const outerRx = Math.min(w * 0.39, 195);
+            const outerRy = Math.min(h * 0.35, 78);
             const innerRx = outerRx * 0.44;
             const innerRy = outerRy * 0.44;
             const rot = (Math.random() - 0.5) * 0.35;
@@ -2516,8 +2559,8 @@
             const sinR = Math.sin(rot);
 
             const rotatePt = (dx, dy) => ({
-                x: Math.max(18, Math.min(w - 18, cx + dx * cosR - dy * sinR)),
-                y: Math.max(18, Math.min(h - 18, cy + dx * sinR + dy * cosR))
+                x: Math.max(20, Math.min(w - 20, cx + dx * cosR - dy * sinR)),
+                y: Math.max(20, Math.min(h - 20, cy + dx * sinR + dy * cosR))
             });
 
             const basePts = [];
@@ -2534,8 +2577,8 @@
 
         function initTanglePuzzle() {
             const cnv = document.getElementById('tangleCanvas');
-            const w = cnv ? cnv.width : 340;
-            const h = cnv ? cnv.height : 190;
+            const w = cnv ? cnv.width : 520;
+            const h = cnv ? cnv.height : 230;
             const alreadyDone = isMiniGameCompletedToday('tangle');
 
             tangleEdges = [
@@ -2561,11 +2604,11 @@
                 }
                 tangleNodes = perm.map(idx => {
                     const base = cleanLayout[idx];
-                    const jitterX = (Math.random() - 0.5) * 34;
-                    const jitterY = (Math.random() - 0.5) * 24;
+                    const jitterX = (Math.random() - 0.5) * 44;
+                    const jitterY = (Math.random() - 0.5) * 28;
                     return {
-                        x: Math.max(18, Math.min(w - 18, base.x + jitterX)),
-                        y: Math.max(18, Math.min(h - 18, base.y + jitterY))
+                        x: Math.max(20, Math.min(w - 20, base.x + jitterX)),
+                        y: Math.max(20, Math.min(h - 20, base.y + jitterY))
                     };
                 });
                 if (countTangleCrossings() >= 2) break;
@@ -2603,7 +2646,7 @@
                     return segmentsIntersect(n1, n2, tangleNodes[k], tangleNodes[l]);
                 });
                 tctx.strokeStyle = (alreadyDone || crossings === 0) ? '#34d399' : (isBad ? '#f87171' : '#94a3b8');
-                tctx.lineWidth = 2;
+                tctx.lineWidth = 2.2;
                 tctx.beginPath();
                 tctx.moveTo(n1.x, n1.y);
                 tctx.lineTo(n2.x, n2.y);
@@ -2613,7 +2656,7 @@
             tangleNodes.forEach((pt, idx) => {
                 tctx.fillStyle = alreadyDone ? '#10b981' : (idx === draggedNodeIdx ? '#fbbf24' : '#38bdf8');
                 tctx.beginPath();
-                tctx.arc(pt.x, pt.y, 8.5, 0, Math.PI * 2);
+                tctx.arc(pt.x, pt.y, 9, 0, Math.PI * 2);
                 tctx.fill();
                 tctx.strokeStyle = '#0f172a';
                 tctx.lineWidth = 2;
@@ -2663,7 +2706,7 @@
                 evt.stopPropagation();
                 const p = getPt(evt);
                 let bestIdx = -1;
-                let bestDist = 28;
+                let bestDist = 30;
                 tangleNodes.forEach((n, idx) => {
                     const d = Math.hypot(n.x - p.x, n.y - p.y);
                     if (d <= bestDist) {
@@ -2680,8 +2723,8 @@
                 if (evt.cancelable) evt.preventDefault();
                 evt.stopPropagation();
                 const p = getPt(evt);
-                tangleNodes[draggedNodeIdx].x = Math.max(14, Math.min(cnv.width - 14, p.x));
-                tangleNodes[draggedNodeIdx].y = Math.max(14, Math.min(cnv.height - 14, p.y));
+                tangleNodes[draggedNodeIdx].x = Math.max(16, Math.min(cnv.width - 16, p.x));
+                tangleNodes[draggedNodeIdx].y = Math.max(16, Math.min(cnv.height - 16, p.y));
                 drawTangleCanvas();
                 checkAndCompleteTangleIfSolved();
             }
@@ -2706,31 +2749,65 @@
             window.addEventListener('touchcancel', endDrag, { passive: false });
         })();
 
-        // --- BOTTENDRIFT (NYMF FÖRBI HINDER) ---
+        // --- BOTTENDRIFT (STÖRRE BANA, SLUMPMÄSSIGA HINDER & GLÖDANDE NYMF) ---
         function buildDriftCourse(w, h) {
-            const laneY = Math.round(h * 0.52);
-            const pocketY = Math.max(38, Math.min(h - 38, laneY + (Math.random() > 0.5 ? -28 : 28)));
+            const safeTop = 28;
+            const safeBottom = h - 26;
+            const laneY = Math.round((safeTop + safeBottom) * 0.5);
+            const pocketY = Math.max(safeTop + 24, Math.min(safeBottom - 24, laneY + ((Math.random() - 0.5) * (safeBottom - safeTop) * 0.52)));
+
             driftTargetPocket = {
-                x: w - 34,
+                x: w - 46,
                 y: pocketY,
-                radius: 17
+                radius: 21
             };
             driftNymph = {
-                x: 28,
+                x: 38,
                 y: laneY,
                 vy: 0,
-                radius: 6.5
+                radius: 7.5,
+                trail: []
             };
 
-            const cols = [0.28, 0.50, 0.72];
+            const colRatios = [0.21, 0.37, 0.53, 0.69, 0.83];
             driftObstacles = [];
-            cols.forEach((ratioX, idx) => {
-                const obsX = Math.round(w * ratioX);
-                const topStoneY = 34 + ((idx * 29 + Math.floor(Math.random() * 24)) % Math.max(20, Math.round(h * 0.34)));
-                const botStoneY = Math.min(h - 32, topStoneY + 62 + Math.floor(Math.random() * 18));
-                driftObstacles.push({ x: obsX, y: topStoneY, r: 15, phase: idx * 1.3 });
-                if (botStoneY - topStoneY > 44) {
-                    driftObstacles.push({ x: obsX + 10, y: botStoneY, r: 15, phase: idx * 2.1 + 0.7 });
+
+            colRatios.forEach((ratioX, idx) => {
+                const jitterX = (Math.random() - 0.5) * (w * 0.045);
+                const obsX = Math.max(85, Math.min(w - 95, Math.round(w * ratioX + jitterX)));
+                const rMain = 13 + Math.floor(Math.random() * 8);
+                const yMain = safeTop + rMain + Math.random() * Math.max(12, (safeBottom - safeTop) - rMain * 2);
+
+                driftObstacles.push({
+                    x: obsX,
+                    y: yMain,
+                    r: rMain,
+                    rx: rMain * (1.05 + Math.random() * 0.25),
+                    ry: rMain * (0.85 + Math.random() * 0.2),
+                    tilt: (Math.random() - 0.5) * 0.5,
+                    phase: Math.random() * Math.PI * 2,
+                    ampY: 3 + Math.random() * 6
+                });
+
+                if (Math.random() < 0.78) {
+                    const rSecond = 11 + Math.floor(Math.random() * 7);
+                    let ySecond = safeTop + rSecond + Math.random() * Math.max(12, (safeBottom - safeTop) - rSecond * 2);
+                    if (Math.abs(ySecond - yMain) < rMain + rSecond + 36) {
+                        ySecond = yMain + (yMain < laneY ? 52 : -52);
+                        ySecond = Math.max(safeTop + rSecond, Math.min(safeBottom - rSecond, ySecond));
+                    }
+                    if (Math.abs(ySecond - yMain) >= rMain + rSecond + 24) {
+                        driftObstacles.push({
+                            x: obsX + Math.round((Math.random() - 0.5) * 26),
+                            y: ySecond,
+                            r: rSecond,
+                            rx: rSecond * (1.0 + Math.random() * 0.25),
+                            ry: rSecond * (0.85 + Math.random() * 0.2),
+                            tilt: (Math.random() - 0.5) * 0.5,
+                            phase: Math.random() * Math.PI * 2,
+                            ampY: 3 + Math.random() * 6
+                        });
+                    }
                 }
             });
         }
@@ -2753,14 +2830,14 @@
             stopDriftGame(false);
             driftSolvedLock = false;
             const cnv = document.getElementById('driftCanvas');
-            const w = cnv ? cnv.width : 340;
-            const h = cnv ? cnv.height : 185;
+            const w = cnv ? cnv.width : 560;
+            const h = cnv ? cnv.height : 240;
             buildDriftCourse(w, h);
             const statusEl = document.getElementById('driftMiniStatusText');
             if (statusEl) {
                 statusEl.innerText = isMiniGameCompletedToday('drift')
                     ? "🔒 Redan avklarat idag!"
-                    : "Tryck 'Starta drift' för att skicka nymfen genom strömmen.";
+                    : "Tryck 'Starta drift' för att skicka den glödande nymfen genom strömmen.";
             }
             drawDriftCanvas(performance.now());
             if (autostart && !isMiniGameCompletedToday('drift')) {
@@ -2775,8 +2852,8 @@
             }
             driftSolvedLock = false;
             const cnv = document.getElementById('driftCanvas');
-            const w = cnv ? cnv.width : 340;
-            const h = cnv ? cnv.height : 185;
+            const w = cnv ? cnv.width : 560;
+            const h = cnv ? cnv.height : 240;
             buildDriftCourse(w, h);
             driftGameRunning = true;
             driftLastTick = performance.now();
@@ -2795,26 +2872,26 @@
             driftLastTick = now;
 
             const cnv = document.getElementById('driftCanvas');
-            const w = cnv ? cnv.width : 340;
-            const h = cnv ? cnv.height : 185;
+            const w = cnv ? cnv.width : 560;
+            const h = cnv ? cnv.height : 240;
 
             const flowSpeedVal = Math.max(6, parseFloat(weatherData.flow) || 16);
-            const horizSpeed = 54 + Math.min(36, flowSpeedVal * 1.15);
+            const horizSpeed = 62 + Math.min(40, flowSpeedVal * 1.2);
 
             driftNymph.x += horizSpeed * dt;
 
-            let accelY = 78; // naturlig nymfsänkning mot botten i strömmen
+            let accelY = 82;
             if (driftHoldingSteer) {
-                accelY = -195;
+                accelY = -205;
             } else if (driftKeyDir !== 0) {
-                accelY = driftKeyDir * 175;
+                accelY = driftKeyDir * 185;
             }
 
             driftNymph.vy = (driftNymph.vy + accelY * dt) * Math.pow(0.18, dt);
             driftNymph.y += driftNymph.vy * dt;
 
-            const minY = 20 + driftNymph.radius;
-            const maxY = h - 18 - driftNymph.radius;
+            const minY = 22 + driftNymph.radius;
+            const maxY = h - 20 - driftNymph.radius;
             if (driftNymph.y < minY) {
                 driftNymph.y = minY;
                 driftNymph.vy = 0;
@@ -2823,10 +2900,16 @@
                 driftNymph.vy = 0;
             }
 
+            driftNymph.trail.push({ x: driftNymph.x, y: driftNymph.y });
+            if (driftNymph.trail.length > 18) {
+                driftNymph.trail.shift();
+            }
+
             for (const obs of driftObstacles) {
-                const oscY = obs.y + Math.sin(now * 0.0022 + obs.phase) * 5;
+                const oscY = obs.y + Math.sin(now * 0.0022 + obs.phase) * (obs.ampY || 4);
                 const dist = Math.hypot(driftNymph.x - obs.x, driftNymph.y - oscY);
-                if (dist < driftNymph.radius + obs.r - 2) {
+                const hitRadius = Math.min(obs.rx || obs.r, obs.ry || obs.r);
+                if (dist < driftNymph.radius + hitRadius - 2) {
                     stopDriftGame(false);
                     const statusEl = document.getElementById('driftMiniStatusText');
                     if (statusEl) statusEl.innerText = "🪨 Nymfen fastnade mot en bottensten! Försök igen.";
@@ -2836,7 +2919,7 @@
             }
 
             const distGoal = Math.hypot(driftNymph.x - driftTargetPocket.x, driftNymph.y - driftTargetPocket.y);
-            if (distGoal <= driftTargetPocket.radius + driftNymph.radius * 0.4) {
+            if (distGoal <= driftTargetPocket.radius + driftNymph.radius * 0.45) {
                 if (!driftSolvedLock) {
                     driftSolvedLock = true;
                     stopDriftGame(false);
@@ -2852,7 +2935,7 @@
                 return;
             }
 
-            if (driftNymph.x > w + 14) {
+            if (driftNymph.x > w + 16) {
                 stopDriftGame(false);
                 const statusEl = document.getElementById('driftMiniStatusText');
                 if (statusEl) statusEl.innerText = "🌊 Nymfen drev förbi målfickan – sikta in mot ringen till höger!";
@@ -2874,63 +2957,106 @@
 
             const grad = dctx.createLinearGradient(0, 0, 0, h);
             grad.addColorStop(0, '#082f49');
-            grad.addColorStop(1, '#0c4a6e');
+            grad.addColorStop(0.55, '#0c4a6e');
+            grad.addColorStop(1, '#083344');
             dctx.fillStyle = grad;
             dctx.fillRect(0, 0, w, h);
 
-            // Bottenbädd och strömlinjer
             dctx.fillStyle = '#292524';
-            dctx.fillRect(0, h - 14, w, 14);
+            dctx.fillRect(0, h - 16, w, 16);
             dctx.fillStyle = '#14532d';
-            dctx.fillRect(0, 0, w, 14);
+            dctx.fillRect(0, 0, w, 16);
 
             dctx.strokeStyle = 'rgba(186, 230, 253, 0.2)';
-            dctx.lineWidth = 1.2;
-            const shift = (nowMs * 0.05) % 36;
-            for (let y = 32; y < h - 22; y += 28) {
+            dctx.lineWidth = 1.3;
+            const shift = (nowMs * 0.055) % 44;
+            for (let y = 38; y < h - 26; y += 34) {
                 dctx.beginPath();
-                for (let x = -36; x < w + 36; x += 36) {
+                for (let x = -44; x < w + 44; x += 44) {
                     dctx.moveTo(x + shift, y);
-                    dctx.lineTo(x + shift + 18, y);
+                    dctx.lineTo(x + shift + 22, y + Math.sin((x + shift) * 0.04) * 2.5);
                 }
                 dctx.stroke();
             }
 
-            // Målficka
+            const pulseRing = 1 + Math.sin(nowMs * 0.006) * 0.08;
             dctx.save();
+            dctx.shadowColor = 'rgba(52, 211, 153, 0.85)';
+            dctx.shadowBlur = 16;
             dctx.strokeStyle = '#34d399';
-            dctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
-            dctx.lineWidth = 2.5;
+            dctx.fillStyle = 'rgba(16, 185, 129, 0.24)';
+            dctx.lineWidth = 2.6;
             dctx.beginPath();
-            dctx.arc(driftTargetPocket.x, driftTargetPocket.y, driftTargetPocket.radius, 0, Math.PI * 2);
+            dctx.arc(driftTargetPocket.x, driftTargetPocket.y, driftTargetPocket.radius * pulseRing, 0, Math.PI * 2);
             dctx.fill();
             dctx.stroke();
             dctx.fillStyle = '#a7f3d0';
-            dctx.font = 'bold 9px Inter';
+            dctx.font = 'bold 10px Inter';
             dctx.textAlign = 'center';
-            dctx.fillText('MÅL', driftTargetPocket.x, driftTargetPocket.y + 3);
+            dctx.fillText('MÅL', driftTargetPocket.x, driftTargetPocket.y + 3.5);
             dctx.restore();
 
-            // Bottenstenar / hinder
             driftObstacles.forEach(obs => {
-                const oscY = obs.y + Math.sin(nowMs * 0.0022 + obs.phase) * 5;
-                dctx.fillStyle = '#334155';
+                const oscY = obs.y + Math.sin(nowMs * 0.0022 + obs.phase) * (obs.ampY || 4);
+                dctx.save();
+                dctx.translate(obs.x, oscY);
+                dctx.rotate(obs.tilt || 0);
+                dctx.fillStyle = '#1e293b';
                 dctx.beginPath();
-                dctx.arc(obs.x, oscY, obs.r, 0, Math.PI * 2);
+                dctx.ellipse(0, 0, obs.rx || obs.r, obs.ry || obs.r, 0, 0, Math.PI * 2);
                 dctx.fill();
                 dctx.strokeStyle = '#94a3b8';
-                dctx.lineWidth = 1.6;
+                dctx.lineWidth = 1.8;
                 dctx.stroke();
+                dctx.restore();
             });
 
-            // Nymf
+            if (driftNymph.trail && driftNymph.trail.length > 1) {
+                for (let i = 0; i < driftNymph.trail.length; i++) {
+                    const pt = driftNymph.trail[i];
+                    const ratio = (i + 1) / driftNymph.trail.length;
+                    dctx.save();
+                    dctx.fillStyle = `rgba(251, 191, 36, ${ratio * 0.35})`;
+                    dctx.beginPath();
+                    dctx.arc(pt.x, pt.y, driftNymph.radius * ratio * 0.75, 0, Math.PI * 2);
+                    dctx.fill();
+                    dctx.restore();
+                }
+            }
+
+            const glowBoost = 16 + Math.sin(nowMs * 0.009) * 7;
             dctx.save();
-            dctx.fillStyle = '#fbbf24';
+            dctx.shadowColor = '#fde047';
+            dctx.shadowBlur = glowBoost;
+
+            const haloGrad = dctx.createRadialGradient(
+                driftNymph.x, driftNymph.y, 1,
+                driftNymph.x, driftNymph.y, driftNymph.radius * 3.1
+            );
+            haloGrad.addColorStop(0, 'rgba(254, 249, 195, 0.95)');
+            haloGrad.addColorStop(0.45, 'rgba(251, 191, 36, 0.55)');
+            haloGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+            dctx.fillStyle = haloGrad;
             dctx.beginPath();
-            dctx.ellipse(driftNymph.x, driftNymph.y, driftNymph.radius * 1.25, driftNymph.radius * 0.8, 0, 0, Math.PI * 2);
+            dctx.arc(driftNymph.x, driftNymph.y, driftNymph.radius * 3.1, 0, Math.PI * 2);
             dctx.fill();
-            dctx.strokeStyle = '#fef08a';
-            dctx.lineWidth = 1.5;
+
+            dctx.fillStyle = '#fef08a';
+            dctx.beginPath();
+            dctx.ellipse(driftNymph.x, driftNymph.y, driftNymph.radius * 1.35, driftNymph.radius * 0.85, 0, 0, Math.PI * 2);
+            dctx.fill();
+            dctx.strokeStyle = '#f59e0b';
+            dctx.lineWidth = 1.8;
+            dctx.stroke();
+
+            // Liten glödande stjärt/spröt på nymfen
+            dctx.strokeStyle = '#fef9c3';
+            dctx.lineWidth = 1.4;
+            dctx.beginPath();
+            dctx.moveTo(driftNymph.x - driftNymph.radius * 1.2, driftNymph.y);
+            dctx.lineTo(driftNymph.x - driftNymph.radius * 2.1, driftNymph.y - 2.5);
+            dctx.moveTo(driftNymph.x - driftNymph.radius * 1.2, driftNymph.y);
+            dctx.lineTo(driftNymph.x - driftNymph.radius * 2.1, driftNymph.y + 2.5);
             dctx.stroke();
             dctx.restore();
         }
@@ -3655,7 +3781,9 @@
                     if (extremeDrought) {
                         let totalShade = gameWorld.shared.trees + gameWorld.shared.bushes;
                         if (totalShade > 4) {
-                            showCustomAlert("☀️ EXTREM TORKA!\n\nVattnet värms upp, men dina utplacerade kantträd och buskar ger viktig skugga som skyddar fiskbeståndet från värmestress!", "Väderlarm");
+                            showCustomAlert("☀️ EXTREM TORKA!
+
+Vattnet värms upp, men dina utplacerade kantträd och buskar ger viktig skugga som skyddar fiskbeståndet från värmestress!", "Väderlarm");
                         } else {
                             let removedFish = Math.floor(gameWorld.shared.population * 0.4);
                             gameWorld.shared.population = Math.max(30, gameWorld.shared.population - removedFish);
@@ -3667,7 +3795,9 @@
                             if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
                             if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `☀️ EXTREM TORKA! Minskat bestånd pga brist på skugga!`, saveanZones[key].name);
-                            showCustomAlert(`☀️ EXTREM TORKA!\n\nEn extrem värmebölja har drabbat Säveån! Bristen på skuggande kantträd och buskar har slagit ut ${removedFish} fiskar.`, "Naturkatastrof");
+                            showCustomAlert(`☀️ EXTREM TORKA!
+
+En extrem värmebölja har drabbat Säveån! Bristen på skuggande kantträd och buskar har slagit ut ${removedFish} fiskar.`, "Naturkatastrof");
                         }
                     }
 
@@ -3690,7 +3820,9 @@
                         if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
                         if (window.logBiotopeToFirebase) window.logBiotopeToFirebase("NATUREN", `⚠️ EXTREMT HÖGFLÖDE! ${gravelsLost} oskyddade lekgruspartier spolades bort.`, saveanZones[key].name);
-                        showCustomAlert(`⚠️ EXTREMT HÖGFLÖDE!\n\nEtt kraftigt oväder drog fram! Oskyddat lekgrus saknade tillräckligt med ståndstenar som brytare och ${gravelsLost} partier spolades bort av strömmen.`, "Naturkatastrof");
+                        showCustomAlert(`⚠️ EXTREMT HÖGFLÖDE!
+
+Ett kraftigt oväder drog fram! Oskyddat lekgrus saknade tillräckligt med ståndstenar som brytare och ${gravelsLost} partier spolades bort av strömmen.`, "Naturkatastrof");
                     }
 
                     let gCount = (zState.gravels || []).length;
@@ -4493,678 +4625,629 @@
                         if (currentFlow >= 14 && singleDriftLog) {
                             let distToLog = Math.hypot(castLine.currentX - singleDriftLog.x, castLine.currentY - singleDriftLog.y);
                             if (distToLog < 28) {
-                                castLine.state = 'retracting';
-                                document.getElementById('castStatus').innerText = "Fastnade i en flytande stock!";
+                                castLine.currentX += 2.2;
+                                if (Math.random() < 0.04) {
+                                    document.getElementById('castStatus').innerText = "🪵 Drivved passerar! Linan påverkas av strömmen.";
+                                }
                             }
                         }
 
-                        if (castLine.driftTimer >= castLine.maxDriftTime) {
-                            castLine.state = 'retracting';
-                            document.getElementById('castStatus').innerText = "Flugan drev färdigt. Klicka på gubben eller i vattnet för nytt kast.";
+                        if (castLine.driftTimer % 30 === 0 && !currentFish) {
+                            checkBite();
                         }
-                    } else if (castLine.state === 'retracting') {
-                        let dx = rodX - castLine.currentX;
-                        let dy = rodY - castLine.currentY;
-                        let dist = Math.hypot(dx, dy);
-                        if(dist <= 15) {
+
+                        if (castLine.driftTimer > castLine.maxDriftTime || castLine.currentX > canvas.width - 10) {
                             castLine = null;
-                            document.getElementById('castStatus').innerText = "Redo för kast. Klicka för kast, klicka på gubben för Hemtagning!";
-                        } else {
-                            castLine.currentX += (dx/dist) * 18;
-                            castLine.currentY += (dy/dist) * 18;
+                            document.getElementById('castStatus').innerText = "Driften avslutad. Klicka för att kasta!";
                         }
                     }
                 }
 
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.moveTo(rodX, rodY);
-                ctx.lineTo(castLine.currentX, castLine.currentY);
-                ctx.stroke();
+                if (castLine) {
+                    ctx.strokeStyle = '#fef08a';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(rodX, rodY);
+                    ctx.lineTo(castLine.currentX, castLine.currentY);
+                    ctx.stroke();
 
-                ctx.fillStyle = '#fbbf24';
-                ctx.beginPath();
-                ctx.arc(castLine.currentX, castLine.currentY, 5, 0, Math.PI*2);
-                ctx.fill();
+                    ctx.fillStyle = '#fef08a';
+                    ctx.beginPath();
+                    ctx.arc(castLine.currentX, castLine.currentY, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
 
             requestAnimationFrame(draw);
         }
 
-        // --- 9I. KAST, DRILLNING & FISKVÄLFÄRD (MED PREDATORREGLER) ---
-        function bindFightEvents() {
-            const c = document.getElementById('gameContainer');
-            c.addEventListener('pointerdown', (e) => {
-                if (isFighting) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    isPressingScreen = true;
-                }
-            });
-            window.addEventListener('pointerup', () => {
-                if (isFighting) {
-                    isPressingScreen = false;
-                }
-            });
-            window.addEventListener('pointercancel', () => {
-                if (isFighting) {
-                    isPressingScreen = false;
-                }
-            });
-        }
-        bindFightEvents();
-
-        function startFightMinigame(fishObj) {
-            isFighting = true;
-            isPressingScreen = false;
-            tippetStress = 0;
-
-            let isBig = fishObj.size >= 60;
-            let isMonster = fishObj.size >= 85;
-            totalFightDuration = isMonster ? 8.0 : (isBig ? 6.5 : 5.0);
-            fightTimeRemaining = totalFightDuration;
-
-            let fightOverlay = document.getElementById('fightOverlay');
-            let fightCard = document.getElementById('fightCard');
-            let titleEl = document.getElementById('fightTitle');
-            let barEl = document.getElementById('stressBar');
-            let valEl = document.getElementById('stressValueText');
-            let timeEl = document.getElementById('fightTimeText');
-
-            titleEl.innerText = isMonster ? `⚡ MONSTERFISK (${fishObj.size} cm)! Håll inne!` : `🎣 Drillning (${fishObj.size} cm) – Håll inne!`;
-            barEl.style.width = "0%";
-            barEl.className = "bg-emerald-500 h-full w-0% rounded-full transition-all duration-75";
-            fightCard.classList.remove('fight-glow-green', 'fight-glow-gold', 'fight-glow-red');
-            fightCard.classList.add('fight-glow-green');
-            valEl.innerText = "0%";
-            timeEl.innerText = fightTimeRemaining.toFixed(1) + "s";
-
-            fightOverlay.classList.remove('hidden');
-            fightOverlay.classList.add('flex');
-
-            let rodSpec = gameWorld.equipment.spec || "";
-            let isHeavyRod = rodSpec.includes("#9") || rodSpec.includes("#10") || rodSpec.includes("#11") || rodSpec.includes("#8");
-            let rodStressReduction = isHeavyRod ? 0.78 : 1.0;
-
-            let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
-            let xpStressReduction = titleObj.levelIndex >= 4 ? 0.88 : 1.0;
-
-            fightInterval = setInterval(() => {
-                if (isAnyModalOpen()) return;
-
-                fightTimeRemaining -= 0.05;
-
-                let rushChance = isMonster ? 0.035 : (isBig ? 0.02 : 0.012);
-                let isRushing = Math.random() < rushChance;
-                if (isRushing) {
-                    tippetStress = Math.min(100, tippetStress + 28);
-                    titleEl.innerText = `⚠️ FISKEN RUSAR! Släpp snabbt!`;
-                    titleEl.className = "text-xs font-extrabold text-rose-400 uppercase tracking-wide animate-pulse";
-                } else {
-                    titleEl.innerText = isMonster ? `⚡ MONSTERFISK (${fishObj.size} cm)! Håll inne!` : `🎣 Drillning (${fishObj.size} cm) – Håll inne!`;
-                    titleEl.className = "text-xs font-bold text-amber-400 uppercase tracking-wide";
-                }
-
-                if (isPressingScreen) {
-                    let baseGain = isMonster ? 3.8 : (isBig ? 2.8 : 2.1);
-                    tippetStress = Math.min(100, tippetStress + (baseGain * rodStressReduction * xpStressReduction));
-                } else {
-                    tippetStress = Math.max(0, tippetStress - 4.2);
-                }
-
-                barEl.style.width = tippetStress + "%";
-                valEl.innerText = Math.round(tippetStress) + "%";
-                timeEl.innerText = Math.max(0, fightTimeRemaining).toFixed(1) + "s";
-
-                if (tippetStress < 50) {
-                    barEl.className = "bg-emerald-500 h-full rounded-full transition-all duration-75";
-                    fightCard.classList.remove('fight-glow-green', 'fight-glow-gold', 'fight-glow-red');
-                    fightCard.classList.add('fight-glow-green');
-                } else if (tippetStress < 80) {
-                    barEl.className = "bg-amber-400 h-full rounded-full transition-all duration-75";
-                    fightCard.classList.remove('fight-glow-green', 'fight-glow-gold', 'fight-glow-red');
-                    fightCard.classList.add('fight-glow-gold');
-                } else {
-                    barEl.className = "bg-rose-500 h-full rounded-full transition-all duration-75";
-                    fightCard.classList.remove('fight-glow-green', 'fight-glow-gold', 'fight-glow-red');
-                    fightCard.classList.add('fight-glow-red');
-                }
-
-                if (tippetStress >= 100) {
-                    clearInterval(fightInterval);
-                    isFighting = false;
-                    isPressingScreen = false;
-                    fightOverlay.classList.add('hidden');
-                    fightOverlay.classList.remove('flex');
-                    
-                    let isBigFish = fishObj.size >= 60;
-                    if (isBigFish) {
-                        addXp(15);
-                    }
-                    
-                    showCustomAlert(`💥 TAFSEN GICK AV!\n\nDen ${fishObj.size} cm stora ${fishObj.species} slet sig loss!${isBigFish ? "\n\n(+15 XP för storfiskekamp!)" : ""}`, "Tafsbrott");
-                    resetAfterCatch();
-                } else if (fightTimeRemaining <= 0) {
-                    clearInterval(fightInterval);
-                    isFighting = false;
-                    isPressingScreen = false;
-                    fightOverlay.classList.add('hidden');
-                    fightOverlay.classList.remove('flex');
-                    
-                    currentFish = fishObj;
-                    showWelfareModal(fishObj);
-                }
-            }, 50);
-        }
-
-        function updateAirTimeLabel(val) {
-            document.getElementById('lblAirTime').innerText = val + "s";
-        }
-
-        function isSmallSmoltHarmfulPerch(fishObj) {
-            return fishObj && fishObj.species === "Abborre" && fishObj.size < 38;
-        }
-
-        function isSmallSmoltHarmfulPike(fishObj) {
-            return fishObj && fishObj.species === "Gädda" && fishObj.size < 80;
-        }
-
-        function isZander(fishObj) {
-            return fishObj && fishObj.species === "Gös";
-        }
-
-        function getWelfarePromptForFish(fishObj) {
-            if (isSmallSmoltHarmfulPerch(fishObj)) {
-                return {
-                    id: "smolt_predator_perch",
-                    text: "Små abborrar (< 38 cm) är skadliga för smolt. Avliva/behåll för pluspoäng?",
-                    options: [
-                        { value: "yes", label: "Ja – skydda smolten (+bonus vid avlivning)" },
-                        { value: "no", label: "Nej – släpp hellre tillbaka" }
-                    ]
-                };
-            }
-            if (isSmallSmoltHarmfulPike(fishObj)) {
-                return {
-                    id: "smolt_predator_pike",
-                    text: "Små gäddor (< 80 cm) är skadliga för smolt. Avliva/behåll för pluspoäng?",
-                    options: [
-                        { value: "yes", label: "Ja – skydda smolten (+bonus vid avlivning)" },
-                        { value: "no", label: "Nej – släpp hellre tillbaka" }
-                    ]
-                };
-            }
-            if (isZander(fishObj)) {
-                return {
-                    id: "zander_keep",
-                    text: "Gös ger alltid pluspoäng att ta hem/avliva. Vill du behålla gösen?",
-                    options: [
-                        { value: "yes", label: "Ja – behåll / ta hem (+35 p)" },
-                        { value: "no", label: "Nej – släpp tillbaka" }
-                    ]
-                };
-            }
-            if (fishObj.species.includes("Lax")) {
-                return {
-                    id: "salmon_native",
-                    text: "Är det en vild (fettfena kvar) eller odlad lax?",
-                    options: [
-                        { value: "wild", label: "Vild lax (fettfena intakt)" },
-                        { value: "stocked", label: "Odlad lax (fettfena klippt)" }
-                    ]
-                };
-            }
-            if (fishObj.species.includes("Öring")) {
-                return {
-                    id: "trout_handled_wet",
-                    text: "Höll du fisken med blöta händer och i vattnet?",
-                    options: [
-                        { value: "yes", label: "Ja – blöta händer / i vattnet" },
-                        { value: "no", label: "Nej – torra händer" }
-                    ]
-                };
-            }
-            return {
-                id: "general_handled_wet",
-                text: "Höll du fisken skonsamt med blöta händer?",
-                options: [
-                    { value: "yes", label: "Ja – skonsamt med blöta händer" },
-                    { value: "no", label: "Nej – torra händer / hård hantering" }
-                ]
-            };
-        }
-
-        function showWelfareModal(fishObj) {
-            currentWelfareQuestion = getWelfarePromptForFish(fishObj);
-
-            document.getElementById('caughtFishDetails').innerText =
-                `Du landade en ${fishObj.species} (${fishObj.size} cm) på ${activeFly.name} (${activeFly.size})!`;
-
-            document.getElementById('sliderAirTime').value = 5;
-            updateAirTimeLabel(5);
-
-            const qContainer = document.getElementById('dynamicSingleQuestionContainer');
-            qContainer.innerHTML = `
-                <label class="text-stone-300 font-semibold block mb-1">${currentWelfareQuestion.text}</label>
-                <select id="qSingleAnswer" class="w-full bg-stone-900 border border-stone-700 rounded-lg px-2 py-1 text-emerald-300 font-semibold text-xs focus:outline-none focus:border-emerald-500">
-                    ${currentWelfareQuestion.options.map(o => `<option value="${o.value}">${o.label}</option>`).join("")}
-                </select>
-            `;
-
-            const btnSample = document.getElementById('btnSampleFish');
-            if (btnSample) {
-                btnSample.disabled = false;
-                btnSample.className = "bg-purple-800 hover:bg-purple-700 text-white py-1.5 px-2 rounded-xl text-xs font-semibold transition";
-            }
-
-            document.getElementById('welfareModal').classList.remove('hidden');
-            document.getElementById('welfareModal').classList.add('flex');
-        }
-
-        function calculateSurvival(airTime, qAns, fishObj) {
-            let survivalChance = 95;
-            if (airTime > 12) survivalChance -= 45;
-            else if (airTime > 8) survivalChance -= 25;
-            else if (airTime > 5) survivalChance -= 10;
-
-            if (qAns === "no" || qAns === "stocked") survivalChance -= 20;
-            if (fishObj && fishObj.size >= 75) survivalChance -= 10;
-
-            survivalChance = Math.max(10, Math.min(99, survivalChance));
-            return (Math.random() * 100) <= survivalChance;
-        }
-
-        async function releaseFish() {
-            if (!currentFish) return;
-            let airTime = parseInt(document.getElementById('sliderAirTime').value);
-            let qAns = document.getElementById('qSingleAnswer')?.value || "yes";
-            let survived = calculateSurvival(airTime, qAns, currentFish);
-
-            const zState = gameWorld.zones[currentZoneKey];
-            const s = gameWorld.shared;
-            const zoneName = saveanZones[currentZoneKey].name;
-            const fishRef = currentFish;
-            const isSalmonOrTrout = fishRef.species.includes("Lax") || fishRef.species.includes("Öring");
-
-            let pointsDelta = 15;
-            let xpDelta = 20;
-            let logText = "";
-            let alertTitle = "";
-            let alertText = "";
-
-            if (isSmallSmoltHarmfulPerch(fishRef) || isSmallSmoltHarmfulPike(fishRef)) {
-                pointsDelta = -15;
-                xpDelta = 5;
-                if (survived) {
-                    s.population = Math.min(s.maxPop, s.population + 1);
-                    alertTitle = "Återutsatt predator";
-                    alertText = `Du släppte tillbaka ${fishRef.species} (${fishRef.size} cm). Den överlevde, men små exemplar som skadar smolt ger minuspoäng (-15 p) vid återutsättning.`;
-                    logText = `C&R ${fishRef.species} (${fishRef.size} cm) • -15 p (smoltpredator)`;
-                } else {
-                    alertTitle = "Fisken överlevde ej";
-                    alertText = `Den ${fishRef.size} cm stora ${fishRef.species} dog tyvärr efter återutsättningen (-15 p).`;
-                    logText = `C&R Död ${fishRef.species} (${fishRef.size} cm) • -15 p`;
-                }
-            } else if (isZander(fishRef)) {
-                pointsDelta = -15;
-                xpDelta = 5;
-                if (survived) {
-                    s.population = Math.min(s.maxPop, s.population + 1);
-                    alertTitle = "Gös återutsatt";
-                    alertText = `Du släppte tillbaka gösen (${fishRef.size} cm). Gös ger alltid pluspoäng att ta hem/avliva – återutsättning ger -15 p.`;
-                    logText = `C&R Gös (${fishRef.size} cm) • -15 p`;
-                } else {
-                    alertTitle = "Gösen överlevde ej";
-                    alertText = `Gösern (${fishRef.size} cm) överlevde tyvärr inte återutsättningen (-15 p).`;
-                    logText = `C&R Död Gös (${fishRef.size} cm) • -15 p`;
-                }
-            } else if (survived) {
-                pointsDelta = 15;
-                xpDelta = 20;
-                if (fishRef.size >= 60) pointsDelta += 10;
-                s.population = Math.min(s.maxPop, s.population + 1);
-                alertTitle = "Lyckad C&R";
-                alertText = `Snygg C&R! ${fishRef.species} (${fishRef.size} cm) simmade iväg pigg och kry! (+${pointsDelta} p, +${xpDelta} XP)`;
-                logText = `C&R ${fishRef.species} (${fishRef.size} cm) • +${pointsDelta} p`;
-            } else {
-                pointsDelta = -20;
-                xpDelta = 5;
-                alertTitle = "Fisken överlevde ej";
-                alertText = `Tyvärr! Den ${fishRef.size} cm stora ${fishRef.species} överlevde inte återutsättningen. (-20 p)`;
-                logText = `C&R Död ${fishRef.species} (${fishRef.size} cm) • -20 p`;
-            }
-
-            if (isSalmonOrTrout && window.saveCatchToFirebase) {
-                await window.saveCatchToFirebase(lockedAnglerName, fishRef.species, fishRef.size, `${activeFly.name} (${activeFly.size})`, zoneName, `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`);
-            }
-
-            gameWorld.points = Math.max(0, gameWorld.points + pointsDelta);
-            addXp(xpDelta);
-
-            zState.log.unshift({
-                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                text: logText
-            });
-
-            document.getElementById('welfareModal').classList.add('hidden');
-            document.getElementById('welfareModal').classList.remove('flex');
-            
-            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-            sharedWorldData.population = s.population;
-            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
-
-            updateUI();
-            resetAfterCatch();
-            showCustomAlert(alertText, alertTitle);
-        }
-
-        async function keepFish() {
-            if (!currentFish) return;
-            const zState = gameWorld.zones[currentZoneKey];
-            const s = gameWorld.shared;
-            const zoneName = saveanZones[currentZoneKey].name;
-            const fishRef = currentFish;
-            const isSalmonOrTrout = fishRef.species.includes("Lax") || fishRef.species.includes("Öring");
-
-            s.population = Math.max(30, s.population - 1);
-
-            let pointsDelta = 0;
-            let xpDelta = 15;
-            let alertTitle = "";
-            let alertText = "";
-            let logText = "";
-
-            if (isSmallSmoltHarmfulPerch(fishRef)) {
-                pointsDelta = 30;
-                xpDelta = 20;
-                alertTitle = "Smolt skyddad – Abborre avlivad";
-                alertText = `Bra smoltvård! Små abborrar (< 38 cm) skadar smolt och ger pluspoäng att avliva (+${pointsDelta} p, +${xpDelta} XP). Bestånd -1.`;
-                logText = `Avlivad liten Abborre (${fishRef.size} cm, <38cm) • +${pointsDelta} p`;
-            } else if (isSmallSmoltHarmfulPike(fishRef)) {
-                pointsDelta = 35;
-                xpDelta = 22;
-                alertTitle = "Smolt skyddad – Gädda avlivad";
-                alertText = `Bra smoltvård! Små gäddor (< 80 cm) skadar smolt och ger pluspoäng att avliva (+${pointsDelta} p, +${xpDelta} XP). Bestånd -1.`;
-                logText = `Avlivad liten Gädda (${fishRef.size} cm, <80cm) • +${pointsDelta} p`;
-            } else if (isZander(fishRef)) {
-                pointsDelta = 35;
-                xpDelta = 22;
-                alertTitle = "Gös behållen";
-                alertText = `Gös ger alltid pluspoäng att avliva/ta hem! Du behöll gösen (${fishRef.size} cm). (+${pointsDelta} p, +${xpDelta} XP). Bestånd -1.`;
-                logText = `Behållen Gös (${fishRef.size} cm) • +${pointsDelta} p`;
-            } else if (fishRef.species === "Abborre") {
-                pointsDelta = 20;
-                alertTitle = "Stor abborre behållen";
-                alertText = `Du behöll abborren (${fishRef.size} cm). (+${pointsDelta} p, +${xpDelta} XP). Bestånd -1.`;
-                logText = `Behållen Abborre (${fishRef.size} cm) • +${pointsDelta} p`;
-            } else if (fishRef.species === "Gädda") {
-                pointsDelta = 20;
-                alertTitle = "Stor gädda behållen";
-                alertText = `Du behöll gäddan (${fishRef.size} cm). (+${pointsDelta} p, +${xpDelta} XP). Bestånd -1.`;
-                logText = `Behållen Gädda (${fishRef.size} cm) • +${pointsDelta} p`;
-            } else {
-                pointsDelta = 10;
-                alertTitle = "Fisk behållen";
-                alertText = `Du behöll ${fishRef.species} (${fishRef.size} cm). (+${pointsDelta} p, +${xpDelta} XP). Bestånd -1.`;
-                logText = `Behållen ${fishRef.species} (${fishRef.size} cm) • +${pointsDelta} p`;
-            }
-
-            if (isSalmonOrTrout && window.saveCatchToFirebase) {
-                await window.saveCatchToFirebase(lockedAnglerName, fishRef.species, fishRef.size, `${activeFly.name} (${activeFly.size})`, zoneName, `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`);
-            }
-
-            gameWorld.points = Math.max(0, gameWorld.points + pointsDelta);
-            addXp(xpDelta);
-
-            zState.log.unshift({
-                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                text: logText
-            });
-
-            document.getElementById('welfareModal').classList.add('hidden');
-            document.getElementById('welfareModal').classList.remove('flex');
-            
-            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-            sharedWorldData.population = s.population;
-            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
-
-            updateUI();
-            resetAfterCatch();
-            showCustomAlert(alertText, alertTitle);
-        }
-
-        async function sampleFish() {
-            if (!currentFish) return;
-            const zState = gameWorld.zones[currentZoneKey];
-            const s = gameWorld.shared;
-            const zoneName = saveanZones[currentZoneKey].name;
-            const fishRef = currentFish;
-            const isSalmonOrTrout = fishRef.species.includes("Lax") || fishRef.species.includes("Öring");
-
-            if (isSalmonOrTrout && window.saveCatchToFirebase) {
-                await window.saveCatchToFirebase(lockedAnglerName, fishRef.species, fishRef.size, `${activeFly.name} (${activeFly.size})`, zoneName, `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`);
-            }
-
-            s.population = Math.max(30, s.population - 1);
-            gameWorld.points += 45;
-            addXp(30);
-
-            zState.log.unshift({
-                time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                text: `Provtagen ${fishRef.species} (${fishRef.size} cm) • +45 p`
-            });
-
-            document.getElementById('welfareModal').classList.add('hidden');
-            document.getElementById('welfareModal').classList.remove('flex');
-            
-            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
-            sharedWorldData.population = s.population;
-            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
-
-            updateUI();
-            resetAfterCatch();
-            showCustomAlert(`Vetenskaplig provtagning genomförd på ${fishRef.species} (${fishRef.size} cm)! (+45 p, +30 XP)`, "Provtagning");
-        }
-
-        function resetAfterCatch() {
-            currentFish = null;
-            castLine = null;
-            isFighting = false;
-            isPressingScreen = false;
-            clearInterval(fightInterval);
-            document.getElementById('fightOverlay').classList.add('hidden');
-            document.getElementById('fightOverlay').classList.remove('flex');
-            document.getElementById('castStatus').innerText = "Redo för kast. Klicka för kast, klicka på gubben för Hemtagning!";
-        }
-
+        // --- 9I. KLICK I VATTNET, KAST & HUGGLOGIK ---
         canvas.addEventListener('click', async (e) => {
-            if (isFighting || isAnyModalOpen()) return;
             const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
 
             const zState = gameWorld.zones[currentZoneKey];
-            const s = gameWorld.shared;
             let rodX = zState.playerPos && zState.playerPos.x !== null ? zState.playerPos.x : 40;
             let rodY = zState.playerPos && zState.playerPos.y !== null ? zState.playerPos.y : canvas.height - 36;
 
-            if (placementMode === 'rod') {
-                zState.playerPos = { x: x, y: y };
-                placementMode = null;
-                document.getElementById('modeBanner').classList.add('hidden');
-                draw();
-                return;
-            }
+            if(placementMode) {
+                if(placementMode === 'rod') {
+                    zState.playerPos = { x: clickX, y: clickY };
+                    placementMode = null;
+                    document.getElementById('modeBanner').classList.add('hidden');
+                    updateUI();
+                    return;
+                }
 
-            if (placementMode) {
                 gameWorld.points -= placementCost;
-                let actionLabel = "";
-                let newItem = { x: x, y: y, author: lockedAnglerName, timestamp: Date.now() };
-                
-                if (placementMode === 'gravel') {
+                addXp(15);
+
+                let newItem = { x: clickX, y: clickY, author: lockedAnglerName, timestamp: Date.now() };
+                let actionText = "";
+                const s = gameWorld.shared;
+
+                if(placementMode === 'gravel') {
                     zState.gravels = zState.gravels || [];
                     zState.gravels.push(newItem);
-                    actionLabel = "Placerade Lekgrus";
-                    addXp(15);
-                } else if (placementMode === 'boulder') {
+                    s.maxPop += 15;
+                    actionText = "Placerade Lekgrus";
+                } else if(placementMode === 'boulder') {
                     zState.boulders = zState.boulders || [];
                     zState.boulders.push(newItem);
                     s.maxPop += 15;
-                    actionLabel = "Placerade Ståndsten";
-                    addXp(15);
-                } else if (placementMode === 'nursery') {
+                    actionText = "Placerade Ståndsten";
+                } else if(placementMode === 'nursery') {
                     zState.nurseries = zState.nurseries || [];
                     zState.nurseries.push(newItem);
-                    actionLabel = "Skapade Uppväxtplats";
-                    addXp(20);
+                    s.maxPop += 15;
+                    actionText = "Skapade Uppväxtplats";
                 }
 
                 await saveCurrentZoneBiotopeToCloud();
 
-                if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, actionLabel, saveanZones[currentZoneKey].name);
+                let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                sharedWorldData.maxPop = s.maxPop;
+                if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
 
+                if (window.logBiotopeToFirebase) window.logBiotopeToFirebase(lockedAnglerName, actionText, saveanZones[currentZoneKey].name);
                 placementMode = null;
                 document.getElementById('modeBanner').classList.add('hidden');
                 updateUI();
                 return;
             }
 
-            let distToRod = Math.hypot(x - rodX, y - rodY);
-            if (distToRod <= 20) {
-                if (castLine) {
-                    castLine.state = 'retracting';
-                    document.getElementById('castStatus').innerText = "Tar hem flugan...";
+            if(Math.hypot(clickX - rodX, clickY - rodY) < 28) {
+                if(castLine) {
+                    castLine = null;
+                    document.getElementById('castStatus').innerText = "Tog hem flugan. Klicka i vattnet för att kasta!";
+                } else {
+                    document.getElementById('castStatus').innerText = "Linan är redan hemtagen. Klicka i vattnet för kast!";
                 }
                 return;
             }
 
-            let distCast = Math.hypot(x - rodX, y - rodY);
+            if (isFighting || currentFish) return;
+
+            if(gameWorld.castsRemaining <= 0) {
+                return showCustomAlert("Du har inga kast kvar idag! Klicka på 'Nästa dag' (eller återställ via Admin).", "Kast slut");
+            }
+
+            let distToTarget = Math.hypot(clickX - rodX, clickY - rodY);
             let maxCastDist = getMaxCastDistance();
-            if (distCast > maxCastDist) {
-                let titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
-                showCustomAlert(`Kastet är för långt! Din nuvarande nivå (${titleObj.title}) tillåter kast upp till ${Math.round(maxCastDist)} px.`, "Kastlängd");
-                return;
+
+            if (distToTarget > maxCastDist) {
+                let angle = Math.atan2(clickY - rodY, clickX - rodX);
+                clickX = rodX + Math.cos(angle) * maxCastDist;
+                clickY = rodY + Math.sin(angle) * maxCastDist;
+                document.getElementById('castStatus').innerText = "Kastade så långt du orkar! (Högre XP/nivå ger längre kast)";
             }
 
-            if (gameWorld.castsRemaining <= 0) {
-                showCustomAlert("Inga kast kvar för denna dag! Klicka på 'Nästa dag' för 5 nya kast.", "Inga kast kvar");
-                return;
-            }
-
-            if (castLine) {
-                castLine.state = 'retracting';
-                return;
+            if(currentZoneKey === 'dickson') {
+                let dicksonBlockX = canvas.width / 3;
+                if(Math.hypot(clickX - dicksonBlockX, clickY - 35) < 40) {
+                    return showCustomAlert("🚫 Hinder vid Dickson! Du kan inte kasta eller vada direkt i blockeringen.", "Hinder");
+                }
             }
 
             gameWorld.castsRemaining--;
+            updateUI();
+
             if (lockedAnglerName && window.consumeCastAtomic) {
                 await window.consumeCastAtomic(lockedAnglerName);
             }
-            updateUI();
+
+            let flyKey = `${activeFly.name} (${activeFly.size})`;
+            gameWorld.flyCounts[flyKey] = (gameWorld.flyCounts[flyKey] || 0) + 1;
 
             castLine = {
                 currentX: rodX,
                 currentY: rodY,
-                targetX: x,
-                targetY: y,
+                targetX: clickX,
+                targetY: clickY,
                 state: 'extending',
                 driftTimer: 0,
                 maxDriftTime: 160
             };
-            document.getElementById('castStatus').innerText = "Kastar ut flugan...";
+            document.getElementById('castStatus').innerText = "Kastar flugan mot valt ställe...";
         });
 
+        function getFlySizeNumber(sizeStr) {
+            if (!sizeStr || sizeStr === "Tub") return 6;
+            const n = parseInt(String(sizeStr).replace(/[^0-9]/g, ''), 10);
+            return isNaN(n) ? 8 : n;
+        }
+
         function checkBite() {
+            if(wildlifeDisturbance) return;
+            if(!castLine || castLine.state !== 'drifting' || currentFish || isFighting) return;
+
+            const zState = gameWorld.zones[currentZoneKey];
             const s = gameWorld.shared;
-            if (wildlifeDisturbance) {
-                setTimeout(() => {
-                    if (castLine && castLine.state === 'drifting') {
-                        document.getElementById('castStatus').innerText = "Inget hugg – vilt stör fiskeplatsen.";
-                    }
-                }, 900);
+            const flowVal = parseFloat(weatherData.flow) || 15;
+            const flyNum = getFlySizeNumber(activeFly.size);
+
+            let gCount = (zState.gravels || []).length;
+            let bCount = (zState.boulders || []).length;
+            let nCount = (zState.nurseries || []).length;
+            let synergy = gCount === 0 ? 0.2 : Math.min(1.0, bCount / Math.max(1, gCount));
+
+            let popFactor = Math.min(1.8, Math.max(0.25, (s.population || 100) / 180));
+            let biotopeBoost = 1 + (gCount * synergy * 0.08) + (bCount * 0.07) + (nCount * 0.06);
+            let biteChance = Math.min(0.88, Math.max(0.14, 0.36 * popFactor * biotopeBoost));
+
+            if (Math.random() > biteChance) return;
+
+            let spec = gameWorld.equipment.spec || "";
+            let isHeavyRod = spec.includes("#7") || spec.includes("#8") || spec.includes("#9/10") || spec.includes("#10/11");
+            let isFlyFluga = activeFly.category === "Laxfluga" || activeFly.name === "Den Vanliga" || activeFly.name === "Haröra";
+
+            let lowFlowSmallFlyBoost = (flowVal < 10 && flyNum >= 10 && activeFly.category === "Laxfluga");
+
+            let roll = Math.random();
+            let species = "Öring";
+            let size = 40;
+
+            if (isHeavyRod && isFlyFluga && (roll < 0.42 || (lowFlowSmallFlyBoost && roll < 0.56))) {
+                species = "Lax";
+                let baseMin = lowFlowSmallFlyBoost ? 64 : 52;
+                let baseSpan = lowFlowSmallFlyBoost ? 58 : 48;
+                size = Math.floor(baseMin + Math.random() * baseSpan + (biotopeBoost - 1) * 14);
+            } else if (roll < 0.72 || (lowFlowSmallFlyBoost && roll < 0.80)) {
+                species = "Öring";
+                let baseMin = lowFlowSmallFlyBoost ? 38 : 28;
+                let baseSpan = lowFlowSmallFlyBoost ? 36 : 30;
+                size = Math.floor(baseMin + Math.random() * baseSpan + (biotopeBoost - 1) * 8);
+            } else if (roll < 0.86) {
+                species = "Abborre";
+                size = Math.floor(18 + Math.random() * 28);
+            } else if (roll < 0.94) {
+                species = "Gädda";
+                size = Math.floor(52 + Math.random() * 48);
+            } else {
+                species = "Gös";
+                size = Math.floor(42 + Math.random() * 34);
+            }
+
+            currentFish = {
+                species,
+                size,
+                fly: `${activeFly.name} (${activeFly.size})`,
+                zone: saveanZones[currentZoneKey].name,
+                angler: lockedAnglerName || "Fiskare",
+                lowFlowSmallFly: lowFlowSmallFlyBoost
+            };
+
+            castLine = null;
+            startFishFight();
+        }
+
+        // --- 9J. DRILLNING & TAFSTRESS ---
+        function startFishFight() {
+            if (!currentFish || isFighting) return;
+            isFighting = true;
+            isPressingScreen = false;
+            tippetStress = 0;
+
+            let sizeFactor = Math.max(0.75, Math.min(1.65, currentFish.size / 65));
+            totalFightDuration = Number((4.0 + sizeFactor * 2.5).toFixed(1));
+            fightTimeRemaining = totalFightDuration;
+
+            const titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+            const knotMasteryFactor = titleObj.levelIndex >= 4 ? 0.88 : 1.0;
+
+            document.getElementById('fightTitle').innerText = `Drillning: ${currentFish.species} (${currentFish.size} cm) – Håll inne fingret!`;
+            document.getElementById('fightOverlay').classList.remove('hidden');
+            document.getElementById('fightOverlay').classList.add('flex');
+            updateFightVisuals();
+
+            const dt = 0.05;
+            if (fightInterval) clearInterval(fightInterval);
+            fightInterval = setInterval(() => {
+                if (!isFighting) {
+                    clearInterval(fightInterval);
+                    return;
+                }
+                if (isAnyModalOpen() && document.getElementById('fightOverlay').classList.contains('hidden')) {
+                    return;
+                }
+
+                let surge = Math.sin(Date.now() * 0.011) > 0.65 ? 1.35 : 1.0;
+                if (isPressingScreen) {
+                    tippetStress += (38 * sizeFactor * surge * knotMasteryFactor) * dt;
+                    fightTimeRemaining = Math.max(0, fightTimeRemaining - dt * 1.15);
+                } else {
+                    tippetStress = Math.max(0, tippetStress - 34 * dt);
+                    fightTimeRemaining = Math.max(0, fightTimeRemaining - dt * 0.55);
+                }
+
+                updateFightVisuals();
+
+                if (tippetStress >= 100) {
+                    clearInterval(fightInterval);
+                    isFighting = false;
+                    isPressingScreen = false;
+                    document.getElementById('fightOverlay').classList.add('hidden');
+                    document.getElementById('fightOverlay').classList.remove('flex');
+                    let lostFish = currentFish;
+                    currentFish = null;
+                    showCustomAlert(`💥 Tafsen gick av! Den starka ${lostFish.species}n (${lostFish.size} cm) slet sig loss. Släpp trycket när mätaren blir röd!`, "Tafsbrott");
+                    document.getElementById('castStatus').innerText = "Tafsbrott! Knyt på ny fluga och kasta igen.";
+                    return;
+                }
+
+                if (fightTimeRemaining <= 0) {
+                    clearInterval(fightInterval);
+                    isFighting = false;
+                    isPressingScreen = false;
+                    document.getElementById('fightOverlay').classList.add('hidden');
+                    document.getElementById('fightOverlay').classList.remove('flex');
+                    openWelfareModal();
+                }
+            }, dt * 1000);
+        }
+
+        function updateFightVisuals() {
+            const clamped = Math.max(0, Math.min(100, Math.round(tippetStress)));
+            const bar = document.getElementById('stressBar');
+            const text = document.getElementById('stressValueText');
+            const timeEl = document.getElementById('fightTimeText');
+            const card = document.getElementById('fightCard');
+
+            if (text) text.innerText = `${clamped}%`;
+            if (timeEl) timeEl.innerText = `${fightTimeRemaining.toFixed(1)}s`;
+
+            if (bar) {
+                bar.style.width = `${clamped}%`;
+                if (clamped >= 75) {
+                    bar.className = "bg-rose-500 h-full rounded-full transition-all duration-75";
+                } else if (clamped >= 45) {
+                    bar.className = "bg-amber-400 h-full rounded-full transition-all duration-75";
+                } else {
+                    bar.className = "bg-emerald-500 h-full rounded-full transition-all duration-75";
+                }
+            }
+
+            if (card) {
+                card.classList.remove('fight-glow-green', 'fight-glow-gold', 'fight-glow-red', 'fight-stream-sway', 'fight-stream-sway-hard');
+                if (clamped >= 75) {
+                    card.classList.add('fight-glow-red', 'fight-stream-sway-hard');
+                } else if (clamped >= 45) {
+                    card.classList.add('fight-glow-gold', 'fight-stream-sway');
+                } else {
+                    card.classList.add('fight-glow-green', 'fight-stream-sway');
+                }
+            }
+        }
+
+        (function bindFightHoldControls() {
+            const onPress = (e) => {
+                if (!isFighting) return;
+                if (e.target && e.target.closest('button, input, select, a')) return;
+                if (e.cancelable) e.preventDefault();
+                isPressingScreen = true;
+            };
+            const onRelease = () => {
+                isPressingScreen = false;
+            };
+
+            document.addEventListener('pointerdown', onPress, { passive: false });
+            document.addEventListener('pointerup', onRelease);
+            document.addEventListener('pointercancel', onRelease);
+            document.addEventListener('touchstart', onPress, { passive: false });
+            document.addEventListener('touchend', onRelease);
+            document.addEventListener('touchcancel', onRelease);
+            window.addEventListener('blur', onRelease);
+        })();
+
+        // --- 9K. C&R, HEMTAGNING, PROVTAGNING & DAGBÖCKER ---
+        function openWelfareModal() {
+            if (!currentFish) return;
+            document.getElementById('caughtFishDetails').innerText = `Du landade en ${currentFish.species} på ${currentFish.size} cm (${currentFish.fly}) vid ${currentFish.zone}!`;
+            document.getElementById('sliderAirTime').value = 5;
+            document.getElementById('lblAirTime').innerText = "5s";
+
+            const sp = currentFish.species;
+            const sz = currentFish.size;
+            const isPredator = (sp === "Abborre" || sp === "Gädda" || sp === "Gös");
+
+            const keepBtn = document.getElementById('btnKeepFish');
+            if (keepBtn) {
+                keepBtn.innerText = isPredator ? "Avliva" : "Behåll";
+            }
+
+            let qObj = null;
+            if (sp === "Lax" || sp === "Öring") {
+                if (sz > 70) {
+                    qObj = {
+                        type: "big_breeder",
+                        question: "Stor lekmogen fisk (>70 cm). Hur hanterar du den?",
+                        options: [
+                            { label: "Håva skonsamt och släpp tillbaka direkt", correct: true },
+                            { label: "Lyft i gällocket för foto", correct: false }
+                        ]
+                    };
+                } else {
+                    qObj = {
+                        type: "handling",
+                        question: "Hur krokar du loss och återutsätter mest skonsamt?",
+                        options: [
+                            { label: "Med blöta händer i vattnet, låt den hämta andan", correct: true },
+                            { label: "Lägg den på torr sten/strand medan du tar fram tång", correct: false }
+                        ]
+                    };
+                }
+            } else if (sp === "Abborre") {
+                qObj = {
+                    type: "perch_rule",
+                    question: sz < 38 ? "Liten abborre (<38 cm) – påverkar yngel/smolt. Vad gör du?" : "Stor abborre (≥38 cm) – viktig för balansen. Vad gör du?",
+                    options: [
+                        { label: sz < 38 ? "Avliva (minskar smoltpredation)" : "Släpp tillbaka (C&R)", correct: true },
+                        { label: sz < 38 ? "Släpp tillbaka" : "Avliva direkt", correct: false }
+                    ]
+                };
+            } else if (sp === "Gädda") {
+                qObj = {
+                    type: "pike_rule",
+                    question: sz < 80 ? "Mindre gädda (<80 cm) – tar lätt smolt. Vad gör du?" : "Stor gädda (≥80 cm) – reglerar småfisk. Vad gör du?",
+                    options: [
+                        { label: sz < 80 ? "Avliva (minskar smoltpredation)" : "Släpp tillbaka (C&R)", correct: true },
+                        { label: sz < 80 ? "Släpp tillbaka" : "Avliva direkt", correct: false }
+                    ]
+                };
+            } else if (sp === "Gös") {
+                qObj = {
+                    type: "zander_rule",
+                    question: "Gös fångad – bra matfisk och predator i ån. Vad gör du?",
+                    options: [
+                        { label: "Avliva / ta hem (+pluspoäng)", correct: true },
+                        { label: "Släpp tillbaka utan eftertanke", correct: false }
+                    ]
+                };
+            } else {
+                qObj = {
+                    type: "general",
+                    question: "Hur hanterar du fisken bäst?",
+                    options: [
+                        { label: "Skonsam hantering & blöta händer", correct: true },
+                        { label: "Hård hantering på torrt underlag", correct: false }
+                    ]
+                };
+            }
+
+            currentWelfareQuestion = qObj;
+            const qBox = document.getElementById('dynamicSingleQuestionContainer');
+            if (qBox) {
+                qBox.innerHTML = `
+                    <span class="font-semibold text-amber-300 block mb-1">${qObj.question}</span>
+                    <div class="flex flex-col gap-1">
+                        ${qObj.options.map((opt, idx) => `
+                            <label class="flex items-center gap-1.5 cursor-pointer text-stone-200 hover:text-white">
+                                <input type="radio" name="welfareOpt" value="${idx}" ${idx === 0 ? "checked" : ""} class="accent-emerald-500">
+                                <span>${opt.label}</span>
+                            </label>
+                        `).join("")}
+                    </div>
+                `;
+            }
+
+            document.getElementById('welfareModal').classList.remove('hidden');
+            document.getElementById('welfareModal').classList.add('flex');
+        }
+
+        function updateAirTimeLabel(val) {
+            document.getElementById('lblAirTime').innerText = val + "s";
+        }
+
+        function evaluateWelfareAnswer() {
+            const selected = document.querySelector('input[name="welfareOpt"]:checked');
+            const idx = selected ? parseInt(selected.value, 10) : 0;
+            if (currentWelfareQuestion && currentWelfareQuestion.options[idx]) {
+                return Boolean(currentWelfareQuestion.options[idx].correct);
+            }
+            return true;
+        }
+
+        async function releaseFish() {
+            if (!currentFish) return;
+            let airSec = parseInt(document.getElementById('sliderAirTime').value);
+            let answeredWell = evaluateWelfareAnswer();
+
+            let survival = 0.96 - (airSec * 0.04) + (answeredWell ? 0.05 : -0.15);
+            survival = Math.max(0.05, Math.min(0.99, survival));
+            let survived = Math.random() < survival;
+
+            let pointsEarned = survived ? (answeredWell ? 45 : 25) : 5;
+            gameWorld.points += pointsEarned;
+            addXp(survived ? (answeredWell ? 20 : 12) : 5);
+
+            const s = gameWorld.shared;
+            if (!survived) {
+                s.population = Math.max(30, s.population - 1);
+                let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+                sharedWorldData.population = s.population;
+                if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+            }
+
+            let eqFull = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
+            if (window.saveCatchToFirebase) {
+                await window.saveCatchToFirebase(lockedAnglerName, currentFish.species, currentFish.size, currentFish.fly, currentFish.zone, eqFull);
+            }
+
+            addLog(`${currentFish.species} (${currentFish.size} cm) – C&R (${survived ? "Överlevde" : "Dog av stress"}, +${pointsEarned}p)`);
+
+            let fishName = currentFish.species;
+            resetAfterCatch();
+            updateUI();
+
+            if (survived) {
+                showCustomAlert(`🌿 Skonsam C&R! ${fishName} simmade iväg med god överlevnad (${Math.round(survival*100)}%). +${pointsEarned} poäng!`, "Återutsatt");
+            } else {
+                showCustomAlert(`⚠️ Tyvärr klarade inte ${fishName}n hanteringen (${airSec}s ovan ytan). Beståndet minskade med 1.`, "Dålig överlevnad");
+            }
+        }
+
+        async function keepFish() {
+            if (!currentFish) return;
+            const sp = currentFish.species;
+            const sz = currentFish.size;
+            const isPredator = (sp === "Abborre" || sp === "Gädda" || sp === "Gös");
+
+            let pointsEarned = 15;
+            let xpEarned = 10;
+            let statusMsg = "";
+
+            if (sp === "Abborre") {
+                if (sz < 38) {
+                    pointsEarned = 40;
+                    xpEarned = 18;
+                    statusMsg = `Avlivade liten abborre (${sz} cm) – skyddar smolt och yngel! +${pointsEarned} p.`;
+                } else {
+                    pointsEarned = 10;
+                    xpEarned = 8;
+                    statusMsg = `Avlivade stor abborre (${sz} cm) – stor abborre balanserar hellre beståndet. +${pointsEarned} p.`;
+                }
+            } else if (sp === "Gädda") {
+                if (sz < 80) {
+                    pointsEarned = 45;
+                    xpEarned = 20;
+                    statusMsg = `Avlivade mindre gädda (${sz} cm) – minskar smoltpredation! +${pointsEarned} p.`;
+                } else {
+                    pointsEarned = 10;
+                    xpEarned = 8;
+                    statusMsg = `Avlivade stor gädda (${sz} cm) – stora gäddor håller nere småfisk. +${pointsEarned} p.`;
+                }
+            } else if (sp === "Gös") {
+                pointsEarned = 45;
+                xpEarned = 20;
+                statusMsg = `Tog hem/avlivade gös (${sz} cm) – uppskattad fångst och viltvård! +${pointsEarned} p.`;
+            } else {
+                pointsEarned = 15;
+                xpEarned = 10;
+                statusMsg = `Behöll ${sp} (${sz} cm). +${pointsEarned} p.`;
+            }
+
+            gameWorld.points += pointsEarned;
+            addXp(xpEarned);
+
+            const s = gameWorld.shared;
+            s.population = Math.max(30, s.population - 1);
+            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+            sharedWorldData.population = s.population;
+            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
+            let eqFull = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
+            if (window.saveCatchToFirebase) {
+                await window.saveCatchToFirebase(lockedAnglerName, sp, sz, currentFish.fly, currentFish.zone, eqFull);
+            }
+
+            addLog(`${sp} (${sz} cm) – ${isPredator ? "Avlivad" : "Behållen"} (+${pointsEarned}p)`);
+
+            resetAfterCatch();
+            updateUI();
+            showCustomAlert(statusMsg, isPredator ? "Avlivad" : "Behållen");
+        }
+
+        async function sampleFish() {
+            if (!currentFish) return;
+            gameWorld.points += 35;
+            addXp(25);
+            const s = gameWorld.shared;
+            s.population = Math.max(30, s.population - 1);
+            let sharedWorldData = await window.loadSharedWorld() || gameWorld.shared;
+            sharedWorldData.population = s.population;
+            if (window.saveSharedWorld) await window.saveSharedWorld(sharedWorldData);
+
+            let eqFull = `${gameWorld.equipment.brand} ${gameWorld.equipment.spec}`;
+            if (window.saveCatchToFirebase) {
+                await window.saveCatchToFirebase(lockedAnglerName, currentFish.species, currentFish.size, currentFish.fly, currentFish.zone, eqFull);
+            }
+
+            addLog(`${currentFish.species} (${currentFish.size} cm) – Provtagen (+35p)`);
+
+            resetAfterCatch();
+            updateUI();
+            showCustomAlert("🧬 Provtagning slutförd! Forskningen får ny data. +35 poäng & +25 XP!", "Provtagning");
+        }
+
+        function resetAfterCatch() {
+            currentFish = null;
+            currentWelfareQuestion = null;
+            isFighting = false;
+            isPressingScreen = false;
+            if (fightInterval) {
+                clearInterval(fightInterval);
+                fightInterval = null;
+            }
+            document.getElementById('fightOverlay').classList.add('hidden');
+            document.getElementById('fightOverlay').classList.remove('flex');
+            document.getElementById('welfareModal').classList.add('hidden');
+            document.getElementById('welfareModal').classList.remove('flex');
+            document.getElementById('castStatus').innerText = "Redo för kast. Klicka för kast, klicka på gubben för Hemtagning!";
+        }
+
+        function addLog(text) {
+            const zState = gameWorld.zones[currentZoneKey];
+            zState.log = zState.log || [];
+            zState.log.unshift({ text, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+            if(zState.log.length > 15) zState.log.pop();
+            renderLog();
+        }
+
+        function renderLog() {
+            const logEl = document.getElementById('catchLog');
+            const zState = gameWorld.zones[currentZoneKey];
+            const logList = zState.log || [];
+            if(logList.length === 0) {
+                logEl.innerHTML = `<p class="text-stone-500 italic">Inga fångster än på denna sträcka.</p>`;
                 return;
             }
-
-            let currentFlow = parseFloat(weatherData.flow);
-            let isSmallFly = activeFly.size === "10#" || activeFly.size === "12#";
-            let isLowFlow = currentFlow < 10;
-
-            let biteChance = 0.72;
-            if (isLowFlow && isSmallFly) {
-                biteChance += 0.14;
-            }
-
-            setTimeout(() => {
-                if (!castLine || castLine.state !== 'drifting' || isFighting || isAnyModalOpen()) return;
-                if (Math.random() > biteChance) {
-                    document.getElementById('castStatus').innerText = "Inget hugg på detta kast. Prova ny plats eller fluga!";
-                    return;
-                }
-
-                let speciesRoll = Math.random();
-                let species = "Öring";
-                let size = 35 + Math.floor(Math.random() * 25);
-
-                if (speciesRoll < 0.25) {
-                    species = "Lax";
-                    size = 58 + Math.floor(Math.random() * 44);
-                } else if (speciesRoll < 0.56) {
-                    species = "Öring";
-                    size = 38 + Math.floor(Math.random() * 42);
-                } else if (speciesRoll < 0.74) {
-                    species = "Abborre";
-                    size = 24 + Math.floor(Math.random() * 22);
-                } else if (speciesRoll < 0.90) {
-                    species = "Gädda";
-                    size = 55 + Math.floor(Math.random() * 50);
-                } else {
-                    species = "Gös";
-                    size = 42 + Math.floor(Math.random() * 38);
-                }
-
-                if (isLowFlow && isSmallFly && (species === "Lax" || species === "Öring")) {
-                    size = Math.max(size, 65 + Math.floor(Math.random() * 32));
-                }
-
-                if (species === "Lax" && !gameWorld.equipment.spec.includes("#7") && !gameWorld.equipment.spec.includes("#8") && !gameWorld.equipment.spec.includes("#9") && !gameWorld.equipment.spec.includes("#10") && !gameWorld.equipment.spec.includes("#11")) {
-                    document.getElementById('castStatus').innerText = "En stor lax klev på men slet sig pga för lätt spö (#6)!";
-                    castLine.state = 'retracting';
-                    return;
-                }
-
-                gameWorld.flyCounts = gameWorld.flyCounts || {};
-                gameWorld.flyCounts[activeFly.name] = (gameWorld.flyCounts[activeFly.name] || 0) + 1;
-
-                if (s.population > 30) {
-                    document.getElementById('castStatus').innerText = `HUGG! ${species} (${size} cm) – Håll inne för att drilla!`;
-                    startFightMinigame({ species, size });
-                }
-            }, 900);
+            logEl.innerHTML = logList.map(item => `<div class="border-b border-stone-900 pb-0.5"><span class="text-stone-500">[${item.time}]</span> ${item.text}</div>`).join("");
         }
 
         function changeFlyModal() {
             const listEl = document.getElementById('flyList');
-            listEl.innerHTML = flies.map(f => {
-                let sizeButtons = f.sizes.map(sz => {
-                    let isSelected = (activeFly.name === f.name && activeFly.size === sz);
-                    let cls = isSelected
-                        ? "bg-amber-400 text-stone-950 border-amber-300 font-bold"
-                        : "bg-stone-900 hover:bg-amber-400/15 text-amber-200 border-amber-500/30";
-                    return `<button type="button" onclick="selectFly('${f.name}', '${f.category}', '${sz}')" class="px-2 py-0.5 rounded-md border text-[10px] transition ${cls}">${sz}</button>`;
-                }).join("");
-
-                return `
-                    <div class="bg-stone-900/90 p-2 rounded-xl border border-amber-500/25 flex flex-col gap-1">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs font-bold text-amber-300">${f.name}</span>
-                            <span class="text-[10px] text-amber-200/70">${f.category}</span>
+            let html = "";
+            flies.forEach(f => {
+                let isSelected = (activeFly.name === f.name);
+                let borderStyle = isSelected ? "border-amber-400 shadow-[0_0_12px_rgba(250,204,21,0.28)]" : "border-amber-500/25 hover:border-amber-400/70";
+                let badgeStyle = isSelected ? "bg-amber-400 text-stone-950 font-extrabold" : "bg-stone-900 text-amber-300 border border-amber-400/40 font-semibold";
+                html += `
+                    <div class="bg-stone-900 p-2 rounded-xl border ${borderStyle} flex flex-col gap-1 transition">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-amber-300">${f.name}</span>
+                            <span class="text-[10px] text-amber-200/80">${f.category}</span>
                         </div>
-                        <div class="flex flex-wrap gap-1">${sizeButtons}</div>
+                        <div class="flex flex-wrap gap-1 mt-0.5">
+                            ${f.sizes.map(sz => {
+                                let isSizeActive = isSelected && activeFly.size === sz;
+                                return `<button type="button" onclick="selectFly('${f.name}', '${f.category}', '${sz}')" class="px-2 py-0.5 rounded text-[10px] transition ${isSizeActive ? 'bg-amber-400 text-stone-950 font-extrabold' : badgeStyle + ' hover:bg-amber-400/20'}">${sz}</button>`;
+                            }).join("")}
+                        </div>
                     </div>
                 `;
-            }).join("");
-
+            });
+            listEl.innerHTML = html;
             document.getElementById('flyModal').classList.remove('hidden');
             document.getElementById('flyModal').classList.add('flex');
         }
@@ -5175,16 +5258,7 @@
             updateUI();
         }
 
-        function renderLog() {
-            const logEl = document.getElementById('catchLog');
-            const zState = gameWorld.zones[currentZoneKey];
-            if(!zState || !zState.log || zState.log.length === 0) {
-                logEl.innerHTML = `<p class="text-stone-500 italic">Inga fångster än på denna sträcka.</p>`;
-                return;
-            }
-            logEl.innerHTML = zState.log.map(item => `<div class="border-b border-stone-900 pb-0.5"><span class="text-stone-500 text-[9px]">${item.time}</span> ${item.text}</div>`).join("");
-        }
-
+        // --- 9L. STARTA RENDERLOOP ---
         resizeCanvas();
         draw();
     </script>
