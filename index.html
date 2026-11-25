@@ -4560,16 +4560,15 @@
                             castLine.currentY = castLine.targetY;
                             castLine.state = 'drifting';
                             castLine.driftTimer = 0;
-                            castLine.biteChecked = false;
-                            castLine.maxDriftTime = 160;
-                            document.getElementById('castStatus').innerText = "Flugan driver i strömmen...";
+                            castLine.nextBiteCheck = 34;
+                            document.getElementById('castStatus').innerText = "Flugan fiskar genom hela strömmen – tryck på gubben för 30px-ryck!";
                         } else {
                             castLine.currentX += (dx/dist) * speed;
                             castLine.currentY += (dy/dist) * speed;
                         }
                     } else if (castLine.state === 'drifting') {
-                        castLine.currentX += (0.25 + currentFlow * 0.015) * flowMultiplier;
-                        castLine.currentY += Math.sin(Date.now() * 0.006) * 0.35;
+                        castLine.currentX += (0.55 + currentFlow * 0.025) * flowMultiplier;
+                        castLine.currentY += Math.sin(Date.now() * 0.006) * 0.4;
                         castLine.driftTimer++;
 
                         if (currentFlow >= 14 && singleDriftLog) {
@@ -4582,14 +4581,14 @@
                             }
                         }
 
-                        if (castLine.driftTimer === 45 && !castLine.biteChecked && !currentFish) {
-                            castLine.biteChecked = true;
-                            checkBite();
+                        if (castLine.driftTimer >= castLine.nextBiteCheck && !currentFish) {
+                            castLine.nextBiteCheck += 42;
+                            checkBite(false);
                         }
 
-                        if (castLine.driftTimer > castLine.maxDriftTime || castLine.currentX > canvas.width - 10) {
+                        if (castLine && castLine.currentX >= canvas.width - 12) {
                             castLine = null;
-                            document.getElementById('castStatus').innerText = "Driften avslutad. Klicka för att kasta!";
+                            document.getElementById('castStatus').innerText = "Flugan har fiskat ut hela canvasen. Klicka för nytt kast!";
                         }
                     }
                 }
@@ -4673,9 +4672,30 @@
             }
 
             if(Math.hypot(clickX - rodX, clickY - rodY) < 28) {
-                if(castLine) {
-                    castLine = null;
-                    document.getElementById('castStatus').innerText = "Tog hem flugan. Klicka i vattnet för att kasta!";
+                if (wildlifeDisturbance) {
+                    document.getElementById('castStatus').innerText = "🐾 Djur på sträckan – det går inte att fiska här nu!";
+                    return;
+                }
+                if (isFighting || currentFish) return;
+                if (castLine && castLine.state === 'drifting') {
+                    let dxToRod = rodX - castLine.currentX;
+                    let dyToRod = rodY - castLine.currentY;
+                    let distToRod = Math.hypot(dxToRod, dyToRod);
+                    if (distToRod <= 30) {
+                        castLine.currentX = rodX;
+                        castLine.currentY = rodY;
+                        castLine = null;
+                        document.getElementById('castStatus').innerText = "Flugan hemtagen till gubben. Klicka för att kasta!";
+                        return;
+                    }
+                    let stepPx = 30;
+                    castLine.currentX += (dxToRod / distToRod) * stepPx;
+                    castLine.currentY += (dyToRod / distToRod) * stepPx;
+                    castLine.driftTimer = Math.max(0, (castLine.driftTimer || 0) - 8);
+                    document.getElementById('castStatus').innerText = "⚡ Livligt ryck i flugan (30 px hem)!";
+                    checkBite(true);
+                } else if (castLine && castLine.state === 'extending') {
+                    document.getElementById('castStatus').innerText = "Flugan är på väg ut i kastet...";
                 } else {
                     document.getElementById('castStatus').innerText = "Linan är redan hemtagen. Klicka i vattnet för kast!";
                 }
@@ -4683,6 +4703,15 @@
             }
 
             if (isFighting || currentFish) return;
+
+            if (wildlifeDisturbance) {
+                return showCustomAlert("🐾 Det finns vilda djur på sträckan! Det går inte att fiska här just nu – byt sträcka.", "Djur på sträckan");
+            }
+
+            if (castLine) {
+                document.getElementById('castStatus').innerText = "Låt flugan fiska ut hela vägen över canvasen innan du kastar igen!";
+                return;
+            }
 
             if(gameWorld.castsRemaining <= 0) {
                 return showCustomAlert("Du har inga kast kvar idag! Klicka på 'Nästa dag' (eller återställ via Admin).", "Kast slut");
@@ -4722,7 +4751,7 @@
                 targetY: clickY,
                 state: 'extending',
                 driftTimer: 0,
-                maxDriftTime: 160
+                maxDriftTime: 999999
             };
             document.getElementById('castStatus').innerText = "Kastar flugan mot valt ställe...";
         });
@@ -4733,7 +4762,7 @@
             return isNaN(n) ? 8 : n;
         }
 
-        function checkBite() {
+        function checkBite(isStripTug = false) {
             if(wildlifeDisturbance) return;
             if(!castLine || castLine.state !== 'drifting' || currentFish || isFighting) return;
 
@@ -4751,18 +4780,18 @@
             let buCount = s.bushes || 0;
             let synergy = gCount === 0 ? 0.2 : Math.min(1.0, bCount / Math.max(1, gCount));
 
-            // Biotopkvalitet (0.0 -> ~1.0) styr stora fiskar och återväxt
+            // Biotopkvalitet (0.0 -> ~1.0) styr huggfrekvens, stora fiskar och återväxt
             let biotopeRaw = (gCount * synergy * 0.14) + (bCount * 0.12) + (nCount * 0.10) + ((tCount + buCount) * 0.025) + (gameWorld.laddersFixed ? 0.22 : 0);
             let biotopeQuality = Math.min(1.0, Math.max(0.0, biotopeRaw));
-            let biotopeBoost = 1 + biotopeQuality * 0.65;
 
-            // Vattenflöde: högt flöde gynnar större fisk, lågt flöde (< 10 m³/s) gör det lättare att få napp med små flugor (10#–16#)
-            let flowFactor = Math.max(0.45, Math.min(1.45, flowVal / 18));
+            // Vattenflöde: lågt flöde (< 10 m³/s) gynnar små flugor (10#–16#)
             let lowFlowSmallFlyBoost = (flowVal < 10 && isSmallFly);
-            let smallFlyMultiplier = lowFlowSmallFlyBoost ? 1.38 : (isSmallFly ? 0.95 : 1.0);
+            let smallFlyMultiplier = lowFlowSmallFlyBoost ? 1.42 : (isSmallFly ? 0.85 : 1.0);
 
-            let popFactor = Math.min(1.5, Math.max(0.25, (s.population || 100) / 210));
-            let biteChance = Math.min(0.72, Math.max(0.14, 0.34 * popFactor * (0.85 + biotopeQuality * 0.35) * smallFlyMultiplier));
+            let popFactor = Math.min(1.3, Math.max(0.2, (s.population || 100) / 240));
+            // Mer balanserad huggfrekvens så biotopvård och flugval spelar tydlig roll
+            let baseChance = isStripTug ? 0.24 : 0.17;
+            let biteChance = Math.min(0.56, Math.max(0.05, baseChance * popFactor * (0.58 + biotopeQuality * 0.72) * smallFlyMultiplier));
 
             if (Math.random() > biteChance) return;
 
@@ -4828,18 +4857,26 @@
         // --- 9J. DRILLNING & TAFSTRESS ---
         let fightVibrationTimer = null;
 
+        function triggerStrongPhoneVibration(pattern = [250, 45, 250, 45, 340]) {
+            try {
+                if (navigator && typeof navigator.vibrate === 'function') {
+                    navigator.vibrate(pattern);
+                }
+            } catch (_) {}
+        }
+
         function startContinuousFingerVibration() {
             stopContinuousFingerVibration();
             try {
                 if (navigator && typeof navigator.vibrate === 'function') {
-                    navigator.vibrate(95);
+                    navigator.vibrate(280);
                     fightVibrationTimer = setInterval(() => {
                         if (!isFighting || !isPressingScreen) {
                             stopContinuousFingerVibration();
                             return;
                         }
-                        try { navigator.vibrate(95); } catch (_) {}
-                    }, 80);
+                        try { navigator.vibrate([200, 25, 240]); } catch (_) {}
+                    }, 155);
                 }
             } catch (_) {}
         }
@@ -4860,18 +4897,18 @@
             const card = document.getElementById('fightCard');
             if (!card || !isFighting) return;
 
-            const sizeFactor = currentFish ? Math.max(0.85, Math.min(1.35, currentFish.size / 85)) : 1.0;
-            const stressBoost = 1 + (tippetStress / 100) * 0.45;
-            const holdDamp = isPressingScreen ? 0.62 : 1.0;
-            const ampX = (5 + (tippetStress / 100) * 6) * sizeFactor * holdDamp;
-            const ampY = (3.5 + (tippetStress / 100) * 4) * sizeFactor * holdDamp;
-            const rotDeg = Math.sin(nowMs * 0.0065) * (1.5 * stressBoost) * holdDamp;
-            const swayX = Math.sin(nowMs * 0.005) * ampX;
-            const swayY = Math.cos(nowMs * 0.007) * ampY;
+            const sizeFactor = currentFish ? Math.max(0.9, Math.min(1.5, currentFish.size / 76)) : 1.0;
+            const stressBoost = 1 + (tippetStress / 100) * 0.65;
+            const holdBoost = isPressingScreen ? 1.18 : 1.0;
+            const ampX = (8 + (tippetStress / 100) * 9.5) * sizeFactor * holdBoost;
+            const ampY = (5.5 + (tippetStress / 100) * 6.5) * sizeFactor * holdBoost;
+            const rotDeg = Math.sin(nowMs * 0.0075) * (2.6 * stressBoost) * holdBoost;
+            const swayX = Math.sin(nowMs * 0.0058) * ampX;
+            const swayY = Math.cos(nowMs * 0.0082) * ampY;
 
-            const vibX = isPressingScreen ? Math.sin(nowMs * 0.085) * 1.4 : 0;
-            const vibY = isPressingScreen ? Math.cos(nowMs * 0.095) * 1.2 : 0;
-            const vibRot = isPressingScreen ? Math.sin(nowMs * 0.1) * 0.4 : 0;
+            const vibX = isPressingScreen ? Math.sin(nowMs * 0.105) * 2.6 : 0;
+            const vibY = isPressingScreen ? Math.cos(nowMs * 0.12) * 2.2 : 0;
+            const vibRot = isPressingScreen ? Math.sin(nowMs * 0.125) * 0.85 : 0;
 
             card.style.animation = 'none';
             card.style.transform = `translate3d(${(swayX + vibX).toFixed(1)}px, ${(swayY + vibY).toFixed(1)}px, 0) rotate(${(rotDeg + vibRot).toFixed(2)}deg)`;
@@ -4893,6 +4930,7 @@
 
         function startFishFight() {
             if (!currentFish || isFighting) return;
+            triggerStrongPhoneVibration([280, 50, 280, 50, 360]);
             isFighting = true;
             isPressingScreen = false;
             tippetStress = 0;
@@ -4923,16 +4961,16 @@
                 }
 
                 const nowMs = Date.now();
-                let surge = Math.sin(nowMs * 0.014) > 0.52 ? 1.32 : 1.0;
-                // Lugnare tafsstress-känslighet på stor fisk så att stora fiskar inte sliter av tafsen direkt
+                let surge = Math.sin(nowMs * 0.0145) > 0.48 ? 1.42 : 1.04;
+                // Lite känsligare tafsmätare än tidigare, men fortfarande kontrollerbar på stor fisk
                 let bigFishStressDamp = currentFish && currentFish.size >= 85
-                    ? 0.72
-                    : (currentFish && currentFish.size >= 60 ? 0.85 : 1.0);
+                    ? 0.84
+                    : (currentFish && currentFish.size >= 60 ? 0.94 : 1.04);
                 if (isPressingScreen) {
-                    tippetStress += (76 * sizeFactor * bigFishStressDamp * surge * knotMasteryFactor) * dt;
+                    tippetStress += (90 * sizeFactor * bigFishStressDamp * surge * knotMasteryFactor) * dt;
                     fightTimeRemaining = Math.max(0, fightTimeRemaining - dt);
                 } else {
-                    tippetStress = Math.max(0, tippetStress - 46 * dt);
+                    tippetStress = Math.max(0, tippetStress - 42 * dt);
                 }
 
                 updateFightVisuals();
@@ -4943,6 +4981,7 @@
                     isFighting = false;
                     isPressingScreen = false;
                     resetFightWindowRocking();
+                    triggerStrongPhoneVibration([380, 60, 380, 60, 480]);
                     document.getElementById('fightOverlay').classList.add('hidden');
                     document.getElementById('fightOverlay').classList.remove('flex');
                     let lostFish = currentFish;
@@ -5089,7 +5128,7 @@
                 await window.saveCatchToFirebase(lockedAnglerName, currentFish.species, currentFish.size, currentFish.fly, currentFish.zone, eqFull);
             }
 
-            addLog(`${currentFish.species} (${currentFish.size} cm) – C&R (${survived ? "Överlevde" : "Dog av stress"}, +${pointsEarned}p)`);
+            addLog(`${currentFish.species} (${currentFish.size} cm)`);
 
             let fishName = currentFish.species;
             resetAfterCatch();
@@ -5161,7 +5200,7 @@
                 await window.saveCatchToFirebase(lockedAnglerName, sp, sz, currentFish.fly, currentFish.zone, eqFull);
             }
 
-            addLog(`${sp} (${sz} cm) – ${isPredator ? "Avlivad" : "Behållen"} (+${pointsEarned}p)`);
+            addLog(`${sp} (${sz} cm)`);
 
             resetAfterCatch();
             updateUI();
@@ -5188,7 +5227,7 @@
                 await window.saveCatchToFirebase(lockedAnglerName, currentFish.species, currentFish.size, currentFish.fly, currentFish.zone, eqFull);
             }
 
-            addLog(`${currentFish.species} (${currentFish.size} cm) – Provtagen (+35p)`);
+            addLog(`${currentFish.species} (${currentFish.size} cm)`);
 
             resetAfterCatch();
             updateUI();
