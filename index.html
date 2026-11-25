@@ -4179,11 +4179,16 @@
 
         // --- 9H. CANVAS-ANIMATION & STRÖMDRIFT ---
         let flowOffset = 0;
+        let _drawLoopScheduled = false;
         function draw() {
-            if (!canvas.width || !canvas.height) {
-                resizeCanvas();
-            }
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            _drawLoopScheduled = false;
+            try {
+                if (!canvas.width || !canvas.height) {
+                    resizeCanvas();
+                }
+                ctx.save();
+                ctx.globalAlpha = 1;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const zState = gameWorld.zones[currentZoneKey];
             const s = gameWorld.shared;
@@ -4604,7 +4609,15 @@
                 }
             }
 
-            requestAnimationFrame(draw);
+                ctx.restore();
+            } catch (err) {
+                console.error("Canvas draw frame recovery:", err);
+                try { ctx.restore(); } catch (_) {}
+            }
+            if (!_drawLoopScheduled) {
+                _drawLoopScheduled = true;
+                requestAnimationFrame(draw);
+            }
         }
 
         // --- 9I. KLICK I VATTNET, KAST & HUGGLOGIK ---
@@ -4727,48 +4740,73 @@
             const zState = gameWorld.zones[currentZoneKey];
             const s = gameWorld.shared;
             const flowVal = parseFloat(weatherData.flow) || 15;
+            // 4# = störst (4), 16# = minst (16)
             const flyNum = getFlySizeNumber(activeFly.size);
+            const isSmallFly = flyNum >= 10;
 
             let gCount = (zState.gravels || []).length;
             let bCount = (zState.boulders || []).length;
             let nCount = (zState.nurseries || []).length;
+            let tCount = s.trees || 0;
+            let buCount = s.bushes || 0;
             let synergy = gCount === 0 ? 0.2 : Math.min(1.0, bCount / Math.max(1, gCount));
 
-            let popFactor = Math.min(1.6, Math.max(0.25, (s.population || 100) / 200));
-            let biotopeBoost = 1 + (gCount * synergy * 0.08) + (bCount * 0.07) + (nCount * 0.06);
-            let biteChance = Math.min(0.75, Math.max(0.18, 0.42 * popFactor * biotopeBoost));
+            // Biotopkvalitet (0.0 -> ~1.0) styr stora fiskar och återväxt
+            let biotopeRaw = (gCount * synergy * 0.14) + (bCount * 0.12) + (nCount * 0.10) + ((tCount + buCount) * 0.025) + (gameWorld.laddersFixed ? 0.22 : 0);
+            let biotopeQuality = Math.min(1.0, Math.max(0.0, biotopeRaw));
+            let biotopeBoost = 1 + biotopeQuality * 0.65;
+
+            // Vattenflöde: högt flöde gynnar större fisk, lågt flöde (< 10 m³/s) gör det lättare att få napp med små flugor (10#–16#)
+            let flowFactor = Math.max(0.45, Math.min(1.45, flowVal / 18));
+            let lowFlowSmallFlyBoost = (flowVal < 10 && isSmallFly);
+            let smallFlyMultiplier = lowFlowSmallFlyBoost ? 1.38 : (isSmallFly ? 0.95 : 1.0);
+
+            let popFactor = Math.min(1.5, Math.max(0.25, (s.population || 100) / 210));
+            let biteChance = Math.min(0.72, Math.max(0.14, 0.34 * popFactor * (0.85 + biotopeQuality * 0.35) * smallFlyMultiplier));
 
             if (Math.random() > biteChance) return;
 
             let spec = gameWorld.equipment.spec || "";
             let isHeavyRod = spec.includes("#7") || spec.includes("#8") || spec.includes("#9/10") || spec.includes("#10/11");
-            let isFlyFluga = activeFly.category === "Laxfluga" || activeFly.name === "Den Vanliga" || activeFly.name === "Haröra";
-
-            let lowFlowSmallFlyBoost = (flowVal < 10 && flyNum >= 10 && activeFly.category === "Laxfluga");
+            // Lax hugger aldrig på torrflugor eller haröra
+            let salmonAllowedFly = activeFly.category !== "Torrfluga" && activeFly.name !== "Haröra" && (activeFly.category === "Laxfluga" || activeFly.name === "Den Vanliga");
 
             let roll = Math.random();
             let species = "Öring";
             let size = 40;
 
-            if (isHeavyRod && isFlyFluga && (roll < 0.42 || (lowFlowSmallFlyBoost && roll < 0.56))) {
+            let salmonProb = (isHeavyRod && salmonAllowedFly)
+                ? Math.min(0.52, (0.24 + biotopeQuality * 0.14 + Math.max(0, (flowVal - 12) * 0.008)) * (lowFlowSmallFlyBoost ? 1.15 : 1.0))
+                : 0;
+
+            if (salmonProb > 0 && roll < salmonProb) {
                 species = "Lax";
-                let baseMin = lowFlowSmallFlyBoost ? 64 : 52;
-                let baseSpan = lowFlowSmallFlyBoost ? 58 : 48;
-                size = Math.floor(baseMin + Math.random() * baseSpan + (biotopeBoost - 1) * 14);
-            } else if (roll < 0.72 || (lowFlowSmallFlyBoost && roll < 0.80)) {
+                // Maxgräns 125 cm, där 120–125 cm är extremt sällsynt även vid bra biotopvård och högt flöde
+                let highFlowBiotopeDrive = Math.min(1.0, Math.max(0.0, biotopeQuality * 0.65 + Math.max(0, (flowVal - 10) / 25) * 0.45));
+                let minLen = Math.round(52 + highFlowBiotopeDrive * 22 + (lowFlowSmallFlyBoost ? 4 : 0));
+                let spanLen = Math.max(12, 125 - minLen);
+                let skewed = Math.pow(Math.random(), 2.35 - highFlowBiotopeDrive * 0.55);
+                size = Math.min(125, Math.max(50, Math.floor(minLen + skewed * spanLen)));
+            } else if (roll < salmonProb + (lowFlowSmallFlyBoost ? 0.42 : 0.34)) {
                 species = "Öring";
-                let baseMin = lowFlowSmallFlyBoost ? 38 : 28;
-                let baseSpan = lowFlowSmallFlyBoost ? 36 : 30;
-                size = Math.floor(baseMin + Math.random() * baseSpan + (biotopeBoost - 1) * 8);
-            } else if (roll < 0.86) {
+                // Öring styrs av biotop och flöde; ~75–77 cm inträffar bara extremt sällan vid hög biotopkvalitet/flöde
+                let troutDrive = Math.min(1.0, Math.max(0.0, biotopeQuality * 0.65 + Math.max(0, (flowVal - 10) / 26) * 0.4));
+                let minTrout = Math.round(28 + troutDrive * 14 + (lowFlowSmallFlyBoost ? 3 : 0));
+                let maxTroutCap = Math.min(77, Math.round(56 + troutDrive * 21));
+                let skewedTrout = Math.pow(Math.random(), 3.2 - troutDrive * 0.65);
+                size = Math.min(77, Math.max(26, Math.floor(minTrout + skewedTrout * Math.max(8, maxTroutCap - minTrout))));
+            } else if (roll < 0.84) {
                 species = "Abborre";
-                size = Math.floor(18 + Math.random() * 28);
-            } else if (roll < 0.94) {
+                let perchBase = 16 + biotopeQuality * 6;
+                size = Math.floor(perchBase + Math.pow(Math.random(), 1.6) * 24);
+            } else if (roll < 0.93) {
                 species = "Gädda";
-                size = Math.floor(52 + Math.random() * 48);
+                let pikeBase = 50 + biotopeQuality * 12;
+                size = Math.floor(pikeBase + Math.pow(Math.random(), 1.7) * 38);
             } else {
                 species = "Gös";
-                size = Math.floor(42 + Math.random() * 34);
+                let zanderBase = 40 + biotopeQuality * 10;
+                size = Math.floor(zanderBase + Math.pow(Math.random(), 1.6) * 28);
             }
 
             let hasFungus = (species === "Lax" || species === "Öring") && Math.random() < 0.18;
@@ -4822,17 +4860,18 @@
             const card = document.getElementById('fightCard');
             if (!card || !isFighting) return;
 
-            const sizeFactor = currentFish ? Math.max(0.9, Math.min(1.75, currentFish.size / 62)) : 1.0;
-            const stressBoost = 1 + (tippetStress / 100) * 1.25;
-            const ampX = (24 + (tippetStress / 100) * 26) * sizeFactor;
-            const ampY = (15 + (tippetStress / 100) * 18) * sizeFactor;
-            const rotDeg = Math.sin(nowMs * 0.0095) * (6.8 * stressBoost);
-            const swayX = Math.sin(nowMs * 0.0072) * ampX;
-            const swayY = Math.cos(nowMs * 0.0105) * ampY;
+            const sizeFactor = currentFish ? Math.max(0.85, Math.min(1.35, currentFish.size / 85)) : 1.0;
+            const stressBoost = 1 + (tippetStress / 100) * 0.45;
+            const holdDamp = isPressingScreen ? 0.62 : 1.0;
+            const ampX = (5 + (tippetStress / 100) * 6) * sizeFactor * holdDamp;
+            const ampY = (3.5 + (tippetStress / 100) * 4) * sizeFactor * holdDamp;
+            const rotDeg = Math.sin(nowMs * 0.0065) * (1.5 * stressBoost) * holdDamp;
+            const swayX = Math.sin(nowMs * 0.005) * ampX;
+            const swayY = Math.cos(nowMs * 0.007) * ampY;
 
-            const vibX = isPressingScreen ? Math.sin(nowMs * 0.11) * 6 : 0;
-            const vibY = isPressingScreen ? Math.cos(nowMs * 0.13) * 5 : 0;
-            const vibRot = isPressingScreen ? Math.sin(nowMs * 0.14) * 2.5 : 0;
+            const vibX = isPressingScreen ? Math.sin(nowMs * 0.085) * 1.4 : 0;
+            const vibY = isPressingScreen ? Math.cos(nowMs * 0.095) * 1.2 : 0;
+            const vibRot = isPressingScreen ? Math.sin(nowMs * 0.1) * 0.4 : 0;
 
             card.style.animation = 'none';
             card.style.transform = `translate3d(${(swayX + vibX).toFixed(1)}px, ${(swayY + vibY).toFixed(1)}px, 0) rotate(${(rotDeg + vibRot).toFixed(2)}deg)`;
@@ -4858,14 +4897,15 @@
             isPressingScreen = false;
             tippetStress = 0;
 
-            let sizeFactor = Math.max(0.85, Math.min(1.75, currentFish.size / 62));
+            let sizeFactor = Math.max(0.85, Math.min(1.65, currentFish.size / 68));
             totalFightDuration = Number((4.0 + sizeFactor * 2.2).toFixed(1));
             fightTimeRemaining = totalFightDuration;
 
             const titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
             const knotMasteryFactor = titleObj.levelIndex >= 4 ? 0.92 : 1.0;
 
-            document.getElementById('fightTitle').innerText = `Drillning: ${currentFish.species} (${currentFish.size} cm) – Håll inne fingret!`;
+            // Visa inte art eller storlek förrän drillningen är avklarad
+            document.getElementById('fightTitle').innerText = `Drillning pågår – Håll inne fingret!`;
             document.getElementById('fightOverlay').classList.remove('hidden');
             document.getElementById('fightOverlay').classList.add('flex');
             updateFightVisuals();
@@ -4883,12 +4923,16 @@
                 }
 
                 const nowMs = Date.now();
-                let surge = Math.sin(nowMs * 0.015) > 0.45 ? 1.55 : 1.05;
+                let surge = Math.sin(nowMs * 0.014) > 0.52 ? 1.32 : 1.0;
+                // Lugnare tafsstress-känslighet på stor fisk så att stora fiskar inte sliter av tafsen direkt
+                let bigFishStressDamp = currentFish && currentFish.size >= 85
+                    ? 0.72
+                    : (currentFish && currentFish.size >= 60 ? 0.85 : 1.0);
                 if (isPressingScreen) {
-                    tippetStress += (98 * sizeFactor * surge * knotMasteryFactor) * dt;
+                    tippetStress += (76 * sizeFactor * bigFishStressDamp * surge * knotMasteryFactor) * dt;
                     fightTimeRemaining = Math.max(0, fightTimeRemaining - dt);
                 } else {
-                    tippetStress = Math.max(0, tippetStress - 44 * dt);
+                    tippetStress = Math.max(0, tippetStress - 46 * dt);
                 }
 
                 updateFightVisuals();
@@ -5165,11 +5209,25 @@
                 clearInterval(fightInterval);
                 fightInterval = null;
             }
-            document.getElementById('fightOverlay').classList.add('hidden');
-            document.getElementById('fightOverlay').classList.remove('flex');
-            document.getElementById('welfareModal').classList.add('hidden');
-            document.getElementById('welfareModal').classList.remove('flex');
-            document.getElementById('castStatus').innerText = "Redo för kast.";
+            const fOverlay = document.getElementById('fightOverlay');
+            if (fOverlay) {
+                fOverlay.classList.add('hidden');
+                fOverlay.classList.remove('flex');
+            }
+            const wModal = document.getElementById('welfareModal');
+            if (wModal) {
+                wModal.classList.add('hidden');
+                wModal.classList.remove('flex');
+            }
+            if (!canvas.width || !canvas.height) {
+                resizeCanvas();
+            }
+            if (!_drawLoopScheduled) {
+                _drawLoopScheduled = true;
+                requestAnimationFrame(draw);
+            }
+            const statusEl = document.getElementById('castStatus');
+            if (statusEl) statusEl.innerText = "Redo för kast.";
         }
 
         function addLog(text) {
