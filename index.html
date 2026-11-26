@@ -5007,25 +5007,26 @@
             // Lax hugger aldrig på torrflugor eller haröra
             let salmonAllowedFly = activeFly.category !== "Torrfluga" && activeFly.name !== "Haröra" && (activeFly.category === "Laxfluga" || activeFly.name === "Den Vanliga");
 
-            let roll = Math.random();
             let species = "Öring";
             let size = 40;
 
             let salmonProb = (isHeavyRod && salmonAllowedFly)
-                ? Math.min(0.52, (0.24 + biotopeQuality * 0.14 + Math.max(0, (flowVal - 12) * 0.008)) * (lowFlowSmallFlyBoost ? 1.15 : 1.0))
+                ? Math.min(0.48, (0.22 + biotopeQuality * 0.13 + Math.max(0, (flowVal - 12) * 0.008)) * (lowFlowSmallFlyBoost ? 1.15 : 1.0))
                 : 0;
 
             const isDamFixed = syncDamStateConsistency();
 
             // === STORLEKSGRÄNSER PER ART (ÄNDRA HÄR VID BEHOV) ===
             // Format: { minUnfixed, maxUnfixed, minFixed, maxFixed, skew }
-            // Lägre 'skew' = oftare större fiskar inom spannet; högre 'skew' = oftare mindre fiskar.
+            // Lägre 'skew' = oftare större fiskar inom spannet; högre 'skew' = oftare mindre fiskar (mycket sällan max).
             const SIZE_CONFIG = {
                 salmon: { minUnfixed: 65, maxUnfixed: 85, minFixed: 70, maxFixed: 125, skew: 2.35 },
                 trout:  { minUnfixed: 26, maxUnfixed: 50, minFixed: 28, maxFixed: 77,  skew: 3.20 },
                 perch:  { minUnfixed: 16, maxUnfixed: 33, minFixed: 16, maxFixed: 46,  skew: 1.60 },
                 pike:   { minUnfixed: 50, maxUnfixed: 72, minFixed: 50, maxFixed: 100, skew: 1.70 },
-                zander: { minUnfixed: 40, maxUnfixed: 56, minFixed: 40, maxFixed: 78,  skew: 1.60 }
+                zander: { minUnfixed: 40, maxUnfixed: 56, minFixed: 40, maxFixed: 78,  skew: 1.60 },
+                ide:    { minUnfixed: 35, maxUnfixed: 64, minFixed: 35, maxFixed: 64,  skew: 6.50 },
+                chub:   { minUnfixed: 35, maxUnfixed: 64, minFixed: 35, maxFixed: 64,  skew: 6.20 }
             };
 
             const applyHighFlowMinSize = (speciesKey, currentSize, maxLimit) => {
@@ -5034,7 +5035,36 @@
                 return Math.max(currentSize, minAllowed);
             };
 
-            if (salmonProb > 0 && roll < salmonProb) {
+            // Artvikter anpassade efter flöde (> 14 m³/s vs <= 14 m³/s):
+            // - Abborre föredrar lugnare vatten (<= 14 m³/s) och napppar väldigt sällan (> 14 m³/s)
+            // - Id följer abborrens mönster i lugnare vatten (<= 14 m³/s) och är sällsynt över 14 m³/s
+            // - Färna är en stark strömfisk (gynnas starkt över 14 m³/s och i strömmen, sällsynt under 14 m³/s)
+            const isHighFlow = flowVal > 14;
+            const troutWeight = lowFlowSmallFlyBoost ? 0.34 : 0.27;
+            const perchWeight = isHighFlow ? 0.015 : 0.24;
+            const ideWeight   = isHighFlow ? 0.015 : 0.16;
+            const chubWeight  = isHighFlow ? 0.24  : 0.03;
+            const pikeWeight  = isHighFlow ? 0.08  : 0.08;
+            const zanderWeight= isHighFlow ? 0.06  : 0.06;
+
+            const nonSalmonTotal = troutWeight + perchWeight + ideWeight + chubWeight + pikeWeight + zanderWeight;
+            const scale = (1 - salmonProb) / nonSalmonTotal;
+
+            const pTrout  = troutWeight * scale;
+            const pPerch  = perchWeight * scale;
+            const pIde    = ideWeight * scale;
+            const pChub   = chubWeight * scale;
+            const pPike   = pikeWeight * scale;
+
+            const roll = Math.random();
+            const c1 = salmonProb;
+            const c2 = c1 + pTrout;
+            const c3 = c2 + pPerch;
+            const c4 = c3 + pIde;
+            const c5 = c4 + pChub;
+            const c6 = c5 + pPike;
+
+            if (salmonProb > 0 && roll < c1) {
                 species = "Lax";
                 const cfg = SIZE_CONFIG.salmon;
                 const salmonMaxLimit = isDamFixed ? cfg.maxFixed : cfg.maxUnfixed;
@@ -5045,7 +5075,7 @@
                 let skewed = Math.pow(Math.random(), cfg.skew - highFlowBiotopeDrive * 0.55);
                 size = Math.min(salmonMaxLimit, Math.max(salmonFloor, Math.floor(minLen + skewed * spanLen)));
                 size = Math.min(salmonMaxLimit, applyHighFlowMinSize("salmon", size, salmonMaxLimit));
-            } else if (roll < salmonProb + (lowFlowSmallFlyBoost ? 0.42 : 0.34)) {
+            } else if (roll < c2) {
                 species = "Öring";
                 const cfg = SIZE_CONFIG.trout;
                 const troutMaxLimit = isDamFixed ? cfg.maxFixed : cfg.maxUnfixed;
@@ -5056,7 +5086,7 @@
                 let skewedTrout = Math.pow(Math.random(), cfg.skew - troutDrive * 0.65);
                 size = Math.min(troutMaxLimit, Math.max(troutFloor, Math.floor(minTrout + skewedTrout * Math.max(5, maxTroutCap - minTrout))));
                 size = Math.min(troutMaxLimit, applyHighFlowMinSize("trout", size, troutMaxLimit));
-            } else if (roll < 0.84) {
+            } else if (roll < c3) {
                 species = "Abborre";
                 const cfg = SIZE_CONFIG.perch;
                 const perchMaxLimit = isDamFixed ? cfg.maxFixed : cfg.maxUnfixed;
@@ -5064,7 +5094,24 @@
                 let perchBase = perchFloor + biotopeQuality * (isDamFixed ? 6 : 3);
                 size = Math.min(perchMaxLimit, Math.max(perchFloor, Math.floor(perchBase + Math.pow(Math.random(), cfg.skew) * (isDamFixed ? 24 : 14))));
                 size = Math.min(perchMaxLimit, applyHighFlowMinSize("perch", size, perchMaxLimit));
-            } else if (roll < 0.93) {
+            } else if (roll < c4) {
+                species = "Id";
+                const cfg = SIZE_CONFIG.ide;
+                const ideMin = cfg.minUnfixed; // 35 cm
+                const ideMax = cfg.maxUnfixed; // 64 cm (mycket sällan nära 64 cm pga hög skew)
+                let skewedIde = Math.pow(Math.random(), cfg.skew);
+                size = Math.min(ideMax, Math.max(ideMin, Math.floor(ideMin + skewedIde * (ideMax - ideMin))));
+                size = Math.min(ideMax, applyHighFlowMinSize("ide", size, ideMax));
+            } else if (roll < c5) {
+                species = "Färna";
+                const cfg = SIZE_CONFIG.chub;
+                const chubMin = cfg.minUnfixed; // 35 cm
+                const chubMax = cfg.maxUnfixed; // 64 cm (mycket sällan nära 64 cm pga hög skew)
+                let flowSkewAdj = isHighFlow ? Math.max(4.4, cfg.skew - Math.min(1.5, (flowVal - 14) * 0.06)) : cfg.skew;
+                let skewedChub = Math.pow(Math.random(), flowSkewAdj);
+                size = Math.min(chubMax, Math.max(chubMin, Math.floor(chubMin + skewedChub * (chubMax - chubMin))));
+                size = Math.min(chubMax, applyHighFlowMinSize("chub", size, chubMax));
+            } else if (roll < c6) {
                 species = "Gädda";
                 const cfg = SIZE_CONFIG.pike;
                 const pikeMaxLimit = isDamFixed ? cfg.maxFixed : cfg.maxUnfixed;
