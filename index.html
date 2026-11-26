@@ -132,20 +132,20 @@
 
         #gameContainer {
             aspect-ratio: 4 / 3;
-            max-height: 420px;
+            max-height: 500px;
         }
         @media (orientation: landscape) {
             #gameContainer {
                 aspect-ratio: 16 / 9;
-                height: min(86vh, 720px);
-                max-height: 720px;
+                height: min(86vh, 800px);
+                max-height: 800px;
             }
         }
         @media (orientation: portrait) and (max-width: 768px) {
             #gameContainer {
                 aspect-ratio: 4 / 3;
                 height: auto;
-                max-height: 300px;
+                max-height: 380px;
             }
         }
 
@@ -346,13 +346,13 @@
 
             <div id="miniGamePanel_flow" class="hidden flex-col gap-2 bg-stone-950 p-3 rounded-xl border border-stone-800 text-xs">
                 <div class="flex justify-between items-center">
-                    <span class="font-bold text-amber-300">🏞️ Flödesschema – Omlöpsbäck (5×5)</span>
+                    <span class="font-bold text-amber-300">🏞️ Flödesschema – Omlöpsbäck (7×5)</span>
                     <span class="text-[10px] text-cyan-300 font-semibold">+4,5 m³/s (idag) • +25 p / +15 XP</span>
                 </div>
                 <p id="flowStatusDesc" class="text-[11px] text-stone-400 leading-snug">
                     Vrid bäckbitarna så vattnet slingrar sig från <strong class="text-sky-400">IN</strong> till <strong class="text-emerald-400">UT</strong>. Matchande bäckskarvar kopplas ihop!
                 </p>
-                <div id="flowGridContainer" class="grid grid-cols-5 gap-1 bg-gradient-to-b from-emerald-950/60 via-stone-900 to-emerald-950/60 p-2 rounded-2xl border border-emerald-800/60 shadow-inner"></div>
+                <div id="flowGridContainer" class="grid grid-cols-7 gap-1 bg-gradient-to-b from-emerald-950/60 via-stone-900 to-emerald-950/60 p-2 rounded-2xl border border-emerald-800/60 shadow-inner"></div>
                 <div id="flowActionButtons" class="flex gap-2">
                     <button type="button" onclick="checkFlowPuzzle()" class="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white py-1.5 rounded-lg text-[11px] font-bold transition">
                         Kontrollera omlöp
@@ -1876,7 +1876,8 @@
         let dailyMiniGameOrder = [];
         let activeMiniGameStep = 0;
 
-        const FLOW_GRID_SIZE = 5;
+        const FLOW_GRID_COLS = 7;
+        const FLOW_GRID_ROWS = 5;
         let flowInRow = 1;
         let flowOutRow = 3;
         let flowCells = [];
@@ -2194,13 +2195,14 @@
         }
 
         function initFlowPuzzle(randomize) {
-            const N = FLOW_GRID_SIZE;
-            flowInRow = Math.floor(Math.random() * N);
-            flowOutRow = Math.floor(Math.random() * N);
+            const ROWS = FLOW_GRID_ROWS;
+            const COLS = FLOW_GRID_COLS;
+            flowInRow = Math.floor(Math.random() * ROWS);
+            flowOutRow = Math.floor(Math.random() * ROWS);
 
             const oppDir = [2, 3, 0, 1];
             const pathSet = new Set();
-            const solDirs = Array.from({ length: N }, () => Array.from({ length: N }, () => new Set()));
+            const solDirs = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => new Set()));
 
             solDirs[flowInRow][0].add(3);
             pathSet.add(`${flowInRow},0`);
@@ -2208,15 +2210,15 @@
             let curR = flowInRow;
             let curC = 0;
 
-            while (curC < N - 1) {
+            while (curC < COLS - 1) {
                 const candidates = [];
-                if (curC + 1 < N && !pathSet.has(`${curR},${curC + 1}`)) {
+                if (curC + 1 < COLS && !pathSet.has(`${curR},${curC + 1}`)) {
                     candidates.push({ nr: curR, nc: curC + 1, d: 1, weight: 3 });
                 }
                 if (curR > 0 && !pathSet.has(`${curR - 1},${curC}`)) {
                     candidates.push({ nr: curR - 1, nc: curC, d: 0, weight: 1.5 });
                 }
-                if (curR + 1 < N && !pathSet.has(`${curR + 1},${curC}`)) {
+                if (curR + 1 < ROWS && !pathSet.has(`${curR + 1},${curC}`)) {
                     candidates.push({ nr: curR + 1, nc: curC, d: 2, weight: 1.5 });
                 }
 
@@ -2228,7 +2230,7 @@
                         curR += stepR;
                         solDirs[curR][curC].add(oppDir[d]);
                         pathSet.add(`${curR},${curC}`);
-                    } else if (curC + 1 < N) {
+                    } else if (curC + 1 < COLS) {
                         solDirs[curR][curC].add(1);
                         curC += 1;
                         solDirs[curR][curC].add(3);
@@ -2263,7 +2265,7 @@
                 pathSet.add(`${curR},${curC}`);
             }
 
-            solDirs[flowOutRow][N - 1].add(1);
+            solDirs[flowOutRow][COLS - 1].add(1);
 
             const pairTemplates = [
                 [0, 1], [1, 2], [2, 3], [3, 0], [0, 2], [1, 3]
@@ -2272,9 +2274,9 @@
             const alreadyDone = isMiniGameCompletedToday('flow');
 
             flowCells = [];
-            for (let r = 0; r < N; r++) {
+            for (let r = 0; r < ROWS; r++) {
                 const rowArr = [];
-                for (let c = 0; c < N; c++) {
+                for (let c = 0; c < COLS; c++) {
                     let baseDirs = Array.from(solDirs[r][c]);
                     if (baseDirs.length < 2) {
                         const tpl = pairTemplates[Math.floor(Math.random() * pairTemplates.length)];
@@ -2303,7 +2305,7 @@
         }
 
         function buildCreekChannelSvg5x5(r, c, dirs, active, matchedDirs) {
-            const N = FLOW_GRID_SIZE;
+            const COLS = FLOW_GRID_COLS;
             const bankMossColor = active ? "#14532d" : "#1c1917";
             const gravelBankColor = active ? "#78716c" : "#44403c";
             const creekBedColor = active ? "#0369a1" : "#1e293b";
@@ -2356,7 +2358,7 @@
 
             let matchBadges = "";
             dirs.forEach(d => {
-                const isPortMatch = (r === flowInRow && c === 0 && d === 3) || (r === flowOutRow && c === N - 1 && d === 1);
+                const isPortMatch = (r === flowInRow && c === 0 && d === 3) || (r === flowOutRow && c === COLS - 1 && d === 1);
                 if (matchedDirs.has(d) || isPortMatch) {
                     const pt = edgePts[d];
                     const mx = pt.x + (30 - pt.x) * 0.2;
@@ -2382,21 +2384,22 @@
         function renderFlowGrid() {
             const container = document.getElementById('flowGridContainer');
             if (!container) return;
-            const N = FLOW_GRID_SIZE;
+            const ROWS = FLOW_GRID_ROWS;
+            const COLS = FLOW_GRID_COLS;
             const oppDir = [2, 3, 0, 1];
             const dr = [-1, 0, 1, 0];
             const dc = [0, 1, 0, -1];
 
-            const cellMatchedDirs = Array.from({ length: N }, () =>
-                Array.from({ length: N }, () => new Set())
+            const cellMatchedDirs = Array.from({ length: ROWS }, () =>
+                Array.from({ length: COLS }, () => new Set())
             );
 
-            for (let r = 0; r < N; r++) {
-                for (let c = 0; c < N; c++) {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
                     for (const d of flowCells[r][c].dirs) {
                         const nr = r + dr[d];
                         const nc = c + dc[d];
-                        if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
+                        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
                             if (flowCells[nr][nc].dirs.includes(oppDir[d])) {
                                 cellMatchedDirs[r][c].add(d);
                             }
@@ -2405,7 +2408,7 @@
                 }
             }
 
-            const energized = Array.from({ length: N }, () => Array(N).fill(false));
+            const energized = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
             const queue = [];
             if (flowCells[flowInRow][0].dirs.includes(3)) {
                 energized[flowInRow][0] = true;
@@ -2416,7 +2419,7 @@
                 for (const d of flowCells[cr][cc].dirs) {
                     const nr = cr + dr[d];
                     const nc = cc + dc[d];
-                    if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
+                    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
                         if (!energized[nr][nc] && flowCells[nr][nc].dirs.includes(oppDir[d])) {
                             energized[nr][nc] = true;
                             queue.push([nr, nc]);
@@ -2427,15 +2430,15 @@
 
             const alreadyDone = isMiniGameCompletedToday('flow');
             let html = "";
-            for (let r = 0; r < N; r++) {
-                for (let c = 0; c < N; c++) {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
                     const dirs = flowCells[r][c].dirs;
                     const active = energized[r][c];
                     const matched = cellMatchedDirs[r][c];
                     const hasPairMatch = matched.size > 0;
 
                     const isIn = (r === flowInRow && c === 0);
-                    const isOut = (r === flowOutRow && c === N - 1);
+                    const isOut = (r === flowOutRow && c === COLS - 1);
                     const badge = isIn
                         ? `<span class="text-[7px] font-extrabold text-sky-200 bg-sky-950/90 px-1 rounded border border-sky-400/50">IN</span>`
                         : (isOut ? `<span class="text-[7px] font-extrabold text-emerald-200 bg-emerald-950/90 px-1 rounded border border-emerald-400/50">UT</span>` : ``);
@@ -2478,11 +2481,12 @@
                 showCustomAlert(`Du har redan klarat omlöpet idag (${todayStr}).`, "Datumlås");
                 return;
             }
-            const N = FLOW_GRID_SIZE;
+            const ROWS = FLOW_GRID_ROWS;
+            const COLS = FLOW_GRID_COLS;
             const oppDir = [2, 3, 0, 1];
             const dr = [-1, 0, 1, 0];
             const dc = [0, 1, 0, -1];
-            const visited = Array.from({ length: N }, () => Array(N).fill(false));
+            const visited = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
             const queue = [];
             if (flowCells[flowInRow][0].dirs.includes(3)) {
                 visited[flowInRow][0] = true;
@@ -2493,7 +2497,7 @@
                 for (const d of flowCells[cr][cc].dirs) {
                     const nr = cr + dr[d];
                     const nc = cc + dc[d];
-                    if (nr >= 0 && nr < N && nc >= 0 && nc < N) {
+                    if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS) {
                         if (!visited[nr][nc] && flowCells[nr][nc].dirs.includes(oppDir[d])) {
                             visited[nr][nc] = true;
                             queue.push([nr, nc]);
@@ -2502,7 +2506,7 @@
                 }
             }
 
-            const connectedToOutlet = visited[flowOutRow][N - 1] && flowCells[flowOutRow][N - 1].dirs.includes(1);
+            const connectedToOutlet = visited[flowOutRow][COLS - 1] && flowCells[flowOutRow][COLS - 1].dirs.includes(1);
             if (connectedToOutlet) {
                 todayStr = getLocalDateString();
                 const gotAllThreeBonus = await markMiniGameCompletedToday('flow');
@@ -2782,17 +2786,33 @@
                 radius: 6.5
             };
 
-            const cols = [0.28, 0.50, 0.72];
             driftObstacles = [];
-            cols.forEach((ratioX, idx) => {
-                const obsX = Math.round(w * ratioX);
-                const topStoneY = 34 + ((idx * 29 + Math.floor(Math.random() * 24)) % Math.max(20, Math.round(h * 0.34)));
-                const botStoneY = Math.min(h - 32, topStoneY + 62 + Math.floor(Math.random() * 18));
-                driftObstacles.push({ x: obsX, y: topStoneY, r: 15, phase: idx * 1.3 });
-                if (botStoneY - topStoneY > 44) {
-                    driftObstacles.push({ x: obsX + 10, y: botStoneY, r: 15, phase: idx * 2.1 + 0.7 });
+            const minX = 68;
+            const maxX = driftTargetPocket.x - 36;
+            const minY = 28;
+            const maxY = h - 28;
+            const stoneRadius = 10;
+
+            for (let i = 0; i < 5; i++) {
+                let placed = false;
+                for (let attempt = 0; attempt < 40; attempt++) {
+                    const rx = Math.round(minX + Math.random() * Math.max(20, maxX - minX));
+                    const ry = Math.round(minY + Math.random() * Math.max(20, maxY - minY));
+                    const distStart = Math.hypot(rx - driftNymph.x, ry - driftNymph.y);
+                    const distGoal = Math.hypot(rx - driftTargetPocket.x, ry - driftTargetPocket.y);
+                    const overlapsOther = driftObstacles.some(o => Math.hypot(rx - o.x, ry - o.y) < (stoneRadius * 2 + 12));
+                    if (distStart > 42 && distGoal > 34 && !overlapsOther) {
+                        driftObstacles.push({ x: rx, y: ry, r: stoneRadius, phase: Math.random() * Math.PI * 2 });
+                        placed = true;
+                        break;
+                    }
                 }
-            });
+                if (!placed) {
+                    const fallbackX = Math.round(minX + ((i + 0.5) / 5) * Math.max(20, maxX - minX));
+                    const fallbackY = Math.round(minY + Math.random() * Math.max(20, maxY - minY));
+                    driftObstacles.push({ x: fallbackX, y: fallbackY, r: stoneRadius, phase: i * 1.1 });
+                }
+            }
         }
 
         function stopDriftGame(evaluateResult = false) {
@@ -4679,7 +4699,7 @@
                                 castLine.state = 'drifting';
                                 castLine.driftTimer = 0;
                                 castLine.nextBiteCheck = 34;
-                                document.getElementById('castStatus').innerText = "Flugan fiskar genom hela strömmen – tryck på gubben för 30px-ryck!";
+                                document.getElementById('castStatus').innerText = "Flugan fiskar genom strömmen...";
                             }
                         } else {
                             castLine.currentX += (dx/dist) * speed;
@@ -4810,7 +4830,6 @@
                     castLine.currentX += (dxToRod / distToRod) * stepPx;
                     castLine.currentY += (dyToRod / distToRod) * stepPx;
                     castLine.driftTimer = Math.max(0, (castLine.driftTimer || 0) - 8);
-                    document.getElementById('castStatus').innerText = "⚡ Livligt ryck i flugan (30 px hem)!";
                     checkBite(true);
                 } else if (castLine && castLine.state === 'extending') {
                     document.getElementById('castStatus').innerText = "Flugan är på väg ut i kastet...";
