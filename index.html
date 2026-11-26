@@ -746,6 +746,950 @@
     </div>
 
     <script>
+        // === KONSTANTER, STRÄCKOR & FLUGOR ===
+        const STORAGE_KEY_PREFIX = "savean_open_world_v4_10_v2_4_";
+        const ADMIN_PASSWORD_HASH = "savean2026";
+        const SEASON_DAM_GOAL = 10000;
+
+        const ZONES = {
+            dickson: {
+                key: "dickson",
+                name: "Dickson",
+                baseFlow: 12.4,
+                waterTemp: 8.2,
+                airTemp: 9.5,
+                condition: "Växlande molnighet",
+                basePop: 210,
+                speciesWeights: { Lax: 0.42, Öring: 0.58 }
+            },
+            mannered: {
+                key: "mannered",
+                name: "Mannered",
+                baseFlow: 13.8,
+                waterTemp: 8.0,
+                airTemp: 9.0,
+                condition: "Lätt bris & solglimt",
+                basePop: 195,
+                speciesWeights: { Lax: 0.48, Öring: 0.52 }
+            },
+            edbergsrakan: {
+                key: "edbergsrakan",
+                name: "Edbergsrakan",
+                baseFlow: 14.6,
+                waterTemp: 7.8,
+                airTemp: 8.8,
+                condition: "Halvklart",
+                basePop: 185,
+                speciesWeights: { Lax: 0.52, Öring: 0.48 }
+            },
+            kahogsforsen: {
+                key: "kahogsforsen",
+                name: "Kåhögsforsen",
+                baseFlow: 16.5,
+                waterTemp: 7.5,
+                airTemp: 8.2,
+                condition: "Forsande / Skum",
+                basePop: 225,
+                speciesWeights: { Lax: 0.60, Öring: 0.40 }
+            },
+            brittamaja: {
+                key: "brittamaja",
+                name: "Britta-Maja",
+                baseFlow: 11.2,
+                waterTemp: 8.4,
+                airTemp: 9.8,
+                condition: "Lugnt & molnigt",
+                basePop: 170,
+                speciesWeights: { Lax: 0.35, Öring: 0.65 }
+            },
+            lortholjan: {
+                key: "lortholjan",
+                name: "Lorthöljan",
+                baseFlow: 9.4,
+                waterTemp: 8.6,
+                airTemp: 10.1,
+                condition: "Lågvatten / Djupt",
+                basePop: 160,
+                speciesWeights: { Lax: 0.30, Öring: 0.70 }
+            },
+            ingvarssons: {
+                key: "ingvarssons",
+                name: "Ingvarssons",
+                baseFlow: 13.1,
+                waterTemp: 8.1,
+                airTemp: 9.2,
+                condition: "Svag vind",
+                basePop: 190,
+                speciesWeights: { Lax: 0.45, Öring: 0.55 }
+            }
+        };
+
+        const FLIES = [
+            { id: "fireball_6", name: "Fireball", size: "6#", type: "Nymf", color: "#f97316", favSpecies: "Öring" },
+            { id: "pars_raka_10", name: "Pärs räka", size: "10#", type: "Räka/Lax", color: "#fb7185", favSpecies: "Lax" },
+            { id: "pars_raka_12", name: "Pärs räka", size: "12#", type: "Räka/Lax", color: "#f43f5e", favSpecies: "Lax" },
+            { id: "svart_flugan_10", name: "Svartflugan", size: "10#", type: "Våtfluga", color: "#a855f7", favSpecies: "Lax" },
+            { id: "haroren_12", name: "Harörenymf", size: "12#", type: "Nymf", color: "#eab308", favSpecies: "Öring" },
+            { id: "streaking_caddis_10", name: "Streaking Caddis", size: "10#", type: "Torrfluga", color: "#38bdf8", favSpecies: "Öring" }
+        ];
+
+        const TITLES = [
+            { name: "Nykomling vid ån", minXp: 0, bonusText: "Grundnivå – låser upp Säveåns sträckor" },
+            { name: "Strömföljare", minXp: 120, bonusText: "Bättre känsla i strömdrag och kastprecision" },
+            { name: "Biotopvän", minXp: 280, bonusText: "Ökad förståelse för lekgrus och ståndplatser" },
+            { name: "Flugbindare", minXp: 480, bonusText: "Skarpare presentation med små lax- och öringflugor" },
+            { name: "Knutmästare", minXp: 750, bonusText: "8% lägre tafsstress under drillning" },
+            { name: "Säveåns Väktare", minXp: 1100, bonusText: "Mästarnivå – full överblick över älv & vandring" }
+        ];
+
+        // === GLOBALT TILLSTÅND ===
+        let lockedAnglerName = "";
+        let currentZoneKey = "dickson";
+        let currentDay = 1;
+        let castsLeft = 5;
+        const maxCastsPerDay = 5;
+        let selectedFly = FLIES[0];
+        let equipment = { brand: "Hardy", rodSpec: "9 fot #6 (Enhands)" };
+
+        let weatherData = {
+            condition: ZONES.dickson.condition,
+            temp: ZONES.dickson.airTemp,
+            waterTemp: ZONES.dickson.waterTemp,
+            baseFlow: ZONES.dickson.baseFlow,
+            bonusFlow: 0,
+            flow: ZONES.dickson.baseFlow
+        };
+
+        let gameWorld = {
+            points: 700,
+            xp: 0,
+            prestige: 0,
+            damProgress: 0,
+            zones: {},
+            catches: [],
+            pbs: {},
+            guestbook: [],
+            biotopeLog: [],
+            hallOfFame: {
+                seasons: [
+                    { season: "Säsong v42–v43", topSalmon: "Fiskare Karl (104 cm)", topTrout: "Maja S (68 cm)" }
+                ]
+            }
+        };
+
+        // Canvas & interaktionsläge
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas ? canvas.getContext("2d") : null;
+        let mode = null; // null | 'moveRod' | 'place_gravel' | 'place_boulder' | 'place_nursery'
+        let pendingCost = 0;
+        let rodPos = { x: 0.22, y: 0.72 };
+        let castLine = null; // { startX, startY, endX, endY, t }
+        let singleDriftLog = { x: 0.55, y: 0.34 };
+        let currentFish = null;
+        let isFighting = false;
+        let isPressingScreen = false;
+        let tippetStress = 0;
+        let totalFightDuration = 5.0;
+        let fightTimeRemaining = 5.0;
+        let fightInterval = null;
+        let pendingWelfareFish = null;
+        let adminClickCount = 0;
+        let adminClickTimer = null;
+
+        // Minispel-state
+        let activeMiniGameTab = "flow";
+        let flowGrid = [];
+        const FLOW_ROWS = 5;
+        const FLOW_COLS = 7;
+
+        let tangleNodes = [];
+        let tangleEdges = [];
+        let draggingTangleNode = -1;
+
+        let driftState = {
+            running: false,
+            nymphX: 35,
+            nymphY: 92,
+            holdingUp: false,
+            obstacles: [],
+            animId: null
+        };
+
+        function getTodayKey() {
+            const d = new Date();
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const dd = String(d.getDate()).padStart(2, "0");
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function ensureZoneData(zoneKey) {
+            if (!gameWorld.zones[zoneKey]) {
+                const z = ZONES[zoneKey] || ZONES.dickson;
+                gameWorld.zones[zoneKey] = {
+                    population: z.basePop,
+                    gravel: 0,
+                    boulders: 0,
+                    nursery: 0,
+                    trees: 2,
+                    bushes: 2,
+                    items: []
+                };
+            }
+            return gameWorld.zones[zoneKey];
+        }
+
+        function ensureAllZones() {
+            Object.keys(ZONES).forEach(k => ensureZoneData(k));
+        }
+
+        function loadLocalState() {
+            ensureAllZones();
+            try {
+                const rawName = localStorage.getItem(STORAGE_KEY_PREFIX + "angler_name");
+                if (rawName && rawName.trim()) {
+                    lockedAnglerName = rawName.trim();
+                }
+                const rawWorld = localStorage.getItem(STORAGE_KEY_PREFIX + "world");
+                if (rawWorld) {
+                    const parsed = JSON.parse(rawWorld);
+                    gameWorld = {
+                        ...gameWorld,
+                        ...parsed,
+                        zones: { ...gameWorld.zones, ...(parsed.zones || {}) },
+                        catches: Array.isArray(parsed.catches) ? parsed.catches : [],
+                        pbs: parsed.pbs || {},
+                        guestbook: Array.isArray(parsed.guestbook) ? parsed.guestbook : [],
+                        biotopeLog: Array.isArray(parsed.biotopeLog) ? parsed.biotopeLog : [],
+                        hallOfFame: parsed.hallOfFame || gameWorld.hallOfFame
+                    };
+                }
+                const rawDay = localStorage.getItem(STORAGE_KEY_PREFIX + "day");
+                if (rawDay) currentDay = Math.max(1, Math.min(7, parseInt(rawDay, 10) || 1));
+
+                const rawCasts = localStorage.getItem(STORAGE_KEY_PREFIX + "casts");
+                if (rawCasts !== null) castsLeft = Math.max(0, Math.min(maxCastsPerDay, parseInt(rawCasts, 10)));
+
+                const rawZone = localStorage.getItem(STORAGE_KEY_PREFIX + "zone");
+                if (rawZone && ZONES[rawZone]) currentZoneKey = rawZone;
+
+                const rawFly = localStorage.getItem(STORAGE_KEY_PREFIX + "fly_id");
+                if (rawFly) {
+                    const found = FLIES.find(f => f.id === rawFly);
+                    if (found) selectedFly = found;
+                }
+
+                const rawEq = localStorage.getItem(STORAGE_KEY_PREFIX + "equipment");
+                if (rawEq) {
+                    const parsedEq = JSON.parse(rawEq);
+                    if (parsedEq && parsedEq.brand && parsedEq.rodSpec) {
+                        equipment = parsedEq;
+                    }
+                }
+
+                const rawBonusFlow = localStorage.getItem(STORAGE_KEY_PREFIX + "bonus_flow_" + getTodayKey());
+                if (rawBonusFlow !== null) {
+                    weatherData.bonusFlow = parseFloat(rawBonusFlow) || 0;
+                }
+            } catch (err) {
+                console.warn("Kunde inte läsa lokalt tillstånd:", err);
+            }
+        }
+
+        function saveLocalState() {
+            try {
+                if (lockedAnglerName) {
+                    localStorage.setItem(STORAGE_KEY_PREFIX + "angler_name", lockedAnglerName);
+                }
+                localStorage.setItem(STORAGE_KEY_PREFIX + "world", JSON.stringify(gameWorld));
+                localStorage.setItem(STORAGE_KEY_PREFIX + "day", String(currentDay));
+                localStorage.setItem(STORAGE_KEY_PREFIX + "casts", String(castsLeft));
+                localStorage.setItem(STORAGE_KEY_PREFIX + "zone", currentZoneKey);
+                localStorage.setItem(STORAGE_KEY_PREFIX + "fly_id", selectedFly.id);
+                localStorage.setItem(STORAGE_KEY_PREFIX + "equipment", JSON.stringify(equipment));
+                localStorage.setItem(STORAGE_KEY_PREFIX + "bonus_flow_" + getTodayKey(), String(weatherData.bonusFlow || 0));
+            } catch (err) {
+                console.warn("Kunde inte spara lokalt tillstånd:", err);
+            }
+        }
+
+        function recordGuestbookVisit(name) {
+            if (!name) return;
+            const nowStr = new Date().toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+            const zoneName = ZONES[currentZoneKey]?.name || "Dickson";
+            gameWorld.guestbook = gameWorld.guestbook.filter(g => g.name.toLowerCase() !== name.toLowerCase());
+            gameWorld.guestbook.unshift({
+                name,
+                zone: zoneName,
+                time: nowStr,
+                day: currentDay
+            });
+            gameWorld.guestbook = gameWorld.guestbook.slice(0, 20);
+        }
+
+        function appendBiotopeLog(text) {
+            const stamp = new Date().toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+            gameWorld.biotopeLog.unshift(`[${stamp}] ${text}`);
+            gameWorld.biotopeLog = gameWorld.biotopeLog.slice(0, 25);
+        }
+
+        function getTitleAndProgress(xp, prestige = 0) {
+            let idx = 0;
+            for (let i = 0; i < TITLES.length; i++) {
+                if (xp >= TITLES[i].minXp) idx = i;
+            }
+            const current = TITLES[idx];
+            const next = TITLES[idx + 1] || null;
+            return {
+                levelIndex: idx,
+                title: current.name,
+                bonusText: current.bonusText,
+                nextMinXp: next ? next.minXp : current.minXp + 500,
+                prestige
+            };
+        }
+
+        function addXp(amount) {
+            if (!amount || amount <= 0) return;
+            const before = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+            gameWorld.xp += amount;
+            const after = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+            if (after.levelIndex > before.levelIndex) {
+                showLevelUpBanner(after.title, after.bonusText);
+            }
+        }
+
+        function showLevelUpBanner(titleName, bonusText) {
+            const modal = document.getElementById("levelUpBannerModal");
+            const txt = document.getElementById("levelUpBannerText");
+            const bonus = document.getElementById("levelUpBonusText");
+            if (!modal || !txt || !bonus) return;
+            txt.innerText = `Du har nått titeln "${titleName}"!`;
+            bonus.innerText = `Bonus: ${bonusText}`;
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+            setTimeout(() => {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }, 4000);
+        }
+
+        function updateWeatherForZone() {
+            const z = ZONES[currentZoneKey] || ZONES.dickson;
+            const dayOffset = (currentDay - 1) * 0.35;
+            const bonus = Number(weatherData.bonusFlow || 0);
+            const flowVal = Number((z.baseFlow + Math.sin(currentDay * 1.4) * 1.1 + bonus).toFixed(1));
+            weatherData = {
+                condition: z.condition,
+                temp: Number((z.airTemp + Math.cos(currentDay) * 1.2).toFixed(1)),
+                waterTemp: Number((z.waterTemp + dayOffset * 0.1).toFixed(1)),
+                baseFlow: z.baseFlow,
+                bonusFlow: bonus,
+                flow: Math.max(2.0, flowVal)
+            };
+        }
+
+        // === UI-UPPDATERING ===
+        function updateUI() {
+            updateWeatherForZone();
+            const zData = ensureZoneData(currentZoneKey);
+            const zInfo = ZONES[currentZoneKey] || ZONES.dickson;
+
+            const anglerLabel = document.getElementById("currentAnglerLabel");
+            if (anglerLabel) anglerLabel.innerText = lockedAnglerName || "Gäst";
+
+            const zoneLabel = document.getElementById("selectedZoneLabel");
+            if (zoneLabel) zoneLabel.innerText = zInfo.name;
+
+            const eqLabel = document.getElementById("hudEqLabel");
+            if (eqLabel) eqLabel.innerText = `${equipment.brand} ${equipment.rodSpec}`;
+
+            const ptsEl = document.getElementById("conservationPoints");
+            if (ptsEl) ptsEl.innerText = `${gameWorld.points} p`;
+
+            const dayEl = document.getElementById("dayCounter");
+            if (dayEl) dayEl.innerText = `Dag ${currentDay}/7`;
+
+            const nextDayBtn = document.getElementById("nextDayBtn");
+            if (nextDayBtn) {
+                if (currentDay >= 7) {
+                    nextDayBtn.disabled = true;
+                    nextDayBtn.classList.add("opacity-50", "cursor-not-allowed");
+                } else {
+                    nextDayBtn.disabled = false;
+                    nextDayBtn.classList.remove("opacity-50", "cursor-not-allowed");
+                }
+            }
+
+            const flyEl = document.getElementById("currentFlyName");
+            if (flyEl) flyEl.innerText = `${selectedFly.name} (${selectedFly.size})`;
+
+            const popEl = document.getElementById("hudPopulation");
+            if (popEl) popEl.innerText = String(Math.max(0, Math.round(zData.population)));
+
+            const castsEl = document.getElementById("castsLeft");
+            if (castsEl) castsEl.innerText = `${castsLeft} / ${maxCastsPerDay}`;
+
+            const condEl = document.getElementById("wCondition");
+            if (condEl) condEl.innerText = weatherData.condition;
+
+            const tempEl = document.getElementById("wTemp");
+            if (tempEl) tempEl.innerText = String(weatherData.temp);
+
+            const wTempEl = document.getElementById("wWaterTemp");
+            if (wTempEl) wTempEl.innerText = String(weatherData.waterTemp);
+
+            const flowEl = document.getElementById("wFlow");
+            if (flowEl) flowEl.innerText = `${weatherData.flow} m³/s`;
+
+            const bonusFlowEl = document.getElementById("flowBonusValue");
+            if (bonusFlowEl) bonusFlowEl.innerText = `+${Number(weatherData.bonusFlow || 0).toFixed(1)} m³/s`;
+
+            const statGravel = document.getElementById("statGravel");
+            if (statGravel) statGravel.innerText = `${zData.gravel} st`;
+
+            const statBoulders = document.getElementById("statBoulders");
+            if (statBoulders) statBoulders.innerText = `${zData.boulders} st`;
+
+            const statNursery = document.getElementById("statNursery");
+            if (statNursery) statNursery.innerText = `${zData.nursery} st`;
+
+            const statTrees = document.getElementById("statTrees");
+            if (statTrees) statTrees.innerText = `${zData.trees} st`;
+
+            const statBushes = document.getElementById("statBushes");
+            if (statBushes) statBushes.innerText = `${zData.bushes} st`;
+
+            const ladderCleared = gameWorld.damProgress >= SEASON_DAM_GOAL;
+            const statLadders = document.getElementById("statLadders");
+            if (statLadders) {
+                statLadders.innerText = ladderCleared ? "Åtgärdat" : "Ej åtgärdat";
+                statLadders.className = ladderCleared ? "font-bold text-emerald-400" : "font-bold text-stone-100";
+            }
+
+            const damTxt = document.getElementById("damProgressText");
+            const damBar = document.getElementById("damProgressBar");
+            const pctDam = Math.min(100, Math.round((gameWorld.damProgress / SEASON_DAM_GOAL) * 100));
+            if (damTxt) damTxt.innerText = `${gameWorld.damProgress} / ${SEASON_DAM_GOAL} p`;
+            if (damBar) damBar.style.width = `${pctDam}%`;
+
+            renderSidePanels();
+            drawCanvas();
+        }
+
+        function renderSidePanels() {
+            const bioEl = document.getElementById("biotopeCloudLog");
+            if (bioEl) {
+                if (!gameWorld.biotopeLog.length) {
+                    bioEl.innerHTML = `<p class="text-stone-500 italic">Inga biotopåtgärder loggade ännu.</p>`;
+                } else {
+                    bioEl.innerHTML = gameWorld.biotopeLog
+                        .map(entry => `<div class="text-emerald-300/90 leading-tight">${escapeHtml(entry)}</div>`)
+                        .join("");
+                }
+            }
+
+            const catchEl = document.getElementById("catchLog");
+            if (catchEl) {
+                if (!gameWorld.catches.length) {
+                    catchEl.innerHTML = `<p class="text-stone-500 italic">Inga fångster än.</p>`;
+                } else {
+                    catchEl.innerHTML = gameWorld.catches
+                        .slice(0, 15)
+                        .map(c => {
+                            const actionBadge = c.action === "C&R"
+                                ? `<span class="text-emerald-400 font-bold">C&amp;R</span>`
+                                : `<span class="text-amber-400 font-bold">${escapeHtml(c.action)}</span>`;
+                            return `<div class="flex justify-between items-center text-stone-300 border-b border-stone-900 pb-0.5">
+                                <span class="truncate">${escapeHtml(c.species)} <strong>${c.size} cm</strong> (${escapeHtml(c.zone)})</span>
+                                ${actionBadge}
+                            </div>`;
+                        })
+                        .join("");
+                }
+            }
+
+            const guestEl = document.getElementById("guestbookList");
+            if (guestEl) {
+                if (!gameWorld.guestbook.length) {
+                    guestEl.innerHTML = `<p class="text-stone-500 italic">Inga besökare registrerade ännu.</p>`;
+                } else {
+                    guestEl.innerHTML = gameWorld.guestbook
+                        .map(g => `<div class="flex justify-between items-center text-stone-300">
+                            <span class="font-semibold text-amber-300 truncate">${escapeHtml(g.name)}</span>
+                            <span class="text-[10px] text-stone-400">${escapeHtml(g.zone)} • ${escapeHtml(g.time)}</span>
+                        </div>`)
+                        .join("");
+                }
+            }
+        }
+
+        function escapeHtml(str) {
+            return String(str || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        // === MODALER & HJÄLPFUNKTIONER ===
+        function isAnyModalOpen() {
+            const ids = [
+                "nameModal", "playerProfileModal", "customAlertModal", "equipmentModal",
+                "populationModal", "adminModal", "minigamesModal", "biotopModal",
+                "highscoreModal", "welfareModal", "flyModal"
+            ];
+            return ids.some(id => {
+                const el = document.getElementById(id);
+                return el && !el.classList.contains("hidden");
+            });
+        }
+
+        function showCustomAlert(message, title = "Meddelande") {
+            const modal = document.getElementById("customAlertModal");
+            const titleEl = document.getElementById("customAlertTitle");
+            const textEl = document.getElementById("customAlertText");
+            if (!modal || !textEl) return;
+            if (titleEl) titleEl.innerHTML = `<span>💬</span> ${escapeHtml(title)}`;
+            textEl.innerText = message;
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        function closeCustomAlert() {
+            const modal = document.getElementById("customAlertModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+        }
+
+        function saveInitialAnglerName() {
+            const input = document.getElementById("initialAnglerName");
+            const val = (input && input.value ? input.value : "").trim();
+            lockedAnglerName = val || "Säveåfiskare";
+            recordGuestbookVisit(lockedAnglerName);
+            saveLocalState();
+            const modal = document.getElementById("nameModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+            updateUI();
+        }
+
+        function openPlayerProfile(name) {
+            const targetName = name || lockedAnglerName || "Gäst";
+            const modal = document.getElementById("playerProfileModal");
+            const nameEl = document.getElementById("profilePlayerName");
+            const xpEl = document.getElementById("profileXpSummary");
+            const pbEl = document.getElementById("profilePbList");
+            if (!modal) return;
+
+            const tInfo = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
+            if (nameEl) nameEl.innerHTML = `<span>👤</span> ${escapeHtml(targetName)}`;
+            if (xpEl) {
+                xpEl.innerHTML = `<div><strong>Titel:</strong> ${escapeHtml(tInfo.title)} (Nivå ${tInfo.levelIndex + 1})</div>
+                <div><strong>Livstids-XP:</strong> ${gameWorld.xp} XP</div>
+                <div><strong>Naturvårdspoäng:</strong> ${gameWorld.points} p</div>`;
+            }
+
+            if (pbEl) {
+                const speciesList = ["Lax", "Öring"];
+                const rows = speciesList.map(sp => {
+                    const best = gameWorld.pbs[sp];
+                    if (!best) {
+                        return `<div class="flex justify-between text-stone-400"><span>${sp}:</span><span>Inget rekord ännu</span></div>`;
+                    }
+                    return `<div class="flex justify-between text-stone-200"><span>${sp}:</span><strong class="text-amber-300">${best.size} cm (${escapeHtml(best.zone)})</strong></div>`;
+                });
+                pbEl.innerHTML = rows.join("");
+            }
+
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        function closePlayerProfileModal() {
+            const modal = document.getElementById("playerProfileModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+        }
+
+        function toggleCustomDropdown() {
+            const list = document.getElementById("customDropdownList");
+            if (list) list.classList.toggle("hidden");
+        }
+
+        function selectCustomZone(zoneKey, labelText) {
+            if (!ZONES[zoneKey]) return;
+            currentZoneKey = zoneKey;
+            ensureZoneData(zoneKey);
+            const lbl = document.getElementById("selectedZoneLabel");
+            if (lbl) lbl.innerText = labelText || ZONES[zoneKey].name;
+            const list = document.getElementById("customDropdownList");
+            if (list) list.classList.add("hidden");
+            castLine = null;
+            currentFish = null;
+            saveLocalState();
+            updateUI();
+        }
+
+        function openEquipmentModal() {
+            const brandSel = document.getElementById("eqBrand");
+            const specSel = document.getElementById("eqRodSpec");
+            if (brandSel) brandSel.value = equipment.brand;
+            if (specSel) specSel.value = equipment.rodSpec;
+            const modal = document.getElementById("equipmentModal");
+            if (modal) {
+                modal.classList.remove("hidden");
+                modal.classList.add("flex");
+            }
+        }
+
+        function closeEquipmentModal() {
+            const modal = document.getElementById("equipmentModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+        }
+
+        function saveEquipment() {
+            const brandSel = document.getElementById("eqBrand");
+            const specSel = document.getElementById("eqRodSpec");
+            if (brandSel && specSel) {
+                equipment = { brand: brandSel.value, rodSpec: specSel.value };
+            }
+            saveLocalState();
+            closeEquipmentModal();
+            updateUI();
+        }
+
+        function openPopulationModal() {
+            const modal = document.getElementById("populationModal");
+            if (modal) {
+                modal.classList.remove("hidden");
+                modal.classList.add("flex");
+            }
+        }
+
+        function closePopulationModal() {
+            const modal = document.getElementById("populationModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+        }
+
+        function nextDay() {
+            if (currentDay >= 7) {
+                showCustomAlert("Du har redan nått Dag 7/7 för denna vecka.", "Veckans dagar");
+                return;
+            }
+            currentDay += 1;
+            castsLeft = maxCastsPerDay;
+            castLine = null;
+            currentFish = null;
+            ensureAllZones();
+            Object.keys(ZONES).forEach(k => {
+                const z = gameWorld.zones[k];
+                const regen = z.gravel * 4 + z.boulders * 3 + z.nursery * 5 + 4;
+                z.population = Math.min(350, z.population + regen);
+            });
+            saveLocalState();
+            updateUI();
+            const statusEl = document.getElementById("castStatus");
+            if (statusEl) statusEl.innerText = `Dag ${currentDay}/7 startad! 5 nya kast redo.`;
+        }
+
+        // === FLUGVAL ===
+        function changeFlyModal() {
+            const modal = document.getElementById("flyModal");
+            const list = document.getElementById("flyList");
+            if (!modal || !list) return;
+
+            list.innerHTML = FLIES.map(fly => {
+                const active = fly.id === selectedFly.id;
+                return `<button type="button" onclick="selectFly('${fly.id}')" class="w-full text-left px-3 py-2 rounded-xl border ${active ? "bg-emerald-950/80 border-emerald-400 text-emerald-200" : "bg-stone-900 border-stone-800 text-stone-200 hover:border-amber-400/50"} flex items-center justify-between text-xs transition">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full inline-block border border-white/30" style="background:${fly.color}"></span>
+                        <div>
+                            <div class="font-bold">${escapeHtml(fly.name)} <span class="text-amber-300">${escapeHtml(fly.size)}</span></div>
+                            <div class="text-[10px] text-stone-400">${escapeHtml(fly.type)} • Favorit: ${escapeHtml(fly.favSpecies)}</div>
+                        </div>
+                    </div>
+                    ${active ? `<span class="text-[10px] font-bold text-emerald-400">VALD</span>` : ""}
+                </button>`;
+            }).join("");
+
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        function selectFly(flyId) {
+            const found = FLIES.find(f => f.id === flyId);
+            if (found) selectedFly = found;
+            saveLocalState();
+            closeFlyModal();
+            updateUI();
+        }
+
+        function closeFlyModal() {
+            const modal = document.getElementById("flyModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+        }
+
+        // === BIOTOPVÅRD & STÅPLATS ===
+        function openBiotopModal() {
+            const modal = document.getElementById("biotopModal");
+            if (modal) {
+                modal.classList.remove("hidden");
+                modal.classList.add("flex");
+            }
+        }
+
+        function closeBiotopModal() {
+            const modal = document.getElementById("biotopModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+        }
+
+        function setModeBanner(text) {
+            const banner = document.getElementById("modeBanner");
+            if (!banner) return;
+            if (!text) {
+                banner.classList.add("hidden");
+            } else {
+                banner.innerText = text;
+                banner.classList.remove("hidden");
+            }
+        }
+
+        function startMoveRod() {
+            mode = "moveRod";
+            pendingCost = 0;
+            setModeBanner("Klicka i vattnet/stranden för ny ståplats");
+        }
+
+        function startPlacement(kind, cost) {
+            if (gameWorld.points < cost) {
+                showCustomAlert(`Du behöver ${cost} poäng men har ${gameWorld.points} p.`, "För lite poäng");
+                return;
+            }
+            closeBiotopModal();
+            mode = `place_${kind}`;
+            pendingCost = cost;
+            const labels = { gravel: "lekgrus", boulder: "ståndsten", nursery: "uppväxtplats" };
+            setModeBanner(`Klicka i strömmen för att placera ${labels[kind] || kind}`);
+        }
+
+        function doTreePlanting(cost) {
+            if (gameWorld.points < cost) {
+                showCustomAlert(`Du behöver ${cost} poäng för att plantera kantträd.`, "För lite poäng");
+                return;
+            }
+            const zData = ensureZoneData(currentZoneKey);
+            gameWorld.points -= cost;
+            zData.trees += 1;
+            zData.items.push({ kind: "tree", owner: lockedAnglerName || "Gäst", cost });
+            addXp(20);
+            appendBiotopeLog(`Planterade kantträd i ${ZONES[currentZoneKey].name} (-${cost} p)`);
+            saveLocalState();
+            updateUI();
+        }
+
+        function doBushPlanting(cost) {
+            if (gameWorld.points < cost) {
+                showCustomAlert(`Du behöver ${cost} poäng för att plantera buske.`, "För lite poäng");
+                return;
+            }
+            const zData = ensureZoneData(currentZoneKey);
+            gameWorld.points -= cost;
+            zData.bushes += 1;
+            zData.items.push({ kind: "bush", owner: lockedAnglerName || "Gäst", cost });
+            addXp(15);
+            appendBiotopeLog(`Planterade buske i ${ZONES[currentZoneKey].name} (-${cost} p)`);
+            saveLocalState();
+            updateUI();
+        }
+
+        function removeMyLatestBiotope() {
+            const zData = ensureZoneData(currentZoneKey);
+            const me = lockedAnglerName || "Gäst";
+            const idx = [...zData.items].map((it, i) => ({ it, i })).reverse().find(x => x.it.owner === me);
+            if (!idx) {
+                showCustomAlert("Hittade ingen egen biotopåtgärd på denna sträcka att ångra.", "Inget att ångra");
+                return;
+            }
+            const removed = zData.items.splice(idx.i, 1)[0];
+            gameWorld.points += removed.cost || 0;
+            if (removed.kind === "gravel") zData.gravel = Math.max(0, zData.gravel - 1);
+            if (removed.kind === "boulder") zData.boulders = Math.max(0, zData.boulders - 1);
+            if (removed.kind === "nursery") zData.nursery = Math.max(0, zData.nursery - 1);
+            if (removed.kind === "tree") zData.trees = Math.max(0, zData.trees - 1);
+            if (removed.kind === "bush") zData.bushes = Math.max(0, zData.bushes - 1);
+            appendBiotopeLog(`Ångrade åtgärd (${removed.kind}) i ${ZONES[currentZoneKey].name}`);
+            saveLocalState();
+            updateUI();
+        }
+
+        function contributeToDam() {
+            const contrib = 250;
+            if (gameWorld.points < contrib) {
+                showCustomAlert(`Du behöver minst ${contrib} p för att bidra till vandringshindret.`, "För lite poäng");
+                return;
+            }
+            gameWorld.points -= contrib;
+            gameWorld.damProgress = Math.min(SEASON_DAM_GOAL, gameWorld.damProgress + contrib);
+            addXp(25);
+            appendBiotopeLog(`Bidrog med ${contrib} p till vandringshinder (${gameWorld.damProgress}/${SEASON_DAM_GOAL} p)`);
+            saveLocalState();
+            updateUI();
+        }
+
+        // === HIGHSCORE & HALL OF FAME ===
+        function openHighscoreModal() {
+            const modal = document.getElementById("highscoreModal");
+            const hofEl = document.getElementById("hallOfFameContent");
+            const salmonEl = document.getElementById("highscoreSalmonList");
+            const troutEl = document.getElementById("highscoreTroutList");
+            const archEl = document.getElementById("hallOfFameArchiveSummary");
+            if (!modal) return;
+
+            const salmonBest = gameWorld.pbs["Lax"];
+            const troutBest = gameWorld.pbs["Öring"];
+            if (hofEl) {
+                hofEl.innerHTML = `<span>🐟 All-Time Lax: <strong class="text-emerald-300">${salmonBest ? `${salmonBest.size} cm (${escapeHtml(salmonBest.angler || lockedAnglerName || "Gäst")})` : "–"}</strong></span>
+                <span>🐠 All-Time Öring: <strong class="text-amber-300">${troutBest ? `${troutBest.size} cm (${escapeHtml(troutBest.angler || lockedAnglerName || "Gäst")})` : "–"}</strong></span>`;
+            }
+
+            const salmons = gameWorld.catches.filter(c => c.species === "Lax").sort((a, b) => b.size - a.size).slice(0, 10);
+            const trouts = gameWorld.catches.filter(c => c.species === "Öring").sort((a, b) => b.size - a.size).slice(0, 10);
+
+            if (salmonEl) {
+                salmonEl.innerHTML = salmons.length
+                    ? salmons.map((s, i) => `<div class="flex justify-between bg-stone-900/80 px-2 py-1 rounded"><span>#${i + 1} ${escapeHtml(s.angler || "Gäst")}</span><strong class="text-emerald-300">${s.size} cm</strong></div>`).join("")
+                    : `<p class="text-stone-500 italic text-center py-2">Inga laxar registrerade ännu.</p>`;
+            }
+
+            if (troutEl) {
+                troutEl.innerHTML = trouts.length
+                    ? trouts.map((t, i) => `<div class="flex justify-between bg-stone-900/80 px-2 py-1 rounded"><span>#${i + 1} ${escapeHtml(t.angler || "Gäst")}</span><strong class="text-amber-300">${t.size} cm</strong></div>`).join("")
+                    : `<p class="text-stone-500 italic text-center py-2">Inga öringar registrerade ännu.</p>`;
+            }
+
+            if (archEl) {
+                const seasons = gameWorld.hallOfFame?.seasons || [];
+                archEl.innerHTML = `<strong class="text-stone-300">Tidigare säsonger:</strong>` + seasons.map(s =>
+                    `<div>• ${escapeHtml(s.season)}: ${escapeHtml(s.topSalmon)} | ${escapeHtml(s.topTrout)}</div>`
+                ).join("");
+            }
+
+            modal.classList.remove("hidden");
+            modal.classList.add("flex");
+        }
+
+        function closeHighscoreModal() {
+            const modal = document.getElementById("highscoreModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+        }
+
+        // === FISKE, DRILLNING & C&R ===
+        function triggerStrongPhoneVibration(pattern) {
+            if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+                try { navigator.vibrate(pattern); } catch (_) {}
+            }
+        }
+
+        function rollFishEncounter(nx, ny) {
+            const zData = ensureZoneData(currentZoneKey);
+            const zInfo = ZONES[currentZoneKey] || ZONES.dickson;
+            if (zData.population <= 0) {
+                showCustomAlert("Beståndet på denna sträcka är tillfälligt lågt. Prova en annan sträcka eller gör biotopvård!", "Tomt bestånd");
+                return null;
+            }
+
+            let biteChance = 0.72;
+            if (selectedFly.favSpecies === "Lax" && zInfo.speciesWeights.Lax >= 0.48) biteChance += 0.1;
+            if (selectedFly.favSpecies === "Öring" && zInfo.speciesWeights.Öring >= 0.55) biteChance += 0.1;
+            biteChance += Math.min(0.14, (zData.gravel + zData.boulders + zData.nursery) * 0.02);
+
+            if (Math.random() > Math.min(0.95, biteChance)) {
+                return null;
+            }
+
+            const isSalmon = Math.random() < zInfo.speciesWeights.Lax;
+            const species = isSalmon ? "Lax" : "Öring";
+            const size = isSalmon
+                ? Math.round(48 + Math.random() * 68)
+                : Math.round(26 + Math.random() * 44);
+            const weightKg = Number(((size * size * size) / (isSalmon ? 98000 : 88000)).toFixed(2));
+
+            return {
+                species,
+                size,
+                weightKg,
+                zone: zInfo.name,
+                flyName: `${selectedFly.name} (${selectedFly.size})`,
+                x: nx,
+                y: ny
+            };
+        }
+
+        function updateFightVisuals() {
+            const stressBar = document.getElementById("stressBar");
+            const stressTxt = document.getElementById("stressValueText");
+            const timeTxt = document.getElementById("fightTimeText");
+            const fightCard = document.getElementById("fightCard");
+
+            const clampedPct = Math.max(0, Math.min(100, Math.round(tippetStress)));
+            if (stressBar) {
+                stressBar.style.width = `${clampedPct}%`;
+                if (tippetStress >= 85) {
+                    stressBar.className = "bg-rose-500 h-full rounded-full transition-all duration-75";
+                } else if (tippetStress >= 55) {
+                    stressBar.className = "bg-amber-400 h-full rounded-full transition-all duration-75";
+                } else {
+                    stressBar.className = "bg-emerald-500 h-full rounded-full transition-all duration-75";
+                }
+            }
+            if (stressTxt) stressTxt.innerText = `${Math.round(tippetStress)}%`;
+            if (timeTxt) timeTxt.innerText = `${fightTimeRemaining.toFixed(1)}s`;
+
+            if (fightCard) {
+                fightCard.classList.remove("fight-glow-green", "fight-glow-gold", "fight-glow-red");
+                if (tippetStress >= 85) fightCard.classList.add("fight-glow-red");
+                else if (tippetStress >= 55) fightCard.classList.add("fight-glow-gold");
+                else fightCard.classList.add("fight-glow-green");
+
+                if (isPressingScreen) fightCard.classList.add("finger-hold-active");
+                else fightCard.classList.remove("finger-hold-active");
+            }
+        }
+
+        function applyFightWindowRocking(nowMs) {
+            const fightCard = document.getElementById("fightCard");
+            if (!fightCard) return;
+            const angle = Math.sin(nowMs * 0.012) * (isPressingScreen ? 2.6 : 1.1);
+            fightCard.style.transform = `rotate(${angle.toFixed(2)}deg)`;
+        }
+
+        function resetFightWindowRocking() {
+            const fightCard = document.getElementById("fightCard");
+            if (fightCard) fightCard.style.transform = "";
+        }
+
         function startFishFight() {
             if (!currentFish || isFighting) return;
             triggerStrongPhoneVibration([280, 50, 280, 50, 360]);
@@ -761,9 +1705,9 @@
             const titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
             const knotMasteryFactor = titleObj.levelIndex >= 4 ? 0.92 : 1.0;
 
-            document.getElementById('fightTitle').innerText = `Drillning pågår – Håll inne fingret!`;
-            document.getElementById('fightOverlay').classList.remove('hidden');
-            document.getElementById('fightOverlay').classList.add('flex');
+            document.getElementById("fightTitle").innerText = "Drillning pågår – Håll inne fingret!";
+            document.getElementById("fightOverlay").classList.remove("hidden");
+            document.getElementById("fightOverlay").classList.add("flex");
             updateFightVisuals();
             applyFightWindowRocking(performance.now());
 
@@ -774,7 +1718,7 @@
                     clearInterval(fightInterval);
                     return;
                 }
-                if (isAnyModalOpen() && document.getElementById('fightOverlay').classList.contains('hidden')) {
+                if (isAnyModalOpen() && document.getElementById("fightOverlay").classList.contains("hidden")) {
                     return;
                 }
 
@@ -799,12 +1743,12 @@
                     isPressingScreen = false;
                     resetFightWindowRocking();
                     triggerStrongPhoneVibration([380, 60, 380, 60, 480]);
-                    document.getElementById('fightOverlay').classList.add('hidden');
-                    document.getElementById('fightOverlay').classList.remove('flex');
+                    document.getElementById("fightOverlay").classList.add("hidden");
+                    document.getElementById("fightOverlay").classList.remove("flex");
                     let lostFish = currentFish;
                     currentFish = null;
                     showCustomAlert(`💥 Tafsen gick av! Den starka ${lostFish.species}n (${lostFish.size} cm) slet sig loss. Håll koll på fingret och släpp när mätaren stiger!`, "Tafsbrott");
-                    document.getElementById('castStatus').innerText = "Tafsbrott! Knyt på ny fluga och kasta igen.";
+                    document.getElementById("castStatus").innerText = "Tafsbrott! Knyt på ny fluga och kasta igen.";
                     return;
                 }
 
@@ -813,8 +1757,8 @@
                     isFighting = false;
                     isPressingScreen = false;
                     resetFightWindowRocking();
-                    document.getElementById('fightOverlay').classList.add('hidden');
-                    document.getElementById('fightOverlay').classList.remove('flex');
+                    document.getElementById("fightOverlay").classList.add("hidden");
+                    document.getElementById("fightOverlay").classList.remove("flex");
                     openWelfareModal();
                 }
             }, dt * 1000);
@@ -830,14 +1774,14 @@
                     return "🪵 Flugan fastnade i drivveden och tafsen gick av!";
                 }
             }
-            if (currentZoneKey === 'dickson') {
+            if (currentZoneKey === "dickson") {
                 const dicksonBlockX = canvas.width / 3;
                 if (Math.hypot(x - dicksonBlockX, y - 35) < 26) {
                     return "🪨 Flugan fastnade i stenen vid Dickson och tafsen gick av!";
                 }
             }
-            if (currentZoneKey === 'kahogsforsen') {
-                const rocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
+            if (currentZoneKey === "kahogsforsen") {
+                const rocks = [{ x: canvas.width * 0.3, y: 100 }, { x: canvas.width * 0.7, y: 120 }];
                 for (const r of rocks) {
                     if (Math.hypot(x - r.x, y - r.y) < 18) {
                         return "🪨 Flugan fastnade i stenarna i Kåhögsforsen och tafsen gick av!";
@@ -846,6 +1790,904 @@
             }
             return null;
         }
+
+        function openWelfareModal() {
+            if (!currentFish) return;
+            pendingWelfareFish = { ...currentFish };
+            currentFish = null;
+
+            const details = document.getElementById("caughtFishDetails");
+            const slider = document.getElementById("sliderAirTime");
+            const lbl = document.getElementById("lblAirTime");
+            if (slider) slider.value = "5";
+            if (lbl) lbl.innerText = "5s";
+            if (details) {
+                details.innerHTML = `<strong class="text-amber-300">${escapeHtml(pendingWelfareFish.species)}</strong> – <strong>${pendingWelfareFish.size} cm</strong> (${pendingWelfareFish.weightKg} kg)<br><span class="text-[11px] text-stone-400">Sträcka: ${escapeHtml(pendingWelfareFish.zone)} • Fluga: ${escapeHtml(pendingWelfareFish.flyName)}</span>`;
+            }
+
+            const modal = document.getElementById("welfareModal");
+            if (modal) {
+                modal.classList.remove("hidden");
+                modal.classList.add("flex");
+            }
+        }
+
+        function updateAirTimeLabel(val) {
+            const lbl = document.getElementById("lblAirTime");
+            if (lbl) lbl.innerText = `${val}s`;
+        }
+
+        function finalizeFishOutcome(actionLabel, bonusPts, xpGain, popDelta) {
+            if (!pendingWelfareFish) return;
+            const fish = pendingWelfareFish;
+            pendingWelfareFish = null;
+
+            const zData = ensureZoneData(currentZoneKey);
+            zData.population = Math.max(0, zData.population + popDelta);
+            gameWorld.points += bonusPts;
+            addXp(xpGain);
+
+            const angler = lockedAnglerName || "Gäst";
+            gameWorld.catches.unshift({
+                species: fish.species,
+                size: fish.size,
+                weightKg: fish.weightKg,
+                zone: fish.zone,
+                action: actionLabel,
+                angler
+            });
+            gameWorld.catches = gameWorld.catches.slice(0, 60);
+
+            const prevPb = gameWorld.pbs[fish.species];
+            if (!prevPb || fish.size > prevPb.size) {
+                gameWorld.pbs[fish.species] = {
+                    size: fish.size,
+                    zone: fish.zone,
+                    angler
+                };
+            }
+
+            const modal = document.getElementById("welfareModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+
+            castLine = null;
+            saveLocalState();
+            updateUI();
+
+            const statusEl = document.getElementById("castStatus");
+            if (statusEl) {
+                statusEl.innerText = `${actionLabel}: ${fish.species} ${fish.size} cm (+${bonusPts} p, +${xpGain} XP).`;
+            }
+        }
+
+        function releaseFish() {
+            const airSec = parseInt(document.getElementById("sliderAirTime")?.value || "5", 10);
+            const quickBonus = airSec <= 6 ? 65 : (airSec <= 10 ? 45 : 25);
+            finalizeFishOutcome("C&R", quickBonus, 35, 2);
+        }
+
+        function keepFish() {
+            finalizeFishOutcome("Behållen", 20, 20, -4);
+        }
+
+        function sampleFish() {
+            finalizeFishOutcome("Provtagen", 35, 25, -2);
+        }
+
+        // === CANVAS-RITNING & KLICKHANTERING ===
+        function resizeCanvas() {
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                canvas.width = Math.round(rect.width);
+                canvas.height = Math.round(rect.height);
+            }
+            drawCanvas();
+        }
+
+        function drawCanvas() {
+            if (!canvas || !ctx) return;
+            const w = canvas.width;
+            const h = canvas.height;
+            if (!w || !h) return;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Älvvatten
+            const waterGrad = ctx.createLinearGradient(0, 0, w, h);
+            waterGrad.addColorStop(0, "#0c4a6e");
+            waterGrad.addColorStop(0.5, "#075985");
+            waterGrad.addColorStop(1, "#0f766e");
+            ctx.fillStyle = waterGrad;
+            ctx.fillRect(0, 0, w, h);
+
+            // Strömlinjer
+            ctx.strokeStyle = "rgba(186, 230, 253, 0.16)";
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 8; i++) {
+                const yLine = ((i + 0.5) / 8) * h;
+                ctx.beginPath();
+                ctx.moveTo(0, yLine);
+                ctx.bezierCurveTo(w * 0.33, yLine - 10, w * 0.66, yLine + 10, w, yLine);
+                ctx.stroke();
+            }
+
+            // Drivved vid högre flöde
+            const activeFlow = parseFloat(weatherData.flow) || 0;
+            singleDriftLog = { x: w * 0.56, y: h * 0.36 };
+            if (activeFlow >= 14) {
+                ctx.save();
+                ctx.translate(singleDriftLog.x, singleDriftLog.y);
+                ctx.rotate(-0.12);
+                ctx.fillStyle = "#78350f";
+                ctx.fillRect(-26, -6, 52, 12);
+                ctx.strokeStyle = "#451a03";
+                ctx.strokeRect(-26, -6, 52, 12);
+                ctx.restore();
+            }
+
+            // Hinder per sträcka
+            if (currentZoneKey === "dickson") {
+                ctx.fillStyle = "#475569";
+                ctx.beginPath();
+                ctx.arc(w / 3, 35, 16, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (currentZoneKey === "kahogsforsen") {
+                const rocks = [{ x: w * 0.3, y: 100 }, { x: w * 0.7, y: 120 }];
+                ctx.fillStyle = "#475569";
+                rocks.forEach(r => {
+                    ctx.beginPath();
+                    ctx.arc(r.x, r.y, 13, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            }
+
+            // Biotopinslag på aktiv sträcka
+            const zData = ensureZoneData(currentZoneKey);
+            zData.items.forEach((it, idx) => {
+                const ix = ((idx * 97 + 120) % Math.max(120, w - 120)) + 60;
+                const iy = ((idx * 61 + 90) % Math.max(90, h - 80)) + 45;
+                if (it.kind === "gravel") {
+                    ctx.fillStyle = "rgba(217, 119, 6, 0.55)";
+                    ctx.beginPath();
+                    ctx.ellipse(ix, iy, 18, 9, 0.2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (it.kind === "boulder") {
+                    ctx.fillStyle = "#64748b";
+                    ctx.beginPath();
+                    ctx.arc(ix, iy, 11, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (it.kind === "nursery") {
+                    ctx.strokeStyle = "rgba(74, 222, 128, 0.65)";
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(ix, iy, 15, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            });
+
+            // Ståplats & fluglina
+            const rx = rodPos.x * w;
+            const ry = rodPos.y * h;
+            ctx.fillStyle = "#f59e0b";
+            ctx.beginPath();
+            ctx.arc(rx, ry, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = "#fef3c7";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            if (castLine) {
+                ctx.strokeStyle = "rgba(248, 250, 252, 0.85)";
+                ctx.lineWidth = 1.6;
+                ctx.beginPath();
+                ctx.moveTo(rx, ry);
+                ctx.quadraticCurveTo((rx + castLine.endX) / 2, Math.min(ry, castLine.endY) - 24, castLine.endX, castLine.endY);
+                ctx.stroke();
+
+                ctx.fillStyle = selectedFly.color;
+                ctx.beginPath();
+                ctx.arc(castLine.endX, castLine.endY, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function handleCanvasClick(evt) {
+            if (isAnyModalOpen() || isFighting) return;
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = evt.clientX - rect.left;
+            const y = evt.clientY - rect.top;
+            const nx = Math.max(0.06, Math.min(0.94, x / rect.width));
+            const ny = Math.max(0.12, Math.min(0.92, y / rect.height));
+
+            if (mode === "moveRod") {
+                rodPos = { x: nx, y: ny };
+                mode = null;
+                setModeBanner(null);
+                document.getElementById("castStatus").innerText = "Ny ståplats vald.";
+                drawCanvas();
+                return;
+            }
+
+            if (mode && mode.startsWith("place_")) {
+                const kind = mode.replace("place_", "");
+                const zData = ensureZoneData(currentZoneKey);
+                if (gameWorld.points < pendingCost) {
+                    showCustomAlert("Otillräckliga poäng.", "Biotopvård");
+                    mode = null;
+                    setModeBanner(null);
+                    return;
+                }
+                gameWorld.points -= pendingCost;
+                if (kind === "gravel") zData.gravel += 1;
+                if (kind === "boulder") zData.boulders += 1;
+                if (kind === "nursery") zData.nursery += 1;
+                zData.items.push({ kind, owner: lockedAnglerName || "Gäst", cost: pendingCost });
+                addXp(20);
+                appendBiotopeLog(`Placerade ${kind} på ${ZONES[currentZoneKey].name} (-${pendingCost} p)`);
+                mode = null;
+                pendingCost = 0;
+                setModeBanner(null);
+                saveLocalState();
+                updateUI();
+                return;
+            }
+
+            if (castsLeft <= 0) {
+                showCustomAlert("Inga kast kvar idag! Klicka på Nästa dag (upp till Dag 7/7).", "Slut på kast");
+                return;
+            }
+
+            castsLeft -= 1;
+            castLine = { endX: x, endY: y };
+            drawCanvas();
+
+            const snagMsg = checkObstacleSnag(x, y);
+            if (snagMsg) {
+                castLine = null;
+                saveLocalState();
+                updateUI();
+                showCustomAlert(snagMsg, "Fastnat i hinder");
+                document.getElementById("castStatus").innerText = snagMsg;
+                return;
+            }
+
+            const encountered = rollFishEncounter(nx, ny);
+            saveLocalState();
+            updateUI();
+
+            if (encountered) {
+                currentFish = encountered;
+                document.getElementById("castStatus").innerText = `Hugg! ${encountered.species} (${encountered.size} cm) – håll inne fingret för att drilla!`;
+                startFishFight();
+            } else {
+                document.getElementById("castStatus").innerText = `Kastade ${selectedFly.name} (${selectedFly.size}) – inget hugg denna gång.`;
+            }
+        }
+
+        // === MINISPEL (OMLÖP 7x5, LINTRASSEL & BOTTENDRIFT) ===
+        function openMinigamesModal() {
+            const modal = document.getElementById("minigamesModal");
+            const schedLabel = document.getElementById("dailyMiniGameScheduleLabel");
+            if (schedLabel) schedLabel.innerText = `Datum: ${getTodayKey()} • Dag ${currentDay}/7`;
+            if (modal) {
+                modal.classList.remove("hidden");
+                modal.classList.add("flex");
+            }
+            switchMiniGameTab(activeMiniGameTab);
+        }
+
+        function closeMinigamesModal() {
+            stopDriftGame();
+            const modal = document.getElementById("minigamesModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+        }
+
+        function triggerPuzzleSuccessWave(msg) {
+            const overlay = document.getElementById("puzzleWaveOverlay");
+            const band = document.getElementById("puzzleWaveBand");
+            if (!overlay || !band) return;
+            band.classList.remove("animate-wave-sweep");
+            void band.offsetWidth;
+            overlay.classList.remove("hidden");
+            overlay.classList.add("flex");
+            band.classList.add("animate-wave-sweep");
+            setTimeout(() => {
+                overlay.classList.add("hidden");
+                overlay.classList.remove("flex");
+            }, 1750);
+            if (msg) {
+                const st = document.getElementById("castStatus");
+                if (st) st.innerText = msg;
+            }
+        }
+
+        function switchMiniGameTab(tabKey) {
+            activeMiniGameTab = tabKey;
+            stopDriftGame();
+
+            const tabs = [
+                { id: "flow", label: "🏞️ Omlöp" },
+                { id: "tangle", label: "🧶 Lintrassel" },
+                { id: "drift", label: "🪨 Bottendrift" }
+            ];
+
+            const tabsContainer = document.getElementById("miniGameStepTabs");
+            if (tabsContainer) {
+                tabsContainer.innerHTML = tabs.map(t => {
+                    const active = t.id === tabKey;
+                    return `<button type="button" onclick="switchMiniGameTab('${t.id}')" class="py-1.5 px-2 rounded-lg font-bold border transition ${active ? "bg-emerald-700 border-emerald-400 text-white" : "bg-stone-950 border-stone-800 text-stone-300 hover:border-stone-700"}">${t.label}</button>`;
+                }).join("");
+            }
+
+            ["flow", "tangle", "drift"].forEach(k => {
+                const panel = document.getElementById(`miniGamePanel_${k}`);
+                if (!panel) return;
+                if (k === tabKey) {
+                    panel.classList.remove("hidden");
+                    panel.classList.add("flex");
+                } else {
+                    panel.classList.add("hidden");
+                    panel.classList.remove("flex");
+                }
+            });
+
+            if (tabKey === "flow" && !flowGrid.length) initFlowPuzzle(false);
+            if (tabKey === "tangle" && !tangleNodes.length) initTanglePuzzle();
+            if (tabKey === "drift") drawDriftScene();
+        }
+
+        // 1. Omlöpsbäck (7x5)
+        function initFlowPuzzle(shuffle = true) {
+            // Sömlös bana från vänster (r2, k0) till höger (r2, k6):
+            // (2,0) -> (2,1) -> (1,1) -> (1,2) -> (1,3) -> (2,3) -> (3,3) -> (3,4) -> (3,5) -> (2,5) -> (2,6)
+            const solutionPath = [
+                [2, 0], [2, 1], [1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [3, 4], [3, 5], [2, 5], [2, 6]
+            ];
+            const pathSet = new Set(solutionPath.map(([r, c]) => `${r},${c}`));
+
+            flowGrid = Array.from({ length: FLOW_ROWS }, (_, r) =>
+                Array.from({ length: FLOW_COLS }, (_, c) => {
+                    const isStart = r === 2 && c === 0;
+                    const isEnd = r === 2 && c === FLOW_COLS - 1;
+                    let dirs = [0, 2];
+                    if (isStart) dirs = [1];
+                    else if (isEnd) dirs = [3];
+                    else if (pathSet.has(`${r},${c}`)) {
+                        const idx = solutionPath.findIndex(([pr, pc]) => pr === r && pc === c);
+                        const prev = idx > 0 ? solutionPath[idx - 1] : [2, 0];
+                        const next = idx < solutionPath.length - 1 ? solutionPath[idx + 1] : [2, FLOW_COLS - 1];
+                        const needed = new Set();
+                        [prev, next].forEach(([nr, nc]) => {
+                            if (nr < r) needed.add(0);
+                            if (nc > c) needed.add(1);
+                            if (nr > r) needed.add(2);
+                            if (nc < c) needed.add(3);
+                        });
+                        dirs = Array.from(needed);
+                    } else {
+                        dirs = Math.random() < 0.5 ? [0, 1] : [1, 3];
+                    }
+                    const rot = shuffle && !isStart && !isEnd ? Math.floor(Math.random() * 4) : 0;
+                    return { r, c, baseDirs: dirs, rot, isStart, isEnd };
+                })
+            );
+            renderFlowPuzzle();
+        }
+
+        function getRotatedDirs(cell) {
+            return cell.baseDirs.map(d => (d + cell.rot) % 4);
+        }
+
+        function rotateFlowCell(r, c) {
+            const cell = flowGrid[r]?.[c];
+            if (!cell || cell.isStart || cell.isEnd) return;
+            cell.rot = (cell.rot + 1) % 4;
+            renderFlowPuzzle();
+        }
+
+        function renderFlowPuzzle() {
+            const container = document.getElementById("flowGridContainer");
+            if (!container) return;
+            const opp = { 0: 2, 1: 3, 2: 0, 3: 1 };
+            const delta = { 0: [-1, 0], 1: [0, 1], 2: [1, 0], 3: [0, -1] };
+
+            const visited = new Set();
+            const queue = [[2, 0]];
+            visited.add("2,0");
+            while (queue.length) {
+                const [r, c] = queue.shift();
+                const dirs = getRotatedDirs(flowGrid[r][c]);
+                dirs.forEach(d => {
+                    const [dr, dc] = delta[d];
+                    const nr = r + dr;
+                    const nc = c + dc;
+                    if (nr >= 0 && nr < FLOW_ROWS && nc >= 0 && nc < FLOW_COLS) {
+                        const nDirs = getRotatedDirs(flowGrid[nr][nc]);
+                        if (nDirs.includes(opp[d])) {
+                            const key = `${nr},${nc}`;
+                            if (!visited.has(key)) {
+                                visited.add(key);
+                                queue.push([nr, nc]);
+                            }
+                        }
+                    }
+                });
+            }
+
+            container.innerHTML = flowGrid.map((row, r) =>
+                row.map((cell, c) => {
+                    const dirs = getRotatedDirs(cell);
+                    const wet = visited.has(`${r},${c}`);
+                    const strokeColor = wet ? "#38bdf8" : "#64748b";
+                    const paths = dirs.map(d => {
+                        if (d === 0) return `<line x1="20" y1="20" x2="20" y2="0" stroke="${strokeColor}" stroke-width="5" stroke-linecap="round"/>`;
+                        if (d === 1) return `<line x1="20" y1="20" x2="40" y2="20" stroke="${strokeColor}" stroke-width="5" stroke-linecap="round"/>`;
+                        if (d === 2) return `<line x1="20" y1="20" x2="20" y2="40" stroke="${strokeColor}" stroke-width="5" stroke-linecap="round"/>`;
+                        return `<line x1="20" y1="20" x2="0" y2="20" stroke="${strokeColor}" stroke-width="5" stroke-linecap="round"/>`;
+                    }).join("");
+
+                    const badge = cell.isStart
+                        ? `<span class="text-[8px] font-extrabold text-sky-300">IN</span>`
+                        : (cell.isEnd ? `<span class="text-[8px] font-extrabold text-emerald-300">UT</span>` : "");
+
+                    return `<button type="button" onclick="rotateFlowCell(${r},${c})" class="relative aspect-square rounded-lg border ${wet ? "border-sky-500/60 bg-sky-950/50" : "border-stone-800 bg-stone-900/90"} flex items-center justify-center overflow-hidden hover:border-cyan-400/70 transition">
+                        <svg viewBox="0 0 40 40" class="w-full h-full">
+                            ${paths}
+                            <circle cx="20" cy="20" r="3.5" fill="${strokeColor}"/>
+                        </svg>
+                        ${badge ? `<span class="absolute top-0.5 left-1">${badge}</span>` : ""}
+                    </button>`;
+                }).join("")
+            ).join("");
+        }
+
+        function checkFlowPuzzle() {
+            const opp = { 0: 2, 1: 3, 2: 0, 3: 1 };
+            const delta = { 0: [-1, 0], 1: [0, 1], 2: [1, 0], 3: [0, -1] };
+            const visited = new Set(["2,0"]);
+            const queue = [[2, 0]];
+            while (queue.length) {
+                const [r, c] = queue.shift();
+                getRotatedDirs(flowGrid[r][c]).forEach(d => {
+                    const [dr, dc] = delta[d];
+                    const nr = r + dr;
+                    const nc = c + dc;
+                    if (nr >= 0 && nr < FLOW_ROWS && nc >= 0 && nc < FLOW_COLS) {
+                        if (getRotatedDirs(flowGrid[nr][nc]).includes(opp[d])) {
+                            const key = `${nr},${nc}`;
+                            if (!visited.has(key)) {
+                                visited.add(key);
+                                queue.push([nr, nc]);
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (visited.has(`${2},${FLOW_COLS - 1}`)) {
+                weatherData.bonusFlow = Number(((weatherData.bonusFlow || 0) + 4.5).toFixed(1));
+                gameWorld.points += 25;
+                addXp(15);
+                saveLocalState();
+                updateUI();
+                triggerPuzzleSuccessWave("Omlöpet kopplat! +4,5 m³/s bonusflöde idag, +25 p och +15 XP.");
+            } else {
+                showCustomAlert("Vattnet når inte hela vägen från IN till UT ännu. Fortsätt vrida bitarna!", "Inte färdigkopplat");
+            }
+        }
+
+        // 2. Lintrassel (8 punkter)
+        function initTanglePuzzle() {
+            const tCanvas = document.getElementById("tangleCanvas");
+            if (!tCanvas) return;
+            const w = tCanvas.width;
+            const h = tCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const rad = Math.min(w, h) * 0.34;
+
+            // Skapa korsande knutar kring en 8-hörnig ring
+            const order = [0, 3, 6, 1, 4, 7, 2, 5];
+            tangleNodes = Array.from({ length: 8 }, (_, i) => {
+                const ang = (i / 8) * Math.PI * 2;
+                const jitterX = ((i % 2 === 0 ? 1 : -1) * 18);
+                const jitterY = ((i % 3 === 0 ? -1 : 1) * 14);
+                return {
+                    x: cx + Math.cos(ang) * rad + jitterX,
+                    y: cy + Math.sin(ang) * rad + jitterY
+                };
+            });
+            tangleEdges = order.map((a, idx) => [a, order[(idx + 1) % order.length]]);
+            bindTangleEvents();
+            renderTanglePuzzle();
+        }
+
+        function segmentsIntersect(p1, p2, p3, p4) {
+            const ccw = (a, b, c) => (c.y - a.y) * (b.x - a.x) > (b.y - a.y) * (c.x - a.x);
+            if (p1 === p3 || p1 === p4 || p2 === p3 || p2 === p4) return false;
+            return ccw(p1, p3, p4) !== ccw(p2, p3, p4) && ccw(p1, p2, p3) !== ccw(p1, p2, p4);
+        }
+
+        function countTangleCrossings() {
+            let count = 0;
+            for (let i = 0; i < tangleEdges.length; i++) {
+                for (let j = i + 1; j < tangleEdges.length; j++) {
+                    const [a1, b1] = tangleEdges[i];
+                    const [a2, b2] = tangleEdges[j];
+                    if (segmentsIntersect(tangleNodes[a1], tangleNodes[b1], tangleNodes[a2], tangleNodes[b2])) {
+                        count += 1;
+                    }
+                }
+            }
+            return count;
+        }
+
+        function renderTanglePuzzle() {
+            const tCanvas = document.getElementById("tangleCanvas");
+            if (!tCanvas) return;
+            const tCtx = tCanvas.getContext("2d");
+            tCtx.clearRect(0, 0, tCanvas.width, tCanvas.height);
+
+            const crossings = countTangleCrossings();
+            const statusEl = document.getElementById("tangleCrossingStatus");
+            if (statusEl) {
+                statusEl.innerText = crossings === 0 ? "Inga korsande linjer – trasslet löst!" : `Korsande linjer: ${crossings}`;
+            }
+
+            tangleEdges.forEach(([i, j]) => {
+                const n1 = tangleNodes[i];
+                const n2 = tangleNodes[j];
+                tCtx.strokeStyle = crossings === 0 ? "#34d399" : "#f59e0b";
+                tCtx.lineWidth = 2.2;
+                tCtx.beginPath();
+                tCtx.moveTo(n1.x, n1.y);
+                tCtx.lineTo(n2.x, n2.y);
+                tCtx.stroke();
+            });
+
+            tangleNodes.forEach((n, idx) => {
+                tCtx.fillStyle = idx === draggingTangleNode ? "#38bdf8" : "#fbbf24";
+                tCtx.beginPath();
+                tCtx.arc(n.x, n.y, 8, 0, Math.PI * 2);
+                tCtx.fill();
+            });
+
+            if (crossings === 0 && draggingTangleNode === -1) {
+                gameWorld.points += 25;
+                addXp(15);
+                saveLocalState();
+                updateUI();
+                triggerPuzzleSuccessWave("Lintrasslet utrett! +25 p och +15 XP.");
+                initTanglePuzzle();
+            }
+        }
+
+        function bindTangleEvents() {
+            const tCanvas = document.getElementById("tangleCanvas");
+            if (!tCanvas || tCanvas.dataset.bound === "1") return;
+            tCanvas.dataset.bound = "1";
+
+            const getPos = (e) => {
+                const rect = tCanvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: ((clientX - rect.left) / rect.width) * tCanvas.width,
+                    y: ((clientY - rect.top) / rect.height) * tCanvas.height
+                };
+            };
+
+            const onDown = (e) => {
+                const pos = getPos(e);
+                const idx = tangleNodes.findIndex(n => Math.hypot(n.x - pos.x, n.y - pos.y) <= 16);
+                if (idx !== -1) {
+                    draggingTangleNode = idx;
+                    renderTanglePuzzle();
+                }
+            };
+
+            const onMove = (e) => {
+                if (draggingTangleNode === -1) return;
+                const pos = getPos(e);
+                tangleNodes[draggingTangleNode].x = Math.max(14, Math.min(tCanvas.width - 14, pos.x));
+                tangleNodes[draggingTangleNode].y = Math.max(14, Math.min(tCanvas.height - 14, pos.y));
+                renderTanglePuzzle();
+            };
+
+            const onUp = () => {
+                if (draggingTangleNode !== -1) {
+                    draggingTangleNode = -1;
+                    renderTanglePuzzle();
+                }
+            };
+
+            tCanvas.addEventListener("mousedown", onDown);
+            window.addEventListener("mousemove", onMove);
+            window.addEventListener("mouseup", onUp);
+            tCanvas.addEventListener("touchstart", onDown, { passive: true });
+            window.addEventListener("touchmove", onMove, { passive: true });
+            window.addEventListener("touchend", onUp);
+        }
+
+        // 3. Bottendrift
+        function stopDriftGame() {
+            driftState.running = false;
+            if (driftState.animId) {
+                cancelAnimationFrame(driftState.animId);
+                driftState.animId = null;
+            }
+        }
+
+        function startOrRestartDriftGame() {
+            const dCanvas = document.getElementById("driftCanvas");
+            if (!dCanvas) return;
+            stopDriftGame();
+            driftState.running = true;
+            driftState.nymphX = 28;
+            driftState.nymphY = dCanvas.height / 2;
+            driftState.obstacles = [
+                { x: 105, y: 42, r: 16 },
+                { x: 165, y: 138, r: 18 },
+                { x: 225, y: 68, r: 16 },
+                { x: 275, y: 122, r: 15 }
+            ];
+            const st = document.getElementById("driftMiniStatusText");
+            if (st) st.innerText = "Styr nymfen förbi stenarna till höger!";
+            loopDriftGame();
+        }
+
+        function drawDriftScene() {
+            const dCanvas = document.getElementById("driftCanvas");
+            if (!dCanvas) return;
+            const dCtx = dCanvas.getContext("2d");
+            dCtx.clearRect(0, 0, dCanvas.width, dCanvas.height);
+
+            // Strömriktning
+            dCtx.fillStyle = "#082f49";
+            dCtx.fillRect(0, 0, dCanvas.width, dCanvas.height);
+
+            // Målficka höger
+            dCtx.fillStyle = "rgba(16, 185, 129, 0.25)";
+            dCtx.fillRect(dCanvas.width - 34, 0, 34, dCanvas.height);
+
+            // Stenar
+            dCtx.fillStyle = "#64748b";
+            (driftState.obstacles || []).forEach(obs => {
+                dCtx.beginPath();
+                dCtx.arc(obs.x, obs.y, obs.r, 0, Math.PI * 2);
+                dCtx.fill();
+            });
+
+            // Nymf
+            dCtx.fillStyle = "#f59e0b";
+            dCtx.beginPath();
+            dCtx.arc(driftState.nymphX, driftState.nymphY, 7, 0, Math.PI * 2);
+            dCtx.fill();
+        }
+
+        function loopDriftGame() {
+            const dCanvas = document.getElementById("driftCanvas");
+            if (!dCanvas || !driftState.running) return;
+
+            driftState.nymphX += 1.45;
+            if (driftState.holdingUp) driftState.nymphY -= 2.1;
+            else driftState.nymphY += 1.15;
+
+            driftState.nymphY = Math.max(10, Math.min(dCanvas.height - 10, driftState.nymphY));
+
+            const hit = driftState.obstacles.some(obs =>
+                Math.hypot(driftState.nymphX - obs.x, driftState.nymphY - obs.y) < obs.r + 6
+            );
+
+            if (hit) {
+                stopDriftGame();
+                const st = document.getElementById("driftMiniStatusText");
+                if (st) st.innerText = "Nymfen stötte i en sten! Klicka Starta drift för nytt försök.";
+                drawDriftScene();
+                return;
+            }
+
+            if (driftState.nymphX >= dCanvas.width - 24) {
+                stopDriftGame();
+                gameWorld.points += 25;
+                addXp(15);
+                saveLocalState();
+                updateUI();
+                drawDriftScene();
+                triggerPuzzleSuccessWave("Nymfen nådde målfickan! +25 p och +15 XP.");
+                return;
+            }
+
+            drawDriftScene();
+            driftState.animId = requestAnimationFrame(loopDriftGame);
+        }
+
+        // === ADMINPANEL ===
+        function openAdminModal() {
+            const modal = document.getElementById("adminModal");
+            if (modal) {
+                modal.classList.remove("hidden");
+                modal.classList.add("flex");
+            }
+        }
+
+        function closeAdminModal() {
+            const modal = document.getElementById("adminModal");
+            if (modal) {
+                modal.classList.add("hidden");
+                modal.classList.remove("flex");
+            }
+        }
+
+        function verifyAdminPassword() {
+            const pw = document.getElementById("adminPasswordInput")?.value || "";
+            if (pw === ADMIN_PASSWORD_HASH) {
+                document.getElementById("adminLoginView")?.classList.add("hidden");
+                const tools = document.getElementById("adminToolsView");
+                if (tools) {
+                    tools.classList.remove("hidden");
+                    tools.classList.add("flex");
+                }
+            } else {
+                showCustomAlert("Felaktigt GM-lösenord.", "Admin");
+            }
+        }
+
+        function adminResetPlayerWeek() {
+            currentDay = 1;
+            castsLeft = maxCastsPerDay;
+            saveLocalState();
+            updateUI();
+            showCustomAlert("Återställde till Dag 1/7 och 5 kast.", "Admin");
+        }
+
+        function adminResetMiniGameLocks() {
+            const dateKey = (document.getElementById("adminMiniGameDate")?.value || "").trim() || getTodayKey();
+            try { localStorage.removeItem(STORAGE_KEY_PREFIX + "bonus_flow_" + dateKey); } catch (_) {}
+            weatherData.bonusFlow = 0;
+            initFlowPuzzle(true);
+            initTanglePuzzle();
+            saveLocalState();
+            updateUI();
+            showCustomAlert(`Minispelsstatus återställd för ${dateKey}.`, "Admin");
+        }
+
+        function adminGrantPoints() {
+            const amt = parseInt(document.getElementById("adminPointsAmount")?.value || "0", 10) || 0;
+            gameWorld.points = Math.max(0, gameWorld.points + amt);
+            saveLocalState();
+            updateUI();
+            showCustomAlert(`Justerade poäng med ${amt} p (nytt saldo: ${gameWorld.points} p).`, "Admin");
+        }
+
+        function adminResetDamProgress() {
+            gameWorld.damProgress = 0;
+            saveLocalState();
+            updateUI();
+            showCustomAlert("Vandringshinder återställt till 0 p.", "Admin");
+        }
+
+        function adminClearCurrentZoneBiotope() {
+            const zData = ensureZoneData(currentZoneKey);
+            zData.gravel = 0;
+            zData.boulders = 0;
+            zData.nursery = 0;
+            zData.trees = 0;
+            zData.bushes = 0;
+            zData.items = [];
+            saveLocalState();
+            updateUI();
+            showCustomAlert(`Rensade biotop på ${ZONES[currentZoneKey].name}.`, "Admin");
+        }
+
+        // === INITIERING & HÄNDELSER ===
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById("loadingOverlay");
+            if (!overlay) return;
+            overlay.classList.add("opacity-0");
+            setTimeout(() => {
+                overlay.classList.add("hidden");
+                overlay.classList.remove("flex");
+                overlay.style.display = "none";
+            }, 250);
+        }
+
+        function initApp() {
+            loadLocalState();
+            updateUI();
+            resizeCanvas();
+
+            if (!lockedAnglerName) {
+                const nameModal = document.getElementById("nameModal");
+                if (nameModal) {
+                    nameModal.classList.remove("hidden");
+                    nameModal.classList.add("flex");
+                }
+            } else {
+                recordGuestbookVisit(lockedAnglerName);
+                saveLocalState();
+                renderSidePanels();
+            }
+
+            hideLoadingOverlay();
+        }
+
+        // Håll-inne för drillning & bottendrift
+        const pressStart = () => {
+            if (isFighting) {
+                isPressingScreen = true;
+                updateFightVisuals();
+            }
+            if (activeMiniGameTab === "drift" && driftState.running) {
+                driftState.holdingUp = true;
+            }
+        };
+        const pressEnd = () => {
+            if (isFighting) {
+                isPressingScreen = false;
+                updateFightVisuals();
+            }
+            if (activeMiniGameTab === "drift") {
+                driftState.holdingUp = false;
+            }
+        };
+
+        window.addEventListener("mousedown", pressStart);
+        window.addEventListener("mouseup", pressEnd);
+        window.addEventListener("touchstart", pressStart, { passive: true });
+        window.addEventListener("touchend", pressEnd);
+
+        window.addEventListener("keydown", (e) => {
+            if (activeMiniGameTab === "drift" && driftState.running && (e.key === "ArrowUp" || e.key === "w" || e.key === "W")) {
+                driftState.holdingUp = true;
+            }
+        });
+        window.addEventListener("keyup", (e) => {
+            if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
+                driftState.holdingUp = false;
+            }
+        });
+
+        const driftCanvasEl = document.getElementById("driftCanvas");
+        if (driftCanvasEl) {
+            driftCanvasEl.addEventListener("mousedown", () => { driftState.holdingUp = true; });
+            driftCanvasEl.addEventListener("mouseup", () => { driftState.holdingUp = false; });
+            driftCanvasEl.addEventListener("touchstart", () => { driftState.holdingUp = true; }, { passive: true });
+            driftCanvasEl.addEventListener("touchend", () => { driftState.holdingUp = false; });
+        }
+
+        if (canvas) {
+            canvas.addEventListener("click", handleCanvasClick);
+        }
+
+        const titleHeader = document.getElementById("mainTitleHeader");
+        if (titleHeader) {
+            titleHeader.addEventListener("click", () => {
+                adminClickCount += 1;
+                clearTimeout(adminClickTimer);
+                adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 1200);
+                if (adminClickCount >= 3) {
+                    adminClickCount = 0;
+                    openAdminModal();
+                }
+            });
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        window.addEventListener("DOMContentLoaded", initApp);
+        // Säkerhetsnät ifall DOMContentLoaded redan passerat
+        if (document.readyState === "complete" || document.readyState === "interactive") {
+            setTimeout(initApp, 0);
+        }
+        setTimeout(hideLoadingOverlay, 1500);
     </script>
 </body>
 </html>
