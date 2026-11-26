@@ -4921,29 +4921,51 @@
             updateUI();
         }
 
+        function pointInEllipse(px, py, cx, cy, rx, ry) {
+            if (rx <= 0 || ry <= 0) return false;
+            const dx = (px - cx) / rx;
+            const dy = (py - cy) / ry;
+            return (dx * dx + dy * dy) <= 1;
+        }
+
+        function pointNearRoundedRect(px, py, cx, cy, halfW, halfH, pad = 2) {
+            const dx = Math.max(0, Math.abs(px - cx) - halfW);
+            const dy = Math.max(0, Math.abs(py - cy) - halfH);
+            return Math.hypot(dx, dy) <= pad;
+        }
+
         function checkObstacleSnag(x, y) {
             if (!castLine || currentFish || isFighting) return null;
             const activeFlow = parseFloat(weatherData.flow) || 0;
+
+            // Drivved: ritas runt (-40, -8) med bredd 80 och höjd 16
             if (activeFlow >= 14 && singleDriftLog) {
-                const distLog = Math.hypot(x - singleDriftLog.x, y - singleDriftLog.y);
-                if (distLog < 34) {
+                if (pointNearRoundedRect(x, y, singleDriftLog.x, singleDriftLog.y, 40, 8, 2)) {
                     return "🪵 Flugan fastnade i drivveden och tafsen gick av!";
                 }
             }
+
+            // Dickson: ritas som elips vid (dicksonBlockX, 35) med rx = 60, ry = 25
             if (currentZoneKey === 'dickson') {
                 const dicksonBlockX = canvas.width / 3;
-                if (Math.hypot(x - dicksonBlockX, y - 35) < 48) {
+                if (pointInEllipse(x, y, dicksonBlockX, 35, 62, 27)) {
                     return "🪨 Flugan fastnade i stenen vid Dickson och tafsen gick av!";
                 }
             }
+
+            // Kåhögsforsen: ritas som elipser med rx = 35, ry = 18
             if (currentZoneKey === 'kahogsforsen') {
-                const rocks = [{x: canvas.width * 0.3, y: 100}, {x: canvas.width * 0.7, y: 120}];
+                const rocks = [
+                    { x: canvas.width * 0.3, y: 100 },
+                    { x: canvas.width * 0.7, y: 120 }
+                ];
                 for (const r of rocks) {
-                    if (Math.hypot(x - r.x, y - r.y) < 30) {
+                    if (pointInEllipse(x, y, r.x, r.y, 37, 20)) {
                         return "🪨 Flugan fastnade i stenarna i Kåhögsforsen och tafsen gick av!";
                     }
                 }
             }
+
             return null;
         }
 
