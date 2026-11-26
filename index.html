@@ -3224,14 +3224,36 @@
         });
 
         let postActionToastTimer = null;
-        function showPostCatchPopup(text, title = "Klart") {
+        function showPostCatchPopup(text, title = "Klart", variant = "default") {
             const existing = document.getElementById('postCatchActionPopup');
             if (existing) existing.remove();
             if (postActionToastTimer) clearTimeout(postActionToastTimer);
 
+            const isDanger = variant === "danger";
             const popup = document.createElement('div');
             popup.id = 'postCatchActionPopup';
-            popup.style.cssText = `
+            if (isDanger) {
+                popup.className = 'fight-glow-red';
+            }
+            popup.style.cssText = isDanger ? `
+                position: fixed;
+                top: 16px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 125;
+                max-width: 340px;
+                width: calc(100% - 24px);
+                background: rgba(69, 10, 10, 0.96);
+                border: 2px solid rgb(248, 113, 113);
+                color: #fef2f2;
+                padding: 11px 14px;
+                border-radius: 14px;
+                font-size: 12px;
+                line-height: 1.4;
+                text-align: center;
+                pointer-events: none;
+                transition: opacity 0.25s ease;
+            ` : `
                 position: fixed;
                 top: 16px;
                 left: 50%;
@@ -3251,7 +3273,8 @@
                 pointer-events: none;
                 transition: opacity 0.25s ease;
             `;
-            popup.innerHTML = `<div style="font-weight:700;color:#34d399;margin-bottom:2px;">${title}</div><div>${text}</div>`;
+            const titleColor = isDanger ? '#fca5a5' : '#34d399';
+            popup.innerHTML = `<div style="font-weight:800;color:${titleColor};margin-bottom:2px;">${title}</div><div>${text}</div>`;
             document.body.appendChild(popup);
 
             postActionToastTimer = setTimeout(() => {
@@ -4752,7 +4775,7 @@
             }
 
             if(gameWorld.castsRemaining <= 0) {
-                return showCustomAlert("Du har inga kast kvar idag! Klicka på 'Nästa dag' (eller återställ via Admin).", "Kast slut");
+                return showCustomAlert("Du har inga kast kvar idag! Klicka på 'Nästa dag'.", "Kast slut");
             }
 
             let distToTarget = Math.hypot(clickX - rodX, clickY - rodY);
@@ -4818,7 +4841,7 @@
             }
             const statusEl = document.getElementById('castStatus');
             if (statusEl) statusEl.innerText = reasonText;
-            showPostCatchPopup(reasonText, "Tafs av");
+            showPostCatchPopup(reasonText, "💥 Tafsbrott!", "danger");
             updateUI();
         }
 
@@ -4894,34 +4917,41 @@
                 ? Math.min(0.52, (0.24 + biotopeQuality * 0.14 + Math.max(0, (flowVal - 12) * 0.008)) * (lowFlowSmallFlyBoost ? 1.15 : 1.0))
                 : 0;
 
+            const isDamFixed = syncDamStateConsistency();
+
             if (salmonProb > 0 && roll < salmonProb) {
                 species = "Lax";
-                // Maxgräns 125 cm, där 120–125 cm är extremt sällsynt även vid bra biotopvård och högt flöde
+                // Maxgräns 125 cm när vandringshindret (10 000 p) är åtgärdat, annars max 78 cm
+                const salmonMaxLimit = isDamFixed ? 125 : 78;
                 let highFlowBiotopeDrive = Math.min(1.0, Math.max(0.0, biotopeQuality * 0.65 + Math.max(0, (flowVal - 10) / 25) * 0.45));
-                let minLen = Math.round(52 + highFlowBiotopeDrive * 22 + (lowFlowSmallFlyBoost ? 4 : 0));
-                let spanLen = Math.max(12, 125 - minLen);
+                let minLen = Math.round((isDamFixed ? 52 : 50) + highFlowBiotopeDrive * (isDamFixed ? 22 : 10) + (lowFlowSmallFlyBoost ? 4 : 0));
+                let spanLen = Math.max(10, salmonMaxLimit - minLen);
                 let skewed = Math.pow(Math.random(), 2.35 - highFlowBiotopeDrive * 0.55);
-                size = Math.min(125, Math.max(50, Math.floor(minLen + skewed * spanLen)));
+                size = Math.min(salmonMaxLimit, Math.max(50, Math.floor(minLen + skewed * spanLen)));
             } else if (roll < salmonProb + (lowFlowSmallFlyBoost ? 0.42 : 0.34)) {
                 species = "Öring";
-                // Öring styrs av biotop och flöde; ~75–77 cm inträffar bara extremt sällan vid hög biotopkvalitet/flöde
+                // Maxgräns 77 cm när vandringshindret (10 000 p) är åtgärdat, annars max 50 cm
+                const troutMaxLimit = isDamFixed ? 77 : 50;
                 let troutDrive = Math.min(1.0, Math.max(0.0, biotopeQuality * 0.65 + Math.max(0, (flowVal - 10) / 26) * 0.4));
-                let minTrout = Math.round(28 + troutDrive * 14 + (lowFlowSmallFlyBoost ? 3 : 0));
-                let maxTroutCap = Math.min(77, Math.round(56 + troutDrive * 21));
+                let minTrout = Math.round(28 + troutDrive * (isDamFixed ? 14 : 8) + (lowFlowSmallFlyBoost ? 3 : 0));
+                let maxTroutCap = Math.min(troutMaxLimit, Math.round((isDamFixed ? 56 : 40) + troutDrive * (isDamFixed ? 21 : 10)));
                 let skewedTrout = Math.pow(Math.random(), 3.2 - troutDrive * 0.65);
-                size = Math.min(77, Math.max(26, Math.floor(minTrout + skewedTrout * Math.max(8, maxTroutCap - minTrout))));
+                size = Math.min(troutMaxLimit, Math.max(26, Math.floor(minTrout + skewedTrout * Math.max(6, maxTroutCap - minTrout))));
             } else if (roll < 0.84) {
                 species = "Abborre";
-                let perchBase = 16 + biotopeQuality * 6;
-                size = Math.floor(perchBase + Math.pow(Math.random(), 1.6) * 24);
+                const perchMaxLimit = isDamFixed ? 46 : 33;
+                let perchBase = 16 + biotopeQuality * (isDamFixed ? 6 : 3);
+                size = Math.min(perchMaxLimit, Math.floor(perchBase + Math.pow(Math.random(), 1.6) * (isDamFixed ? 24 : 14)));
             } else if (roll < 0.93) {
                 species = "Gädda";
-                let pikeBase = 50 + biotopeQuality * 12;
-                size = Math.floor(pikeBase + Math.pow(Math.random(), 1.7) * 38);
+                const pikeMaxLimit = isDamFixed ? 100 : 72;
+                let pikeBase = 50 + biotopeQuality * (isDamFixed ? 12 : 6);
+                size = Math.min(pikeMaxLimit, Math.floor(pikeBase + Math.pow(Math.random(), 1.7) * (isDamFixed ? 38 : 16)));
             } else {
                 species = "Gös";
-                let zanderBase = 40 + biotopeQuality * 10;
-                size = Math.floor(zanderBase + Math.pow(Math.random(), 1.6) * 28);
+                const zanderMaxLimit = isDamFixed ? 78 : 56;
+                let zanderBase = 40 + biotopeQuality * (isDamFixed ? 10 : 5);
+                size = Math.min(zanderMaxLimit, Math.floor(zanderBase + Math.pow(Math.random(), 1.6) * (isDamFixed ? 28 : 12)));
             }
 
             let hasFungus = (species === "Lax" || species === "Öring") && Math.random() < 0.18;
@@ -5021,9 +5051,11 @@
             isPressingScreen = false;
             tippetStress = 0;
 
-            let sizeFactor = Math.max(0.85, Math.min(1.65, currentFish.size / 68));
-            totalFightDuration = Number((4.0 + sizeFactor * 2.2).toFixed(1));
+            // Dynamisk drillningstid: små fiskar (~20-35 cm) = kort drillning (~2.2-3.5s), stora fiskar (~90-125 cm) = lång drillning (~8-11.5s)
+            const normSize = Math.max(0, Math.min(1, (currentFish.size - 20) / 105));
+            totalFightDuration = Number((2.2 + Math.pow(normSize, 1.15) * 9.3).toFixed(1));
             fightTimeRemaining = totalFightDuration;
+            let sizeFactor = Math.max(0.75, Math.min(1.65, currentFish.size / 68));
 
             const titleObj = getTitleAndProgress(gameWorld.xp, gameWorld.prestige);
             const knotMasteryFactor = titleObj.levelIndex >= 4 ? 0.92 : 1.0;
@@ -5056,7 +5088,7 @@
                     tippetStress += (90 * sizeFactor * bigFishStressDamp * surge * knotMasteryFactor) * dt;
                     fightTimeRemaining = Math.max(0, fightTimeRemaining - dt);
                 } else {
-                    tippetStress = Math.max(0, tippetStress - 42 * dt);
+                    tippetStress = Math.max(0, tippetStress - 78 * dt);
                 }
 
                 updateFightVisuals();
