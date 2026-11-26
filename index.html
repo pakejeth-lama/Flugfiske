@@ -5017,39 +5017,69 @@
 
             const isDamFixed = syncDamStateConsistency();
 
+            // === STORLEKSGRÄNSER PER ART (ÄNDRA HÄR VID BEHOV) ===
+            // Format: { minUnfixed, maxUnfixed, minFixed, maxFixed, skew }
+            // Lägre 'skew' = oftare större fiskar inom spannet; högre 'skew' = oftare mindre fiskar.
+            const SIZE_CONFIG = {
+                salmon: { minUnfixed: 65, maxUnfixed: 85, minFixed: 70, maxFixed: 125, skew: 2.35 },
+                trout:  { minUnfixed: 26, maxUnfixed: 50, minFixed: 28, maxFixed: 77,  skew: 3.20 },
+                perch:  { minUnfixed: 16, maxUnfixed: 33, minFixed: 16, maxFixed: 46,  skew: 1.60 },
+                pike:   { minUnfixed: 50, maxUnfixed: 72, minFixed: 50, maxFixed: 100, skew: 1.70 },
+                zander: { minUnfixed: 40, maxUnfixed: 56, minFixed: 40, maxFixed: 78,  skew: 1.60 }
+            };
+
+            const applyHighFlowMinSize = (speciesKey, currentSize, maxLimit) => {
+                if (flowVal <= 14) return currentSize;
+                const minAllowed = Math.ceil(maxLimit * 0.70);
+                return Math.max(currentSize, minAllowed);
+            };
+
             if (salmonProb > 0 && roll < salmonProb) {
                 species = "Lax";
-                // Maxgräns 125 cm när vandringshindret (10 000 p) är åtgärdat, annars max 78 cm
-                const salmonMaxLimit = isDamFixed ? 125 : 78;
+                const cfg = SIZE_CONFIG.salmon;
+                const salmonMaxLimit = isDamFixed ? cfg.maxFixed : cfg.maxUnfixed;
+                const salmonFloor = isDamFixed ? cfg.minFixed : cfg.minUnfixed;
                 let highFlowBiotopeDrive = Math.min(1.0, Math.max(0.0, biotopeQuality * 0.65 + Math.max(0, (flowVal - 10) / 25) * 0.45));
-                let minLen = Math.round((isDamFixed ? 52 : 50) + highFlowBiotopeDrive * (isDamFixed ? 22 : 10) + (lowFlowSmallFlyBoost ? 4 : 0));
-                let spanLen = Math.max(10, salmonMaxLimit - minLen);
-                let skewed = Math.pow(Math.random(), 2.35 - highFlowBiotopeDrive * 0.55);
-                size = Math.min(salmonMaxLimit, Math.max(50, Math.floor(minLen + skewed * spanLen)));
+                let minLen = Math.round(salmonFloor + highFlowBiotopeDrive * (isDamFixed ? 22 : 10) + (lowFlowSmallFlyBoost ? 4 : 0));
+                let spanLen = Math.max(5, salmonMaxLimit - minLen);
+                let skewed = Math.pow(Math.random(), cfg.skew - highFlowBiotopeDrive * 0.55);
+                size = Math.min(salmonMaxLimit, Math.max(salmonFloor, Math.floor(minLen + skewed * spanLen)));
+                size = Math.min(salmonMaxLimit, applyHighFlowMinSize("salmon", size, salmonMaxLimit));
             } else if (roll < salmonProb + (lowFlowSmallFlyBoost ? 0.42 : 0.34)) {
                 species = "Öring";
-                // Maxgräns 77 cm när vandringshindret (10 000 p) är åtgärdat, annars max 50 cm
-                const troutMaxLimit = isDamFixed ? 77 : 50;
+                const cfg = SIZE_CONFIG.trout;
+                const troutMaxLimit = isDamFixed ? cfg.maxFixed : cfg.maxUnfixed;
+                const troutFloor = isDamFixed ? cfg.minFixed : cfg.minUnfixed;
                 let troutDrive = Math.min(1.0, Math.max(0.0, biotopeQuality * 0.65 + Math.max(0, (flowVal - 10) / 26) * 0.4));
-                let minTrout = Math.round(28 + troutDrive * (isDamFixed ? 14 : 8) + (lowFlowSmallFlyBoost ? 3 : 0));
+                let minTrout = Math.round(troutFloor + troutDrive * (isDamFixed ? 14 : 8) + (lowFlowSmallFlyBoost ? 3 : 0));
                 let maxTroutCap = Math.min(troutMaxLimit, Math.round((isDamFixed ? 56 : 40) + troutDrive * (isDamFixed ? 21 : 10)));
-                let skewedTrout = Math.pow(Math.random(), 3.2 - troutDrive * 0.65);
-                size = Math.min(troutMaxLimit, Math.max(26, Math.floor(minTrout + skewedTrout * Math.max(6, maxTroutCap - minTrout))));
+                let skewedTrout = Math.pow(Math.random(), cfg.skew - troutDrive * 0.65);
+                size = Math.min(troutMaxLimit, Math.max(troutFloor, Math.floor(minTrout + skewedTrout * Math.max(5, maxTroutCap - minTrout))));
+                size = Math.min(troutMaxLimit, applyHighFlowMinSize("trout", size, troutMaxLimit));
             } else if (roll < 0.84) {
                 species = "Abborre";
-                const perchMaxLimit = isDamFixed ? 46 : 33;
-                let perchBase = 16 + biotopeQuality * (isDamFixed ? 6 : 3);
-                size = Math.min(perchMaxLimit, Math.floor(perchBase + Math.pow(Math.random(), 1.6) * (isDamFixed ? 24 : 14)));
+                const cfg = SIZE_CONFIG.perch;
+                const perchMaxLimit = isDamFixed ? cfg.maxFixed : cfg.maxUnfixed;
+                const perchFloor = isDamFixed ? cfg.minFixed : cfg.minUnfixed;
+                let perchBase = perchFloor + biotopeQuality * (isDamFixed ? 6 : 3);
+                size = Math.min(perchMaxLimit, Math.max(perchFloor, Math.floor(perchBase + Math.pow(Math.random(), cfg.skew) * (isDamFixed ? 24 : 14))));
+                size = Math.min(perchMaxLimit, applyHighFlowMinSize("perch", size, perchMaxLimit));
             } else if (roll < 0.93) {
                 species = "Gädda";
-                const pikeMaxLimit = isDamFixed ? 100 : 72;
-                let pikeBase = 50 + biotopeQuality * (isDamFixed ? 12 : 6);
-                size = Math.min(pikeMaxLimit, Math.floor(pikeBase + Math.pow(Math.random(), 1.7) * (isDamFixed ? 38 : 16)));
+                const cfg = SIZE_CONFIG.pike;
+                const pikeMaxLimit = isDamFixed ? cfg.maxFixed : cfg.maxUnfixed;
+                const pikeFloor = isDamFixed ? cfg.minFixed : cfg.minUnfixed;
+                let pikeBase = pikeFloor + biotopeQuality * (isDamFixed ? 12 : 6);
+                size = Math.min(pikeMaxLimit, Math.max(pikeFloor, Math.floor(pikeBase + Math.pow(Math.random(), cfg.skew) * (isDamFixed ? 38 : 16))));
+                size = Math.min(pikeMaxLimit, applyHighFlowMinSize("pike", size, pikeMaxLimit));
             } else {
                 species = "Gös";
-                const zanderMaxLimit = isDamFixed ? 78 : 56;
-                let zanderBase = 40 + biotopeQuality * (isDamFixed ? 10 : 5);
-                size = Math.min(zanderMaxLimit, Math.floor(zanderBase + Math.pow(Math.random(), 1.6) * (isDamFixed ? 28 : 12)));
+                const cfg = SIZE_CONFIG.zander;
+                const zanderMaxLimit = isDamFixed ? cfg.maxFixed : cfg.maxUnfixed;
+                const zanderFloor = isDamFixed ? cfg.minFixed : cfg.minUnfixed;
+                let zanderBase = zanderFloor + biotopeQuality * (isDamFixed ? 10 : 5);
+                size = Math.min(zanderMaxLimit, Math.max(zanderFloor, Math.floor(zanderBase + Math.pow(Math.random(), cfg.skew) * (isDamFixed ? 28 : 12))));
+                size = Math.min(zanderMaxLimit, applyHighFlowMinSize("zander", size, zanderMaxLimit));
             }
 
             let hasFungus = (species === "Lax" || species === "Öring") && Math.random() < 0.18;
